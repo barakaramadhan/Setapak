@@ -1,28 +1,26 @@
 import { useEffect, useRef } from "react";
-import { initHomeAnimation } from "./animation/HomeAnimation";
-import ImageHero from "./../../assets/images/imagehero.png";
-import ImageSecond from "./../../assets/images/imagehero2.png";
-
+import { svgHomeAnimation } from "./animation/HomeAnimation";
+import FillButton from "../../components/ui/FillButton";
+import ImageLangit from "../../assets/images/langithome.png";
+import ImageSecond from "../../assets/images/imagehero2.png";
 function Home() {
   const animasiRef = useRef(null);
 
   useEffect(() => {
-    const cleanup = initHomeAnimation(animasiRef.current);
+    const animasiSvg = svgHomeAnimation(animasiRef.current);
 
-    return cleanup;
+    return animasiSvg;
   }, []);
 
   return (
     <>
       <section className="relative grid w-full overflow-hidden">
-        {/* gambar utama */}
         <img
-          src={ImageHero}
-          alt="Hero"
-          className="block w-full h-full [grid-area:1/1] object-cover object-center"
+          src={ImageLangit}
+          alt="Langit Home"
+          className="block w-full h-[900px] [grid-area:1/1] object-cover object-center rounded-b-2xl"
         />
 
-        {/* SVG garis */}
         <div
           ref={animasiRef}
           id="animasi-container"
@@ -141,11 +139,10 @@ function Home() {
           </svg>
         </div>
 
-        {/* gambar kedua (menimpa gambar pertama, kotak dan crop sama persis) */}
         <img
           src={ImageSecond}
           alt="Second Image"
-          className="block w-full h-full [grid-area:1/1] object-cover object-center z-10"
+          className="block w-full h-[900px] [grid-area:1/1] object-cover object-center z-10 rounded-2xl"
         />
 
         <div>
@@ -161,8 +158,7 @@ function Home() {
               Discover New Places and Create Your Perfect Journey.
             </p>
 
-            {/* ini masih dummy nnti kan pake component */}
-            <button className="pt-3">Get Started</button>
+            <FillButton className="mt-3">Let's Go</FillButton>
           </div>
         </div>
       </section>

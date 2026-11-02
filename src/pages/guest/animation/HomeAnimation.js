@@ -3,7 +3,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-export const initHomeAnimation = (container) => {
+export const svgHomeAnimation = (container) => {
   if (!container) return () => {};
 
   // yang di-pin = seluruh section, bukan container garis
