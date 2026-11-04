@@ -3,6 +3,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
+// Panjang scroll selama garis digambar (px).
+// Dipakai juga oleh Navbar untuk tahu kapan animasi selesai.
+export const HOME_PIN_DISTANCE = 1500;
+
 export const svgHomeAnimation = (container) => {
   if (!container) return () => {};
 
@@ -45,7 +49,7 @@ export const svgHomeAnimation = (container) => {
       scrollTrigger: {
         trigger: section,
         start: "top top",
-        end: "+=1500",
+        end: `+=${HOME_PIN_DISTANCE}`,
         pin: true,
         scrub: 1,
         invalidateOnRefresh: true,
