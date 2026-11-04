@@ -1,4 +1,4 @@
-import imageDestinations from "../../assets/images/mapdestination.png";
+import imageDestinations from "../../assets/images/mapdestination.webp";
 
 // Garis putus-putus (path asli, tidak diubah)
 const DASHED_PATH =

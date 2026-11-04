@@ -1,16 +1,62 @@
-# React + Vite
+# SETAPAK
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Website perencanaan perjalanan untuk **IDN IT FEST**. SETAPAK membantu pengguna menemukan destinasi dan merencanakan perjalanan ke beberapa tempat dalam satu rute.
 
-Currently, two official plugins are available:
+## Fitur
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Sudah tersedia:
+- Landing page (hero dengan animasi garis perjalanan, section Destinations)
+- Smooth scroll dan animasi berbasis scroll
 
-## React Compiler
+Dalam pengembangan:
+- AI Planning
+- Sign in dan sign up
+- Halaman user
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Teknologi
 
-## Expanding the ESLint configuration
+React 19, Vite, Tailwind CSS v4, React Router, GSAP (ScrollTrigger), Lenis, Flaticon UIcons.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Cara menjalankan
+
+Pastikan Node.js sudah terpasang, lalu:
+
+```bash
+npm install
+npm run dev
+```
+
+Perintah lain:
+
+```bash
+npm run build     # build untuk production
+npm run preview   # lihat hasil build
+npm run lint      # cek kode dengan ESLint
+```
+
+## Struktur folder
+
+```
+src/
+├── animations/     # animasi GSAP (mis. HomeAnimation.js)
+├── api/            # pemanggilan API
+├── assets/
+│   ├── fonts/      # Clash Display
+│   └── images/     # gambar (format .webp)
+├── components/
+│   ├── layouts/    # GuestLayout, AuthLayout, UserLayout, SmoothScroll
+│   ├── shared/     # komponen bersama (Navbar)
+│   └── ui/         # komponen kecil (FillButton)
+├── hooks/          # custom hooks
+├── pages/
+│   ├── guest/      # Home, Destinations, LandingPage
+│   ├── auth/       # sign in / sign up
+│   └── user/       # halaman user
+├── store/          # state global
+├── utils/          # fungsi bantu
+├── App.jsx         # router
+├── main.jsx
+└── index.css
+```
+
+Alur halaman landing: `App.jsx` -> `GuestLayout` (Navbar) -> `LandingPage` -> section `Home` dan `Destinations`.
