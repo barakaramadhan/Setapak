@@ -1,9 +1,12 @@
-import React from 'react'
+import { Outlet } from "react-router-dom";
 
+// Kerangka halaman user setelah login (belum dipakai di App.jsx)
 function UserLayout() {
   return (
-    <div>UserLayout</div>
-  )
+    <main>
+      <Outlet />
+    </main>
+  );
 }
 
-export default UserLayout
+export default UserLayout;
