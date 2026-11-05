@@ -1,5 +1,5 @@
-
 import imageMaps from "../../assets/images/maps.png";
+import FillButton from "../../components/ui/FillButton";
 import ImageDestination from "../../assets/images/yogyakarta.png";
 import ImageDestination2 from "../../assets/images/bandung.png";
 import ImageDestination3 from "../../assets/images/bali.png";
@@ -10,17 +10,17 @@ function Destinations() {
       <img
         src={imageMaps}
         alt=""
-        className="absolute left-0 -top-28 z-0 w-150 h-150 object-contain opacity-20"
+        className="absolute left-0 -top-36 z-0 w-250 h-200 object-contain opacity-20"
       />
 
       <div className="relative">
         <div className="absolute top-114 left-24 z-0 pointer-events-none select-none">
-          <h1 className="font-clash font-bold text-[200px] leading-none text-grey-light/20">
+          <h1 className="font-clash font-bold text-[200px] leading-none text-grey-light/30">
             SE
           </h1>
           <div className="flex items-center">
             <div className="w-96 h-105"></div>
-            <h1 className="font-clash font-bold text-[250px] leading-none text-grey-light/20">
+            <h1 className="font-clash font-bold text-[230px] leading-none text-grey-light/30">
               TAPAK
             </h1>
           </div>
@@ -28,20 +28,43 @@ function Destinations() {
 
         <div className="relative z-10 grid grid-cols-5">
           <div className="col-span-2">
-            <img
-              src={ImageDestination}
-              alt="Yogyakarta"
-              className="mt-14 w-120 h-105 rounded-xl object-cover"
-            />
-            <img
-              src={ImageDestination3}
-              alt="Bali"
-              className="mt-40 ml-12 w-120 h-120 rounded-xl object-cover"
-            />
+            {/* Yogyakarta */}
+            <div className="group relative mt-14 w-120 h-105 overflow-hidden rounded-xl">
+              <img
+                src={ImageDestination}
+                alt="Yogyakarta"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center">
+                <span className="font-clash text-4xl font-bold text-bright-white tracking-wide">
+                  Yogyakarta
+                </span>
+              </div>
+            </div>
+
+            {/* Bali */}
+            <div className="group relative mt-40 ml-12 w-120 h-120 overflow-hidden rounded-xl">
+              <img
+                src={ImageDestination3}
+                alt="Bali"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center">
+                <span className="font-jakarta text-2xl font-bold text-bright-white tracking-wide flex flex-col items-start">
+                  Pulau <span className="text-bright-white font-clash font-bold text-5xl">Lemukutan</span>
+                </span>
+              </div>
+            </div>
           </div>
 
           <div>
-            <h2 className="ml-16 whitespace-nowrap font-clash font-bold text-6xl leading-none text-black">
+            <div className="ml-16 border-2 border-light-brown-new rounded-2xl w-32 h-10 flex items-center justify-center mb-2">
+              <p className="font-jakarta font-semibold text-grey-light/50 text-base text-center">
+                Destinations
+              </p>
+            </div>
+
+            <h2 className="ml-16 whitespace-nowrap font-clash font-bold text-6xl leading-none text-black ">
               Indonesia <br />
               <span className="text-light-brown-new">
                 Stories Between <br />
@@ -54,16 +77,25 @@ function Destinations() {
                 Explore Indonesia's timeless streets, rich culture, and hidden
                 stories.
               </p>
-              <div className="mt-4 mx-auto w-32 h-px bg-black"></div>
+
+              <FillButton className="mt-7">Explore Now</FillButton>
             </div>
           </div>
 
-          <div className="col-span-2">
-            <img
-              src={ImageDestination2}
-              alt="Bandung"
-              className="mt-56 ml-auto w-120 h-150 rounded-xl object-cover"
-            />
+          <div className="col-span-2 pt-5">
+            {/* Bandung */}
+            <div className="group relative mt-56 ml-auto w-120 h-150 overflow-hidden rounded-xl">
+              <img
+                src={ImageDestination2}
+                alt="Bandung"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center">
+                <span className="font-clash text-4xl font-bold text-bright-white tracking-wide">
+                  Braga
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

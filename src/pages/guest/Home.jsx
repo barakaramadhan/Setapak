@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { svgHomeAnimation } from "../../animations/HomeAnimation";
 import FillButton from "../../components/ui/FillButton";
 import ImageLangit from "../../assets/images/langithome.webp";
-import ImageSecond from "../../assets/images/imagehero2.webp";
+import ImageSecond from "../../assets/images/imagehero2.png";
 function Home() {
   const animasiRef = useRef(null);
 
@@ -24,7 +24,7 @@ function Home() {
         <div
           ref={animasiRef}
           id="animasi-container"
-          className="absolute top-72 right-0 w-[1500px] z-[5]"
+          className="absolute top-64 -right-12 w-[1500px] z-[5]"
         >
           <svg
             className="garis-svg w-full h-auto overflow-visible"
@@ -146,7 +146,7 @@ function Home() {
         />
 
         <div>
-          <div className="absolute top-48 right-[430px] z-10 leading-none">
+          <div className="absolute top-48 right-[380px] z-10 leading-none">
             <h1 className="font-jakarta text-5xl font-medium text-white">
               Plan Your Next <br />
               Trip Across <br />
@@ -158,7 +158,12 @@ function Home() {
               Discover New Places and Create Your Perfect Journey.
             </p>
 
-            <FillButton className="mt-3">Let's Go</FillButton>
+            <FillButton className="mt-7">
+              <span className="inline-flex items-center justify-center gap-2">
+                <span>Let's Go</span>
+                <i className="fi fi-br-arrow-up-right leading-none"></i>
+              </span>
+            </FillButton>
           </div>
         </div>
       </section>
