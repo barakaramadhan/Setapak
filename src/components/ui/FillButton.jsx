@@ -6,7 +6,7 @@ function FillButton({
   children,
   className = "",
   baseClassName = "ring-1 ring-inset ring-dark-brown-new text-dark-brown-new",
-  fillClassName = "bg-dark-brown-new text-light-brown-new",
+  fillClassName = "bg-dark-brown-new text-bright-white",
   ...props
 }) {
   const btnRef = useRef(null);
@@ -71,7 +71,7 @@ function FillButton({
       onPointerEnter={handleEnter}
       onPointerLeave={handleLeave}
       className={twMerge(
-        "relative cursor-pointer overflow-hidden rounded-full px-8 py-3 font-jakarta font-extrabold",
+        "relative cursor-pointer overflow-hidden rounded-2xl px-8 py-3 font-jakarta font-extrabold",
         baseClassName,
         className
       )}
@@ -84,7 +84,7 @@ function FillButton({
         aria-hidden="true"
         style={{ clipPath: "circle(0px at 0px 0px)" }}
         className={twMerge(
-          "pointer-events-none absolute inset-0 z-10 flex items-center justify-center whitespace-nowrap rounded-full font-jakarta font-extrabold",
+          "pointer-events-none absolute inset-0 z-10 flex items-center justify-center whitespace-nowrap rounded-2xl font-jakarta font-extrabold",
           fillClassName
         )}
       >

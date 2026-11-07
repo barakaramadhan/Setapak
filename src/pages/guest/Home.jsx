@@ -13,7 +13,6 @@ function Home() {
   }, []);
 
   return (
-    <>
       <section className="relative grid w-full overflow-hidden">
         <img
           src={ImageLangit}
@@ -167,7 +166,6 @@ function Home() {
           </div>
         </div>
       </section>
-    </>
   );
 }
 

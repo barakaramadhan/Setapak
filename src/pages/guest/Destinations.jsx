@@ -1,12 +1,13 @@
 import imageMaps from "../../assets/images/maps.png";
 import FillButton from "../../components/ui/FillButton";
+import SectionMarker from "../../components/ui/SectionMarker";
 import ImageDestination from "../../assets/images/yogyakarta.png";
 import ImageDestination2 from "../../assets/images/bandung.png";
 import ImageDestination3 from "../../assets/images/bali.png";
 
 function Destinations() {
   return (
-    <section className="relative overflow-hidden bg-white px-20 pt-32 pb-40">
+    <section className="relative overflow-hidden bg-bright-white px-20 pt-32 pb-40">
       <img
         src={imageMaps}
         alt=""
@@ -58,13 +59,9 @@ function Destinations() {
           </div>
 
           <div>
-            <div className="ml-16 border-2 border-light-brown-new rounded-2xl w-32 h-10 flex items-center justify-center mb-2">
-              <p className="font-jakarta font-semibold text-grey-light/50 text-base text-center">
-                Destinations
-              </p>
-            </div>
+            <SectionMarker className="ml-16 mb-3" title="Destinations" />
 
-            <h2 className="ml-16 whitespace-nowrap font-clash font-bold text-6xl leading-none text-black ">
+            <h2 className="ml-16 whitespace-nowrap font-clash font-bold text-6xl leading-none text-grey-light ">
               Indonesia <br />
               <span className="text-light-brown-new">
                 Stories Between <br />
