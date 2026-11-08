@@ -15,7 +15,7 @@ const rightLinks = [
 function NavLink({ href, label }) {
   return (
     <li>
-      <a href={href} className="font-jakarta font-normal text-sm text-white">
+      <a href={href} className="font-jakarta font-semibold text-sm text-dark-brown-new">
         {label}
       </a>
     </li>
@@ -45,7 +45,7 @@ function Navbar() {
           ))}
 
           <li>
-            <h1 className="font-clash font-bold text-2xl text-white">
+            <h1 className="font-clash font-bold text-2xl text-bright-white">
               SETAPAK
             </h1>
           </li>
