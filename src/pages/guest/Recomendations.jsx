@@ -30,7 +30,7 @@ function Recomendations() {
   ];
 
   return (
-    <section className="px-20 py-8 bg-bright-white">
+    <section className="sticky top-0 z-0 px-20 py-8 bg-bright-white">
       <SectionMarker title="Recommendation" className="mb-6 w-36" />
 
       <div className="flex gap-9 overflow-x-auto pb-4">

@@ -23,10 +23,10 @@ function LandingPage() {
       <div id="find-your-place">
         < FindYourPlace />
       </div>
-      <div id="recomendations">
+      <div id="recomendations" className="sticky top-0 z-0">
         < Recomendations />
       </div>
-      <div id="how-it-works">
+      <div id="how-it-works" className="relative z-10">
         < HowItWorks />
       </div>
       {/* <div id="destinations">
