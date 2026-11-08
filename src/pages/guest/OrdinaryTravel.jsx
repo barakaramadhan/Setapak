@@ -64,7 +64,7 @@ function OrdinaryTravel() {
           <div
             key={item.id}
             className={`${item.widthClass} shrink-0 group cursor-pointer`}
-          >
+            >
             {/* Box Gambar */}
             <div
               className={`relative overflow-hidden rounded-2xl ${item.heightClass}`}

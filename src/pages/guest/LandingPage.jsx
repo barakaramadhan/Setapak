@@ -4,6 +4,8 @@ import TripPlanning from "./TripPlanning";
 import About from "./About";
 import OrdinaryTravel from "./OrdinaryTravel";
 import FindYourPlace from "./FindYourPlace";
+import Recomendations from "./Recomendations";
+import HowItWorks from "./HowItWorks";
 
 // Menyusun semua section landing page. Tambah section baru di sini.
 function LandingPage() {
@@ -20,6 +22,12 @@ function LandingPage() {
       </div>
       <div id="find-your-place">
         < FindYourPlace />
+      </div>
+      <div id="recomendations">
+        < Recomendations />
+      </div>
+      <div id="how-it-works">
+        < HowItWorks />
       </div>
       {/* <div id="destinations">
         <Destinations />
