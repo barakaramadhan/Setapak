@@ -1,6 +1,4 @@
 import Home from "./Home";
-import Destinations from "./Destinations";
-import TripPlanning from "./TripPlanning";
 import About from "./About";
 import OrdinaryTravel from "./OrdinaryTravel";
 import FindYourPlace from "./FindYourPlace";
@@ -29,12 +27,6 @@ function LandingPage() {
       <div id="how-it-works" className="relative z-10">
         < HowItWorks />
       </div>
-      {/* <div id="destinations">
-        <Destinations />
-      </div> */}
-      {/* <div id="trip-planning">
-        <TripPlanning />
-      </div> */}
       
     </>
   );

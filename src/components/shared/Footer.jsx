@@ -1,6 +1,7 @@
 import React from "react";
 import FillButton from "../ui/FillButton";
-import ImageFooter from "../../assets/images/imagefooter.png";
+// import ImageFooter from "../../assets/images/imagefooter.png";
+import ImageFooter from "../../assets/images/imagebackup.png";
 
 function Footer() {
   return (
@@ -158,7 +159,8 @@ function Footer() {
         <div className="flex max-w-xs flex-col gap-3">
           <h2 className="text-4xl font-bold font-clash text-grey-light uppercase">
             SETAPAK
-          </h2> 
+          </h2>
+
           <p className="text-base font-jakarta font-normal leading-relaxed text-grey-light">
             Discover new places, explore local experiences, and create
             meaningful journeys filled with unforgettable moments with Setapak.
@@ -166,10 +168,10 @@ function Footer() {
         </div>
 
         {/* Social: pakai relative + top, bukan mt */}
-        <nav
-          className="relative top-32 flex flex-col items-end gap-3 max-md:top-0 max-md:items-start"
-        >
-          <h3 className="text-3xl font-bold font-clash text-grey-light">Social</h3>
+        <nav className="relative top-32 flex flex-col items-end gap-3 max-md:top-0 max-md:items-start">
+          <h3 className="text-3xl font-bold font-clash text-grey-light">
+            Social
+          </h3>
 
           <div className="flex flex-col items-end gap-2 text-xs font-medium text-gray-900 max-md:items-start">
             {/* Baris 1 */}
@@ -179,25 +181,27 @@ function Footer() {
                   href="#"
                   className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light"
                 >
-                  <i className="fi fi-brands-youtube text-base" />
+                  <i className="fi fi-brands-youtube text-2xl" />
                   Setapak.
                 </a>
               </li>
+
               <li>
                 <a
                   href="#"
                   className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light"
                 >
-                  <i className="fi fi-brands-instagram-circle text-base" />
+                  <i className="fi fi-brands-instagram text-2xl" />
                   SetapakGo
                 </a>
               </li>
+
               <li>
                 <a
                   href="#"
                   className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light"
                 >
-                  <i className="fi fi-brands-facebook text-base" />
+                  <i className="fi fi-brands-facebook text-2xl" />
                   Setapak
                 </a>
               </li>
@@ -210,25 +214,27 @@ function Footer() {
                   href="#"
                   className="flex items-center gap-2 hover:opacity-75"
                 >
-                  <i className="fab fa-github text-base" />
+                  <i className="fab fa-github text-2xl" />
                   fawwazRN
                 </a>
               </li>
+
               <li>
                 <a
                   href="#"
                   className="flex items-center gap-2 hover:opacity-75"
                 >
-                  <i className="fab fa-github text-base" />
+                  <i className="fab fa-github text-2xl" />
                   barakaramadhan
                 </a>
               </li>
+
               <li>
                 <a
                   href="#"
                   className="flex items-center gap-2 hover:opacity-75"
                 >
-                  <i className="fab fa-github text-base" />
+                  <i className="fab fa-github text-2xl" />
                   Izzamnuddin
                 </a>
               </li>
@@ -241,7 +247,7 @@ function Footer() {
                   href="mailto:setapakinfo@gmail.com"
                   className="flex items-center gap-2 hover:opacity-75"
                 >
-                  <i className="fas fa-envelope text-base" />
+                  <i className="fas fa-envelope text-2xl" />
                   setapakinfo@gmail.com
                 </a>
               </li>
