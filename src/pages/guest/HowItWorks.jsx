@@ -39,7 +39,7 @@ function HowItWorks() {
   const currentData = steps.find((step) => step.id === activeStep);
 
   return (
-    <section className="bg-grey-light text-white min-h-[600px] py-12 px-10 mt-20 mb-96 rounded-t-4xl relative z-10 overflow-hidden flex flex-col max-md:rounded-t-[50%/60px] max-sm:rounded-t-[50%/40px] max-sm:px-5">
+    <section className="bg-grey-light text-white min-h-[600px] py-12 px-10 mt-20 rounded-t-4xl relative z-10 overflow-hidden flex flex-col max-md:rounded-t-[50%/60px] max-sm:rounded-t-[50%/40px] max-sm:px-5">
       <h2 className="text-center text-3xl font-bold font-clash text-white uppercase">
         Setapak
       </h2>
