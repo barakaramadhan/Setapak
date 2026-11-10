@@ -6,11 +6,11 @@ import { getSectionTop } from "../../utils/scroll";
 
 const leftLinks = [
   { label: "Home", href: "#home" },
-  { label: "Destination", href: "#recomendations" },
+  { label: "Plan a Trip", href: "#find-your-place" },
 ];
 
 const rightLinks = [
-  { label: "Plan a trip", href: "#find-your-place" },
+  { label: "Destination", href: "#recomendations" },
   { label: "Info", href: "#footer" },
 ];
 
