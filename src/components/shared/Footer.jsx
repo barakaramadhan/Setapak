@@ -1,7 +1,7 @@
 import React from "react";
 import FillButton from "../ui/FillButton";
 // import ImageFooter from "../../assets/images/imagefooter.png";
-import ImageFooter from "../../assets/images/imagebackup.png";
+import ImageFooter from "../../assets/images/imagefooter.webp";
 
 function Footer() {
   return (
@@ -181,7 +181,7 @@ function Footer() {
                   href="#"
                   className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light"
                 >
-                  <i className="fi fi-brands-youtube text-2xl" />
+                  <i className="fi fi-brands-youtube text-2xl pt-2" />
                   Setapak.
                 </a>
               </li>
@@ -191,7 +191,7 @@ function Footer() {
                   href="#"
                   className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light"
                 >
-                  <i className="fi fi-brands-instagram text-2xl" />
+                  <i className="fi fi-brands-instagram text-2xl pt-1" />
                   SetapakGo
                 </a>
               </li>
@@ -201,7 +201,7 @@ function Footer() {
                   href="#"
                   className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light"
                 >
-                  <i className="fi fi-brands-facebook text-2xl" />
+                  <i className="fi fi-brands-facebook text-2xl pt-1" />
                   Setapak
                 </a>
               </li>
@@ -212,9 +212,9 @@ function Footer() {
               <li>
                 <a
                   href="#"
-                  className="flex items-center gap-2 hover:opacity-75"
+                  className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75"
                 >
-                  <i className="fab fa-github text-2xl" />
+                  <i className="fi fi-brands-github text-2xl pt-1" />
                   fawwazRN
                 </a>
               </li>
@@ -222,9 +222,9 @@ function Footer() {
               <li>
                 <a
                   href="#"
-                  className="flex items-center gap-2 hover:opacity-75"
+                  className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75"
                 >
-                  <i className="fab fa-github text-2xl" />
+                  <i className="fi fi-brands-github text-2xl pt-1" />
                   barakaramadhan
                 </a>
               </li>
@@ -232,9 +232,9 @@ function Footer() {
               <li>
                 <a
                   href="#"
-                  className="flex items-center gap-2 hover:opacity-75"
+                  className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75"
                 >
-                  <i className="fab fa-github text-2xl" />
+                  <i className="fi fi-brands-github text-2xl pt-1" />
                   Izzamnuddin
                 </a>
               </li>
@@ -245,9 +245,9 @@ function Footer() {
               <li>
                 <a
                   href="mailto:setapakinfo@gmail.com"
-                  className="flex items-center gap-2 hover:opacity-75"
+                  className="flex items-center gap-2 font-jakarta font-semibold text-base text-grey-light hover:opacity-75"
                 >
-                  <i className="fas fa-envelope text-2xl" />
+                  <i className="fi fi-sr-envelope text-xl pt-1" />
                   setapakinfo@gmail.com
                 </a>
               </li>
@@ -258,7 +258,7 @@ function Footer() {
 
       {/* 3. Copyright */}
       <div className="relative z-10 px-10 pt-10 pb-6 max-md:px-8 max-sm:px-5">
-        <small className="block text-xs font-semibold text-gray-800">
+        <small className="block text-base font-jakarta font-bold text-grey-light">
           © 2026 Setapak. Crafted by The Rijalz.
         </small>
       </div>
