@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import SectionMarker from "../../components/ui/SectionMarker";
-import FillButton from "../../components/ui/FillButton";
-import InputAll from "../../components/ui/InputAll";
-import ImageCard from "../../assets/images/imagecard.png";
+import SectionMarker from "../../../components/ui/SectionMarker";
+import FillButton from "../../../components/ui/FillButton";
+import InputAll from "../../../components/ui/InputAll";
+import ImageCard from "../../../assets/images/find-your-place/imagecard.webp";
 
 const categories = ["Beach", "Mountain", "City", "Culture", "Nature"];
 const dayNames = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];

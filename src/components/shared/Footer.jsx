@@ -1,11 +1,10 @@
 import React from "react";
 import FillButton from "../ui/FillButton";
-// import ImageFooter from "../../assets/images/imagefooter.png";
-import ImageFooter from "../../assets/images/imagefooter.webp";
+import ImageFooter from "../../assets/images/footer/imagefooter.webp";
 
 function Footer() {
   return (
-    <footer className="relative w-full overflow-hidden bg-black font-sans text-gray-900">
+    <footer id="footer" className="relative w-full overflow-hidden bg-black font-sans text-grey-light">
       {/* Foto latar (img, paling belakang) */}
       <img
         src={ImageFooter}
@@ -173,7 +172,7 @@ function Footer() {
             Social
           </h3>
 
-          <div className="flex flex-col items-end gap-2 text-xs font-medium text-gray-900 max-md:items-start">
+          <div className="flex flex-col items-end gap-2 text-xs font-medium text-grey-light max-md:items-start">
             {/* Baris 1 */}
             <ul className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 max-md:justify-start">
               <li>

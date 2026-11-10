@@ -1,9 +1,9 @@
 import React from "react";
-import SectionMarker from "../../components/ui/SectionMarker";
-import FillButton from "../../components/ui/FillButton";
-import ImageOrdinary from "../../assets/images/bandung.png";
-import ImageOrdinary1 from "../../assets/images/ordinaryimage1.png";
-import ImageOrdinary2 from "../../assets/images/ordinaryimage2.png";
+import SectionMarker from "../../../components/ui/SectionMarker";
+import FillButton from "../../../components/ui/FillButton";
+import ImageOrdinary from "../../../assets/images/ordinary-travel/bandung.webp";
+import ImageOrdinary1 from "../../../assets/images/ordinary-travel/ordinaryimage1.webp";
+import ImageOrdinary2 from "../../../assets/images/ordinary-travel/ordinaryimage2.webp";
 
 function OrdinaryTravel() {
   const destinations = [

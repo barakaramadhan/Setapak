@@ -1,9 +1,9 @@
-import Home from "./Home";
-import About from "./About";
-import OrdinaryTravel from "./OrdinaryTravel";
-import FindYourPlace from "./FindYourPlace";
-import Recomendations from "./Recomendations";
-import HowItWorks from "./HowItWorks";
+import Home from "./sections/Home";
+import About from "./sections/About";
+import OrdinaryTravel from "./sections/OrdinaryTravel";
+import FindYourPlace from "./sections/FindYourPlace";
+import Recomendations from "./sections/Recomendations";
+import HowItWorks from "./sections/HowItWorks";
 
 // Menyusun semua section landing page. Tambah section baru di sini.
 function LandingPage() {

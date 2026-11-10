@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
-import { svgHomeAnimation } from "../../animations/HomeAnimation";
-import FillButton from "../../components/ui/FillButton";
-import ImageLangit from "../../assets/images/langithome.webp";
-import ImageSecond from "../../assets/images/imagehero2.png";
+import { svgHomeAnimation } from "../../../animations/HomeAnimation";
+import FillButton from "../../../components/ui/FillButton";
+import ImageLangit from "../../../assets/images/home/langithome.webp";
+import ImageSecond from "../../../assets/images/home/imagehero2.webp";
 function Home() {
   const animasiRef = useRef(null);
 
