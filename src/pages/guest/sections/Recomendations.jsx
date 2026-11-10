@@ -1,8 +1,8 @@
 import React from "react";
-import SectionMarker from "../../components/ui/SectionMarker";
-import ImageCard from "../../assets/images/imagerecomendation.png";
-import ImageCard2 from "../../assets/images/imagerecomendation2.png";
-import ImageCard3 from "../../assets/images/imagerecomendation3.png";
+import SectionMarker from "../../../components/ui/SectionMarker";
+import ImageCard from "../../../assets/images/recomendations/imagerecomendation.webp";
+import ImageCard2 from "../../../assets/images/recomendations/imagerecomendation2.webp";
+import ImageCard3 from "../../../assets/images/recomendations/imagerecomendation3.webp";
 
 function Recomendations() {
   const recomendations = [

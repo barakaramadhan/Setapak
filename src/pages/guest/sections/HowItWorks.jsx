@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import ImageStep1 from "../../assets/images/imagestep1.png";
-import ImageStep2 from "../../assets/images/imagestep2.png";
-import ImageStep3 from "../../assets/images/imagestep3.png";
-import ImageStep4 from "../../assets/images/imagestep4.png";
-import ImageStep5 from "../../assets/images/imagestep5.png";
-import ImageStep6 from "../../assets/images/imagestep6.png";
+import ImageStep1 from "../../../assets/images/how-it-works/imagestep1.webp";
+import ImageStep2 from "../../../assets/images/how-it-works/imagestep2.webp";
+import ImageStep3 from "../../../assets/images/how-it-works/imagestep3.webp";
+import ImageStep4 from "../../../assets/images/how-it-works/imagestep4.webp";
+import ImageStep5 from "../../../assets/images/how-it-works/imagestep5.webp";
+import ImageStep6 from "../../../assets/images/how-it-works/imagestep6.webp";
 
 function HowItWorks() {
   const steps = [

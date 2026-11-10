@@ -1,10 +1,10 @@
 import React from "react";
-import SectionMarker from "../../components/ui/SectionMarker";
-import FillButton from "../../components/ui/FillButton";
-// import ImagePlan1 from "../../assets/images/imageplan1.png"
-// import ImagePlan2 from "../../assets/images/imageplan2.png"
-// import ImagePlan3 from "../../assets/images/imageplan3.png"
-// import ImagePlan4 from "../../assets/images/imageplan4.png"
+import SectionMarker from "../../../components/ui/SectionMarker";
+import FillButton from "../../../components/ui/FillButton";
+// import ImagePlan1 from "../../../assets/images/imageplan1.webp"
+// import ImagePlan2 from "../../../assets/images/imageplan2.webp"
+// import ImagePlan3 from "../../../assets/images/imageplan3.webp"
+// import ImagePlan4 from "../../../assets/images/imageplan4.webp"
 function TripPlanning() {
   return (
     <section className="px-20">

@@ -1,6 +1,6 @@
 import React from 'react'
-import MapsHome from '../../assets/images/maps.png'
-import SectionMarker from '../../components/ui/SectionMarker'
+import MapsHome from '../../../assets/images/about/maps.webp'
+import SectionMarker from '../../../components/ui/SectionMarker'
 
 function About() {
   return (
