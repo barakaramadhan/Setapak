@@ -11,7 +11,7 @@ const leftLinks = [
 
 const rightLinks = [
   { label: "Destination", href: "#recomendations" },
-  { label: "Info", href: "#footer" },
+  { label: "Flow", href: "#how-it-works" },
 ];
 
 // id section yang dipantau untuk isActive (urutan bebas)
