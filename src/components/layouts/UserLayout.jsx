@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 
-// Kerangka halaman user setelah login (belum dipakai di App.jsx)
+// Kerangka halaman user setelah login (dipakai di App.jsx untuk rute /dashboard)
 function UserLayout() {
   return (
     <main>
