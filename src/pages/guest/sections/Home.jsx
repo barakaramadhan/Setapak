@@ -145,7 +145,7 @@ function Home() {
         />
 
         <div>
-          <div className="absolute top-48 right-[380px] z-10 leading-none">
+          <div className="absolute top-48 right-[442px] z-10 leading-none">
             <h1 className="font-jakarta text-5xl font-medium text-white">
               Plan Your Next <br />
               Trip Across <br />

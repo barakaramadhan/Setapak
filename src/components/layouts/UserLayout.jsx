@@ -1,11 +1,15 @@
 import { Outlet } from "react-router-dom";
+import Sidebar from "../shared/Sidebar";
 
-// Kerangka halaman user setelah login (belum dipakai di App.jsx)
+// Kerangka halaman user setelah login (dipakai di App.jsx untuk rute /dashboard)
 function UserLayout() {
   return (
-    <main>
-      <Outlet />
-    </main>
+    <>
+      <Sidebar />
+      <main>
+        <Outlet />
+      </main>
+    </>
   );
 }
 
