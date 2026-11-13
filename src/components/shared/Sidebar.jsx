@@ -94,7 +94,7 @@ function Sidebar() {
         >
           <i className="fi fi-rr-sign-out-alt shrink-0 text-xl leading-none" />
           <span
-            className={`whitespace-nowrap transition-opacity duration-300 ${
+            className={`whitespace-nowrap transition-opacity duration-300 font-jakarta font-medium text-base text-grey-light ${
               isOpen ? "opacity-100" : "opacity-0"
             }`}
           >
