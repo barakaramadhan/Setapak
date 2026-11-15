@@ -11,6 +11,81 @@ const dummyUser = {
     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLuR5PKWFCU9Lm6xnsIznp7vNosgUMbRaxQXtdnuGfEQ&s=10",
 };
 
+// DATA DUMMY "For you" (sementara, nanti diganti hasil AI planning)
+const coffeeAndSnacks = [
+  {
+    id: 1,
+    name: "Coffe & Breads",
+    rating: 4.5,
+    address: "Jl. Pajajaran No. 12, Bogor",
+    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600",
+  },
+  {
+    id: 2,
+    name: "Kopi Kenangan Hills",
+    rating: 4.7,
+    address: "Jl. Suryakencana No. 5, Bogor",
+    image: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600",
+  },
+  {
+    id: 3,
+    name: "Roti Unyil Venus",
+    rating: 4.4,
+    address: "Jl. Pangrango No. 3, Bogor",
+    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600",
+  },
+  {
+    id: 4,
+    name: "Warung Kopi Bogor",
+    rating: 4.6,
+    address: "Jl. Ahmad Yani No. 20, Bogor",
+    image: "https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=600",
+  },
+];
+
+const outdoorParks = [
+  {
+    id: 5,
+    name: "Kebun Raya Bogor",
+    rating: 4.8,
+    address: "Jl. Ir. H. Juanda No. 13, Bogor",
+    image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600",
+  },
+  {
+    id: 6,
+    name: "Taman Safari",
+    rating: 4.6,
+    address: "Jl. Raya Puncak, Cisarua",
+    image: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600",
+  },
+  {
+    id: 7,
+    name: "Curug Cilember",
+    rating: 4.5,
+    address: "Cisarua, Bogor",
+    image: "https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?w=600",
+  },
+  {
+    id: 8,
+    name: "Gunung Pancar",
+    rating: 4.4,
+    address: "Babakan Madang, Bogor",
+    image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600",
+  },
+];
+
+// "near" = sekitar, "in" = di dalam kota (sementara urutannya dibalik supaya kelihatan bedanya)
+const dummyPlaces = {
+  near: {
+    "Coffe And Snacks": coffeeAndSnacks,
+    "Outdoor parks & Trials": outdoorParks,
+  },
+  in: {
+    "Coffe And Snacks": [...coffeeAndSnacks].reverse(),
+    "Outdoor parks & Trials": [...outdoorParks].reverse(),
+  },
+};
+
 const dayNames = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const monthNames = [
   "January",
@@ -30,6 +105,7 @@ const monthNames = [
 function HomeUser() {
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
+  const [mode, setMode] = useState("near"); // "in" | "near"
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -93,6 +169,10 @@ function HomeUser() {
       place: "Just place sama sub tittle here",
     },
   ];
+
+  // data "For you" sesuai toggle
+  // NANTI kalau AI sudah jadi: ganti baris ini dengan hasil fetch (state dari API)
+  const places = dummyPlaces[mode];
 
   return (
     // [PERBAIKAN 1]: Ditambah max-w-7xl mx-auto w-full agar layout terpusat rapi
@@ -287,6 +367,70 @@ function HomeUser() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* bagian for you (data dummy, nanti dari AI planning) */}
+      <div className="px-10 pb-10 mt-20">
+        {/* judul: For you [In|Near] Bogor > */}
+        <div className="flex items-center gap-3">
+          <h2 className="text-3xl font-jakarta font-bold text-grey-light">
+            For you
+          </h2>
+
+          <div className="flex rounded-full bg-grey-label/50 p-0.5">
+            {["in", "near"].map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={`rounded-full px-3 py-1 text-sm font-jakarta font-medium capitalize ${
+                  mode === m ? "bg-[#83ADD0] text-white" : "text-grey-light/80"
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          <h2 className="text-3xl font-jakarta font-bold text-grey-light">
+            Bogor
+          </h2>
+          <i className="fi fi-rr-angle-small-right text-2xl leading-none pt-1"></i>
+        </div>
+
+        {/* kategori + card tempat */}
+        {Object.entries(places).map(([category, items]) => (
+          <div key={category} className="mt-8">
+            <h3 className="text-xl font-jakarta font-bold text-grey-light">
+              {category}
+            </h3>
+
+            <div className="mt-3 grid w-full grid-cols-4 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
+              {items.map((place) => (
+                <div key={place.id} className="flex flex-col">
+                  <img
+                    src={place.image}
+                    alt={place.name}
+                    className="aspect-[4/3] w-full rounded-2xl bg-grey-label/50 object-cover"
+                  />
+
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <h4 className="truncate text-base font-jakarta font-semibold text-grey-light">
+                      {place.name}
+                    </h4>
+                    <span className="shrink-0 text-sm font-jakarta font-medium text-grey-light">
+                      <i className="fi fi-sr-star text-xs"></i> {place.rating}
+                    </span>
+                  </div>
+
+                  <p className="line-clamp-2 text-sm font-jakarta font-normal text-grey-light/80">
+                    {place.address}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );
