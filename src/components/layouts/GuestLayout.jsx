@@ -1,9 +1,17 @@
-import React from 'react'
+import { Outlet } from "react-router-dom";
+import Navbar from "../shared/Navbar";
+import Footer from "../shared/Footer";
 
 function GuestLayout() {
   return (
-    <div>GuestLayout</div>
-  )
+    <>
+      <Navbar />
+      <main>
+        <Outlet />
+      </main>
+      <Footer />
+    </>
+  );
 }
 
-export default GuestLayout
+export default GuestLayout;
