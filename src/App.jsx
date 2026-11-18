@@ -4,6 +4,7 @@ import GuestLayout from "./components/layouts/GuestLayout";
 import LandingPage from "./pages/guest/LandingPage";
 import UserLayout from "./components/layouts/UserLayout";
 import DashboardUser from "./pages/user/DashboardUser";
+import AiChat from "./pages/user/sections/AiChat";
 
 // MODE PENGEMBANGAN HALAMAN USER
 // true  -> npm run dev langsung menampilkan Dashboard User (alamat "/" diarahkan ke "/dashboard")
@@ -28,6 +29,7 @@ function App() {
           {/* Halaman untuk user yang sudah login */}
           <Route element={<UserLayout />}>
             <Route path="/dashboard" element={<DashboardUser />} />
+            <Route path="/chats" element={<AiChat />} />
           </Route>
         </Routes>
       </SmoothScroll>

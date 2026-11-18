@@ -13,7 +13,7 @@ function Sidebar() {
 
   return (
     <aside
-      className={`sticky top-4 flex h-[750px] shrink-0 flex-col overflow-hidden rounded-r-3xl border-2 border-l-0 border-grey-label/50 bg-white transition-[width] duration-300 ease-in-out ${
+      className={`sticky top-4 z-10 flex h-[750px] shrink-0 flex-col overflow-hidden rounded-r-3xl border-2 border-l-0 border-grey-label/50 bg-white transition-[width] duration-300 ease-in-out ${
         isOpen ? "w-72" : "w-20"
       }`}
     >
@@ -60,14 +60,23 @@ function Sidebar() {
             to={m.to}
             className="flex items-center gap-3 overflow-hidden rounded-xl px-3.5 py-2.5 text-base font-jakarta font-medium text-grey-light hover:bg-grey-label/15"
           >
-            <i className={`${m.icon} shrink-0 text-xl leading-none`} />
-            <span
-              className={`whitespace-nowrap transition-opacity duration-300 ${
-                isOpen ? "opacity-100" : "opacity-0"
-              }`}
-            >
-              {m.label}
-            </span>
+            {({ isActive }) => (
+              <>
+                {/* aktif -> ikon solid (fi-sr-), tidak aktif -> ikon outline (fi-rr-) */}
+                <i
+                  className={`${
+                    isActive ? m.icon.replace("fi-rr-", "fi-sr-") : m.icon
+                  } shrink-0 text-xl leading-none`}
+                />
+                <span
+                  className={`whitespace-nowrap transition-opacity duration-300 ${
+                    isOpen ? "opacity-100" : "opacity-0"
+                  }`}
+                >
+                  {m.label}
+                </span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -94,7 +103,7 @@ function Sidebar() {
         >
           <i className="fi fi-rr-sign-out-alt shrink-0 text-xl leading-none" />
           <span
-            className={`whitespace-nowrap transition-opacity duration-300 ${
+            className={`whitespace-nowrap transition-opacity duration-300 font-jakarta font-medium text-base text-grey-light ${
               isOpen ? "opacity-100" : "opacity-0"
             }`}
           >
