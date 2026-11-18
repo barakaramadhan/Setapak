@@ -6,7 +6,7 @@ import ImageTravelUser2 from "../../../assets/images/imagetraveluser2.png";
 import ImageTravelUser3 from "../../../assets/images/imagetraveluser3.png";
 
 const dummyUser = {
-  name: "Almerrr",
+  name: "Fulann",
   photo:
     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLuR5PKWFCU9Lm6xnsIznp7vNosgUMbRaxQXtdnuGfEQ&s=10",
 };

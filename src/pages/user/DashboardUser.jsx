@@ -8,7 +8,6 @@ function DashboardUser() {
   return (
     <>
       <HomeUser />
-      <AiChat />
     </>
   );
 }

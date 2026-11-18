@@ -60,14 +60,23 @@ function Sidebar() {
             to={m.to}
             className="flex items-center gap-3 overflow-hidden rounded-xl px-3.5 py-2.5 text-base font-jakarta font-medium text-grey-light hover:bg-grey-label/15"
           >
-            <i className={`${m.icon} shrink-0 text-xl leading-none`} />
-            <span
-              className={`whitespace-nowrap transition-opacity duration-300 ${
-                isOpen ? "opacity-100" : "opacity-0"
-              }`}
-            >
-              {m.label}
-            </span>
+            {({ isActive }) => (
+              <>
+                {/* aktif -> ikon solid (fi-sr-), tidak aktif -> ikon outline (fi-rr-) */}
+                <i
+                  className={`${
+                    isActive ? m.icon.replace("fi-rr-", "fi-sr-") : m.icon
+                  } shrink-0 text-xl leading-none`}
+                />
+                <span
+                  className={`whitespace-nowrap transition-opacity duration-300 ${
+                    isOpen ? "opacity-100" : "opacity-0"
+                  }`}
+                >
+                  {m.label}
+                </span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
