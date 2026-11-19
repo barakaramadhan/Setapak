@@ -6,7 +6,7 @@ export default function OutlineButton({ title, className, onClick }) {
     <button
       onClick={onClick}
       className={twMerge(
-        "border border-dark-brown-new rounded-full px-8 py-3 font-jakarta text-dark-brown-new text-base flex items-center justify-center",
+        "border border-grey-brown-new rounded-full px-8 py-3 font-jakarta text-dark-brown-new text-base flex items-center justify-center",
         className
       )}
     >

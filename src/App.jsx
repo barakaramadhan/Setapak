@@ -6,17 +6,14 @@ import UserLayout from "./components/layouts/UserLayout";
 import DashboardUser from "./pages/user/DashboardUser";
 import AiChat from "./pages/user/sections/AiChat";
 import YourPlan from "./pages/user/sections/YourPlan";
+// 1. Import file dummy detail yang baru (pastikan Anda sudah membuat file ini nanti)
+import TripDetail from "./pages/user/sections/TripDetail"; 
 import AuthLayout from "./components/layouts/AuthLayout";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 
 // HALAMAN AWAL SAAT DEVELOPMENT
-// Isi dengan alamat halaman yang sedang dikerjakan, maka npm run dev langsung membukanya.
-//   "/sign-in"    -> halaman Sign In
-//   "/sign-up"    -> halaman Sign Up
-//   "/dashboard"  -> Dashboard User
-//   null          -> normal: alamat "/" menampilkan Landing Page
-const START_PAGE = "/dashboard";
+const START_PAGE = "/trip"; // Saya ubah ke "/trip" agar Anda langsung melihat halaman YourPlan saat npm run dev
 
 function App() {
   return (
@@ -30,7 +27,6 @@ function App() {
 
           {/* Halaman untuk pengunjung (belum login) */}
           <Route element={<GuestLayout />}>
-            {/* Landing Page hanya aktif kalau START_PAGE kosong */}
             {!START_PAGE && <Route path="/" element={<LandingPage />} />}
           </Route>
 
@@ -44,7 +40,12 @@ function App() {
           <Route element={<UserLayout />}>
             <Route path="/dashboard" element={<DashboardUser />} />
             <Route path="/chats" element={<AiChat />} />
-            <Route path="/trip" element={<YourPlan />} />
+            
+            {/* List kumpulan Card Trip */}
+            <Route path="/trip" element={<YourPlan />} /> 
+            
+            {/* 2. Tambahkan route baru ini untuk halaman detail yang ada map/timeline-nya */}
+            <Route path="/trip/:id" element={<TripDetail />} /> 
           </Route>
         </Routes>
       </SmoothScroll>

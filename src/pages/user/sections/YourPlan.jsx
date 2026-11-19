@@ -1,6 +1,7 @@
-
 import React from "react";
+import { Link } from "react-router-dom"; // 1. Tambahkan import Link di sini
 import OutlineButton from "../../../components/ui/OutlineButton";
+import FillButton from "../../../components/ui/FillButton";
 
 // data sementara karna Ai belom jadi
 const DATA_DUMMY = [
@@ -59,31 +60,33 @@ function YourPlan() {
       <div className="flex gap-3 pt-7">
         <OutlineButton
           title="All"
-          className="bg-grey-light text-white border-grey-light px-8 py-2 font-normal text-base"
+          className="bg-grey-light text-white border-grey-light px-8 py-2 font-semibold text-base"
         />
 
         <OutlineButton
           title="Upcoming"
-          className="border-grey-light text-grey-light px-8 py-2 font-normal text-base"
+          className="border-2 border-grey-light text-grey-light px-8 py-2 font-semibold text-base"
         />
 
         <OutlineButton
           title="Past"
-          className="border-grey-light text-grey-light px-8 py-2 font-normal text-base"
+          className="border-2 border-grey-light text-grey-light px-8 py-2 font-semibold text-base"
         />
 
         <OutlineButton
           title="Draft"
-          className="border-grey-light text-grey-light px-8 py-2 font-normal text-base"
+          className="border-2 border-grey-light text-grey-light px-8 py-2 font-semibold text-base"
         />
       </div>
 
       {/* Mapping Data */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-10">
         {DATA_DUMMY.map((trip) => (
-          <div
+          // 2. Ubah div menjadi Link dan tambahkan 'to' serta class hover agar terlihat bisa diklik
+          <Link
+            to={`/trip/${trip.id}`}
             key={trip.id}
-            className="flex flex-col border border-grey-label/60 rounded-2xl overflow-hidden font-jakarta"
+            className="flex flex-col border border-grey-label/60 rounded-2xl overflow-hidden font-jakarta cursor-pointer hover:shadow-md transition-shadow duration-200"
           >
             {/* Bagian Gambar */}
             <div className="relative w-full h-40">
@@ -92,7 +95,7 @@ function YourPlan() {
                 alt={trip.title}
                 className="w-full h-full object-cover"
               />
-              <span className="absolute top-3 right-3 bg-white text-grey-light text-xs font-bold px-3 py-1 rounded-full">
+              <span className="absolute top-3 right-3 bg-bright-white text-grey-light font-jakarta text-xs font-bold px-3 py-1 rounded-full">
                 {trip.status}
               </span>
             </div>
@@ -121,9 +124,9 @@ function YourPlan() {
               {/* Logika Bawah: Tombol (jika Draft) atau Progress Bar */}
               <div className="mt-auto">
                 {trip.status === "Draft" ? (
-                  <button className="w-full border border-grey-light text-grey-light rounded-xl py-2.5 text-sm font-semibold hover:bg-gray-50 transition-colors">
-                    Continue Planing
-                  </button>
+                  <div className="flex justify-center w-full">
+                    <FillButton className="w-full">Continue Planing</FillButton>
+                  </div>
                 ) : (
                   <div>
                     <div className="flex justify-between text-xs text-gray-500 mb-2 font-medium">
@@ -144,21 +147,19 @@ function YourPlan() {
                 )}
               </div>
             </div>
-          </div>
+          </Link>
         ))}
 
         {/* Tambahan Card: Start a new trip */}
-        <div className="border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors min-h-[350px] font-jakarta">
-          <div className="bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center mb-4">
-            <span className="text-xl font-bold text-gray-600 pb-1">+</span>
+        <div className="border-2 border-dashed border-grey-label/70 rounded-2xl flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:bg-grey-label/20 transition-colors min-h-[350px] font-jakarta">
+          <div className="bg-arctic-blue/30 rounded-full w-10 h-10 flex items-center justify-center mb-4">
+            <i className="fi fi-rr-plus-small text-2xl flex items-center justify-center "></i>
           </div>
-          <h3 className="font-bold text-lg text-grey-light mb-1">
+          <h3 className="font-jakarta font-bold text-xl text-grey-light mb-1">
             Start a new trip
           </h3>
-          <p className="text-sm text-gray-500">
-            Tell Setapak where
-            <br />
-            want to go.
+          <p className="font-jakarta font-normal text-sm text-grey-light/70 w-44">
+            Tell Setapak where you want to go.
           </p>
         </div>
       </div>
