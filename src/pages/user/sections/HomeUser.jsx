@@ -135,19 +135,19 @@ function HomeUser() {
     {
       id: 1,
       title: "Nature",
-      description: "Lorem ipsum dolor sit amet, consectetur ",
+      description: "Discover peaceful landscapes and escapes.",
       image: ImageTravelUser1,
     },
     {
       id: 2,
       title: "Culture",
-      description: "Lorem ipsum dolor sit amet, consectetur ",
+      description: "Explore local traditions, historic places, and stories.",
       image: ImageTravelUser2,
     },
     {
       id: 3,
       title: "Food",
-      description: "Lorem ipsum dolor sit amet, consectetur ",
+      description: "Taste authentic local dishes and new flavors.",
       image: ImageTravelUser3,
     },
   ];
@@ -260,7 +260,7 @@ function HomeUser() {
                     <h3 className="font-clash text-4xl font-bold text-white tracking-normal">
                       {item.title}
                     </h3>
-                    <p className="text-xs font-normal leading-tight text-white">
+                    <p className="text-sm font-light leading-tight text-white">
                       {item.description}
                     </p>
                   </div>
