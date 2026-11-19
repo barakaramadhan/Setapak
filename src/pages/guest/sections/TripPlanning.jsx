@@ -1,4 +1,3 @@
-import React from "react";
 import SectionMarker from "../../../components/ui/SectionMarker";
 import FillButton from "../../../components/ui/FillButton";
 // import ImagePlan1 from "../../../assets/images/imageplan1.webp"

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import SectionMarker from "../../../components/ui/SectionMarker";
 import FillButton from "../../../components/ui/FillButton";
 import InputAll from "../../../components/ui/InputAll";

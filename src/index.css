@@ -25,3 +25,20 @@
   --color-grey-light: #292929;
   --color-grey-label: #969696;
 }
+
+/* Cetak / Simpan PDF dari workspace trip: hanya konten rencana yang keluar. */
+@media print {
+  nav[aria-label="Modul trip planner"] {
+    display: none !important;
+  }
+  button {
+    display: none !important;
+  }
+  section {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  a {
+    text-decoration: none !important;
+  }
+}

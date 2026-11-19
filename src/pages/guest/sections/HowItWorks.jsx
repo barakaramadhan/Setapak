@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import ImageStep1 from "../../../assets/images/how-it-works/imagestep1.webp";
 import ImageStep2 from "../../../assets/images/how-it-works/imagestep2.webp";
 import ImageStep3 from "../../../assets/images/how-it-works/imagestep3.webp";

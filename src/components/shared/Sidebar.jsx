@@ -1,5 +1,9 @@
-import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth, displayName } from "../../store/useAuth";
+import { useChats } from "../../store/useChats";
+import { useTrips } from "../../store/useTrips";
+import InputAll from "../ui/InputAll";
 
 const navigasiMenu = [
   { label: "Home", to: "/dashboard", icon: "fi fi-rr-house-blank" },
@@ -10,6 +14,34 @@ const navigasiMenu = [
 
 function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { trips } = useTrips();
+  const {
+    chats,
+    newChat,
+    openChat,
+    renameChat,
+    togglePin,
+    deleteChat,
+  } = useChats();
+
+  const mulaiChatBaru = async () => {
+    await newChat();
+    navigate("/chats");
+  };
+
+  const bukaChat = (id) => {
+    openChat(id);
+    navigate("/chats");
+  };
+
+  const simpanJudul = async (id) => {
+    if (editTitle.trim()) await renameChat(id, editTitle);
+    setEditingId(null);
+  };
 
   return (
     <aside
@@ -38,8 +70,9 @@ function Sidebar() {
       </div>
 
       <div className="px-4 pb-4 pt-8">
-        <NavLink
-          to="/plan"
+        <button
+          type="button"
+          onClick={mulaiChatBaru}
           className="flex w-full items-center justify-center overflow-hidden rounded-xl bg-grey-light py-3 text-base font-jakarta font-medium text-white hover:bg-grey-light/95"
         >
           <span
@@ -50,7 +83,7 @@ function Sidebar() {
             New Chat
           </span>
           <i className="fi fi-br-plus shrink-0 text-base leading-none" />
-        </NavLink>
+        </button>
       </div>
 
       <nav className="flex flex-col gap-1 px-4 pt-3">
@@ -82,23 +115,110 @@ function Sidebar() {
       </nav>
 
       <div
-        className={`my-6 border-t-2 border-grey-label transition-all duration-300 ${
+        className={`my-4 border-t-2 border-grey-label transition-all duration-300 ${
           isOpen ? "mx-10" : "mx-5"
         }`}
       />
 
-      <p
-        className={`whitespace-nowrap px-5 text-center font-jakarta font-semibold text-base text-grey-label transition-opacity duration-300 ${
+      {/* Daftar chat — tepat di bawah garis pemisah Explore */}
+      <div
+        className={`min-h-0 flex-1 overflow-y-auto px-3 transition-opacity duration-300 ${
+          isOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      >
+        <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-grey-light/50">
+          Recent chats
+        </p>
+        <div className="space-y-0.5">
+          {chats.map((chat) => {
+            const trip = trips.find((item) => item.id === chat.tripId);
+            return (
+              <div
+                key={chat.id}
+                className="flex items-center gap-1 rounded-lg px-2 py-1.5 hover:bg-grey-label/10"
+              >
+                <i
+                  className={`fi fi-rr-comment text-xs leading-none ${
+                    chat.pinned ? "text-[#6f9abf]" : "text-grey-light/40"
+                  }`}
+                />
+                {editingId === chat.id ? (
+                  <InputAll
+                    autoFocus
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") simpanJudul(chat.id);
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    onBlur={() => simpanJudul(chat.id)}
+                    className="w-full text-xs"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => bukaChat(chat.id)}
+                    title={trip ? `Trip: ${trip.title}` : chat.title}
+                    className="min-w-0 flex-1 truncate text-left text-xs font-medium text-grey-light"
+                  >
+                    {chat.title}
+                    {trip && (
+                      <span className="ml-1 rounded-full bg-[#83ADD0]/15 px-1 py-0.5 text-[9px] font-semibold text-[#6f9abf]">
+                        {trip.title}
+                      </span>
+                    )}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  title={chat.pinned ? "Lepaskan pin" : "Pin chat"}
+                  onClick={() => togglePin(chat.id)}
+                  className={chat.pinned ? "text-[#6f9abf]" : "text-grey-light/35"}
+                >
+                  <i className="fi fi-rr-pin text-[11px] leading-none" />
+                </button>
+                <button
+                  type="button"
+                  title="Ganti judul"
+                  onClick={() => {
+                    setEditingId(chat.id);
+                    setEditTitle(chat.title);
+                  }}
+                  className="text-grey-light/35 hover:text-grey-light"
+                >
+                  <i className="fi fi-rr-pencil text-[11px] leading-none" />
+                </button>
+                <button
+                  type="button"
+                  title="Hapus chat"
+                  onClick={() => deleteChat(chat.id)}
+                  className="text-grey-light/35 hover:text-red-500"
+                >
+                  <i className="fi fi-rr-trash text-[11px] leading-none" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div
+        className={`overflow-hidden px-5 py-2 text-center transition-opacity duration-300 ${
           isOpen ? "opacity-100" : "opacity-0"
         }`}
       >
-        No chat yet.
-      </p>
+        <p className="truncate font-jakarta text-sm font-semibold text-grey-light">
+          {displayName(user)}
+        </p>
+        <p className="truncate font-jakarta text-xs text-grey-label">
+          {user?.email || "No chat yet."}
+        </p>
+      </div>
 
       <div className="mt-auto px-4 pb-6">
         <button
           type="button"
-          onClick={() => {}}
+          onClick={() => signOut()}
           className="flex w-full items-center gap-3 overflow-hidden border-2 border-grey-label/90 rounded-xl px-3.5 py-2.5 text-base font-jakarta font-medium text-grey-light hover:bg-neutral-100"
         >
           <i className="fi fi-rr-sign-out-alt shrink-0 text-xl leading-none" />

@@ -1,0 +1,43 @@
+// Foto asli tempat (Wikimedia/Wikipedia + sumber web terverifikasi).
+// Google Places butuh API key + billing, jadi tidak dipakai di sini.
+// Tempat yang belum punya foto asli memakai foto stok + tautan Google Maps.
+export const placeImages = {
+  "bogor-kebun-raya": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Kebun_Raya_Bogor_19.jpg/960px-Kebun_Raya_Bogor_19.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bogor-taman-safari": "https://edensorhills.com/wp-content/uploads/2022/12/Taman-Safari-Indonesia-Bogor.jpg",
+  "jogja-borobudur": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/Pradaksina.jpg/960px-Pradaksina.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "jogja-prambanan": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Yogyakarta_Indonesia_Prambanan-temple-complex-02.jpg/960px-Yogyakarta_Indonesia_Prambanan-temple-complex-02.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "jogja-tebing-breksi": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/Lahan_parkir_dan_amfiteater_di_Tebing_Breksi_Yogyakarta.jpg/960px-Lahan_parkir_dan_amfiteater_di_Tebing_Breksi_Yogyakarta.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "jogja-hutan-pinus": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/Hutan_Pinus_Mangunan_%281%29.jpg/960px-Hutan_Pinus_Mangunan_%281%29.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "jogja-gudeg": "https://thumb.wikimedia.org/wikipedia/id/thumb/9/9a/Gudeg_Yu_Djum.jpg/960px-Gudeg_Yu_Djum.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "jogja-parangtritis": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/Dusk_till_dawn_%28cropped%29.jpg/960px-Dusk_till_dawn_%28cropped%29.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bali-tanah-lot": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/TanahLot_2014.JPG/960px-TanahLot_2014.JPG?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bali-monkey-forest": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/Monkey_Forest.jpg/960px-Monkey_Forest.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bali-besakih": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/Besakih_Bali_Indonesia_Pura-Besakih-02.jpg/960px-Besakih_Bali_Indonesia_Pura-Besakih-02.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bali-nusa-penida": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Broken_Beach.jpg/960px-Broken_Beach.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bali-seminyak-beach": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6d/Pantai_Seminyak_1.jpg/960px-Pantai_Seminyak_1.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bali-kuta-beach": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/Kuta_Beach_%286924448550%29.jpg/960px-Kuta_Beach_%286924448550%29.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bali-tirta-empul": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f7/Bali_-_bathing_%28Melukat%29_at_Pura_Tirta_Empul_%282025%29_-_img_07.jpg/960px-Bali_-_bathing_%28Melukat%29_at_Pura_Tirta_Empul_%282025%29_-_img_07.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bali-mount-batur": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2a/View_Of_Mt.Batur_on_April_8th_2026.jpg/960px-View_Of_Mt.Batur_on_April_8th_2026.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bogor-museum-zoologicum": "https://upload.wikimedia.org/wikipedia/commons/f/fd/COLLECTIE_TROPENMUSEUM_Zo%C3%B7logisch_Museum_Buitenzorg_TMnr_10016843.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+  "bogor-gunung-gede": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/Gunung_Gede_in_The_Clouds.jpg/960px-Gunung_Gede_in_The_Clouds.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "jogja-sonobudoyo": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/Museum_Sonobudoyo_2025.jpg/960px-Museum_Sonobudoyo_2025.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "jogja-beringharjo": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d0/Bringharjo_Market_Yogyakarta_-_Pasar_Bringharjo_Jogja_%282025%29_-_img_06.jpg/960px-Bringharjo_Market_Yogyakarta_-_Pasar_Bringharjo_Jogja_%282025%29_-_img_06.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "jogja-bakpia-pathok": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/90/Bakpia_Pathok_3.jpg/960px-Bakpia_Pathok_3.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bandung-jalan-braga": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Jl_Braga_Street_Sign_in_Bandung.jpg/960px-Jl_Braga_Street_Sign_in_Bandung.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bandung-nuart": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/Nugallery.jpg/960px-Nugallery.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bandung-kawah-putih": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/Kawah_Putih_Lake_from_the_viewing_platform%2C_Bandung_Regency%2C_2014-08-21.jpg/960px-Kawah_Putih_Lake_from_the_viewing_platform%2C_Bandung_Regency%2C_2014-08-21.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bandung-tangkuban-perahu": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Panoramic_View_of_Kawah_Ratu_Crater_in_Mt.Tangkuban_Perahu.jpg/960px-Panoramic_View_of_Kawah_Ratu_Crater_in_Mt.Tangkuban_Perahu.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+  "bandung-curug-cimahi": "https://upload.wikimedia.org/wikipedia/commons/e/e5/COLLECTIE_TROPENMUSEUM_Waterval_in_de_omgeving_van_Tjisaroea_en_Tjimahi_TMnr_60050403.jpg?utm_source=id.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+  "jogja-jomblang": "https://upload.wikimedia.org/wikipedia/commons/f/fa/Foto_Goa_Jomblang.jpeg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+  "bali-babi-guling": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a9/Babi_Guling_-_Roasted_Suckling_Pig.jpg/960px-Babi_Guling_-_Roasted_Suckling_Pig.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+
+  // Foto tambahan dari link langsung (situs wisata/Wikimedia) yang sudah dicek.
+  // Link langsung ke file gambar seperti ini sah dipakai; yang tidak bisa
+  // dipakai tanpa API/billing hanyalah foto yang di-host Google Places/Maps.
+  "bogor-curug-cilember": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Curug_cilember_bogor.jpg/960px-Curug_cilember_bogor.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "bogor-gunung-pancar": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/Taman_Wisata_Alam_Gunung_Pancar.jpg/960px-Taman_Wisata_Alam_Gunung_Pancar.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "bogor-alun-alun": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Alun-Alun_Bogor_00.jpg/960px-Alun-Alun_Bogor_00.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "bali-pura-jagatnatha": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Kuta_Bali_Indonesia_Pura-Jagatnatha-01.jpg/960px-Kuta_Bali_Indonesia_Pura-Jagatnatha-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+  "jogja-gudeg-pawon": "https://niagatour.com/wp-content/uploads/2023/08/Harga-Gudeg-Pawon-1024x780.jpg",
+  "bandung-nasi-ampera": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Warung_Nasi_Ampera%2C_cabang_KH_Sholeh_Iskandar_-_panoramio.jpg/960px-Warung_Nasi_Ampera%2C_cabang_KH_Sholeh_Iskandar_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+};

@@ -1,4 +1,3 @@
-import React from "react";
 import SectionMarker from "../../../components/ui/SectionMarker";
 import ImageCard from "../../../assets/images/recomendations/imagerecomendation.webp";
 import ImageCard2 from "../../../assets/images/recomendations/imagerecomendation2.webp";

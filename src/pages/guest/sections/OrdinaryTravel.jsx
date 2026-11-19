@@ -1,4 +1,3 @@
-import React from "react";
 import SectionMarker from "../../../components/ui/SectionMarker";
 import FillButton from "../../../components/ui/FillButton";
 import ImageOrdinary from "../../../assets/images/ordinary-travel/bandung.webp";

@@ -1,4 +1,3 @@
-import React from "react";
 import FillButton from "../ui/FillButton";
 import ImageFooter from "../../assets/images/footer/imagefooter.webp";
 

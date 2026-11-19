@@ -18,4 +18,9 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  {
+    // Kode server (Vercel, Vite config) jalan di Node, bukan browser.
+    files: ['api/**/*.js', 'server/**/*.js', 'vite.config.js'],
+    languageOptions: { globals: globals.node },
+  },
 ])
