@@ -22,10 +22,6 @@ import { useAuth, displayName } from "../../../store/useAuth";
 import { useTrips } from "../../../store/useTrips";
 import { toDateKey } from "../../../utils/tripDate";
 
-const dummyUser = {
-  photo:
-    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLuR5PKWFCU9Lm6xnsIznp7vNosgUMbRaxQXtdnuGfEQ&s=10",
-};
 
 function HomeUser() {
   const navigate = useNavigate();
@@ -173,21 +169,21 @@ function HomeUser() {
     {
       id: 1,
       title: "Nature",
-      description: "Lorem ipsum dolor sit amet, consectetur ",
+      description: "Gunung, pantai, dan alam terbuka",
       image: ImageTravelUser1,
       prompt: "Rekomendasi tempat alam di [lokasi]",
     },
     {
       id: 2,
       title: "Culture",
-      description: "Lorem ipsum dolor sit amet, consectetur ",
+      description: "Candi, museum, dan tradisi lokal",
       image: ImageTravelUser2,
       prompt: "Rekomendasi tempat budaya di [lokasi]",
     },
     {
       id: 3,
       title: "Food",
-      description: "Lorem ipsum dolor sit amet, consectetur ",
+      description: "Kuliner khas yang wajib dicoba",
       image: ImageTravelUser3,
       prompt: "Rekomendasi kuliner di [lokasi]",
     },
@@ -203,19 +199,27 @@ function HomeUser() {
             Hello, {displayName(user)}!
           </h1>
           <p className="text-base font-jakarta font-normal text-grey-light">
-            wut i have put in here?, so i’ll just put some random word here
+            {trips.length
+              ? `Kamu punya ${trips.length} perjalanan. Ayo lanjutkan rencanamu!`
+              : "Belum ada perjalanan. Mau ke mana kita hari ini?"}
           </p>
         </div>
         <div className="flex items-center gap-5">
-          <button className="text-2xl ">
+          <button
+            type="button"
+            title="Lihat jadwal perjalanan"
+            onClick={() => navigate("/trip")}
+            className="text-2xl"
+          >
             <i className="fi fi-rr-bell"></i>
           </button>
-          <button className="-mt-2">
-            <img
-              src={dummyUser.photo}
-              alt=""
-              className="h-8 w-8 rounded-full object-cover"
-            />
+          <button
+            type="button"
+            title={displayName(user)}
+            onClick={() => navigate("/trip")}
+            className="-mt-2 flex h-8 w-8 items-center justify-center rounded-full bg-grey-light text-sm font-bold text-white"
+          >
+            {(displayName(user) || "U").slice(0, 1).toUpperCase()}
           </button>
         </div>
       </header>
@@ -477,15 +481,28 @@ function HomeUser() {
                     {place.address}
                   </p>
 
-                  <a
-                    href={place.mapsUrl || mapsLinkFor(place.name, place.address)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-flex items-center gap-1 self-start text-xs font-jakarta font-medium text-[#83ADD0] hover:underline"
-                  >
-                    <i className="fi fi-rr-marker text-[10px] leading-none"></i>
-                    Lihat di Google Maps
-                  </a>
+                  <div className="mt-1 flex flex-wrap gap-x-3">
+                    <a
+                      href={place.mapsUrl || mapsLinkFor(place.name, place.address)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-jakarta font-medium text-[#83ADD0] hover:underline"
+                    >
+                      <i className="fi fi-rr-marker text-[10px] leading-none"></i>
+                      Lihat di Google Maps
+                    </a>
+                    {place.infoUrl && (
+                      <a
+                        href={place.infoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-jakarta font-medium text-[#83ADD0] hover:underline"
+                      >
+                        <i className="fi fi-rr-link text-[10px] leading-none"></i>
+                        Info tempat
+                      </a>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

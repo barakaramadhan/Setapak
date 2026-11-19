@@ -199,6 +199,14 @@ export default function ChatsProvider({ children }) {
   );
 
   const newChat = useCallback(async () => {
+    // Jangan menumpuk "Chat baru" kosong: pakai yang kosong kalau sudah ada.
+    const kosong = chatsRef.current.find(
+      (chat) => !chat.messages.length && chat.title === "Chat baru"
+    );
+    if (kosong) {
+      setActiveId(kosong.id);
+      return kosong;
+    }
     const baru = buatChat();
     if (user && pakaiCloud) {
       const { error: err } = await supabase

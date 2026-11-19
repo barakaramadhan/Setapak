@@ -48,8 +48,11 @@ export function resolveCity(input) {
  * - "Jepang" -> "jepang" (kota/negara baru, disimpan apa adanya)
  * Dipakai untuk cache, data lokal, dan planner data bersama.
  */
+// Salah ketik yang umum -> nama benar.
+const TYPO_KOTA = { makasar: "makassar", ujung: "makassar", jakata: "jakarta", yogya: "yogyakarta", jogjakarta: "yogyakarta" };
+
 export function searchCityKey(input) {
-  const clean = normalizeText(input);
+  const clean = TYPO_KOTA[normalizeText(input)] || normalizeText(input);
   return searchCityAliases[clean] || clean || "kota";
 }
 

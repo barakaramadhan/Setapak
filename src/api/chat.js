@@ -9,8 +9,8 @@ import {
 } from "./plannerEngine";
 
 // Versi dinaikkan ke v3 supaya hasil lama otomatis terbuang saat reset planner.
-const CACHE_KEY = "setapak:chat-cache:v3"; // ganti versi kalau format jawaban berubah
-const REC_CACHE_KEY = "setapak:recommend-cache:v3"; // cache khusus "For you"
+const CACHE_KEY = "setapak:chat-cache:v4"; // ganti versi kalau format jawaban berubah
+const REC_CACHE_KEY = "setapak:recommend-cache:v4"; // cache khusus "For you"
 const PLAN_KEY = "setapak:last-plan";
 
 const OFFLINE_REPLY =

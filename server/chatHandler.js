@@ -15,6 +15,11 @@ import {
   DEFAULT_IMAGE_OUTDOOR,
 } from "./aiProviders.js";
 import {
+  jawabanDuniaDariPesan,
+  pusatDunia,
+  batasJumlah,
+} from "./worldKnowledge.js";
+import {
   recommendPlaces,
   getRecommendationCandidates,
   mapsLinkFor,
@@ -23,6 +28,7 @@ import {
   normalizeText,
   cityLabels,
 } from "../src/api/plannerEngine.js";
+import { fotoTempat, linkMaps } from "./placeMedia.js";
 import {
   getSavedRecommendations,
   saveRecommendations,
@@ -99,10 +105,9 @@ function bacaJsonArrayAI(text) {
 }
 
 const FIELD_DEFAULT = [
-  { key: "city", label: "Kota tujuan", type: "text", placeholder: "mis. Bogor" },
-  { key: "date", label: "Tanggal berangkat", type: "date", placeholder: "" },
-  { key: "days", label: "Berapa hari", type: "number", placeholder: "3" },
-  { key: "budget", label: "Budget per orang (Rp)", type: "number", placeholder: "300000" },
+  { key: "people", label: "Seru! Berapa orang yang ikut, dan kira-kira budget kamu berapa?", type: "text", placeholder: "" },
+  { key: "dates", label: "Oke! Mau berapa hari, atau dari tanggal berapa sampai tanggal berapa?", type: "text", placeholder: "" },
+  { key: "interests", label: "Terakhir, kamu lebih suka suasana yang seperti apa?", type: "select", options: ["Nature", "Culture", "Food"], placeholder: "" },
 ];
 
 function parsePlanFields(text) {
@@ -190,8 +195,17 @@ const PUSAT_KOTA = {
   kuta: [-8.72, 115.17],
   makassar: [-5.14, 119.43],
   jakarta: [-6.2, 106.8],
+  ...pusatDunia(),
 };
 
+function embedDenganMarker(lat, lon, lebar = 0.015) {
+  const bbox = [lon - lebar, lat - lebar, lon + lebar, lat + lebar]
+    .map((n) => n.toFixed(5))
+    .join("%2C");
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(5)}%2C${lon.toFixed(5)}`;
+}
+
+/** Cari satu titik di Nominatim; tolak hasil yang jauh dari kota yang diminta. */
 async function cariTitik(query, pusat) {
   try {
     const response = await fetch(
@@ -209,16 +223,8 @@ async function cariTitik(query, pusat) {
     const lat = Number(data?.[0]?.lat);
     const lon = Number(data?.[0]?.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-
-    // Tolak hasil yang jauh dari kota (mis. "Puncak" kena Papua).
-    if (pusat) {
-      const [pusatLat, pusatLon] = pusat;
-      if (
-        Math.abs(lat - pusatLat) > 0.5 ||
-        Math.abs(lon - pusatLon) > 0.5
-      ) {
-        return null;
-      }
+    if (pusat && (Math.abs(lat - pusat[0]) > 0.5 || Math.abs(lon - pusat[1]) > 0.5)) {
+      return null;
     }
     return { lat, lon };
   } catch (error) {
@@ -227,55 +233,42 @@ async function cariTitik(query, pusat) {
   }
 }
 
-async function geocodeNama(daftarNama, kota = "") {
-  const konteks = cityLabels[kota] ? `${cityLabels[kota]}, Indonesia` : "Indonesia";
-  const pusat = PUSAT_KOTA[kota] || null;
-  const hasil = await Promise.all(
-    daftarNama.slice(0, 4).map(async (nama) => {
-      const osmUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(`${nama}, ${konteks}`)}`;
+/** Lengkapi satu nama tempat dengan koordinat & embed peta OpenStreetMap. */
+async function petaUntuk(nama, label = "", pusat = null) {
+  const konteks = [label, "Indonesia"].filter(Boolean).join(", ");
+  const osmUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(`${nama}, ${konteks}`)}`;
+  let titik = await cariTitik(`${nama}, ${konteks}`, pusat);
+  if (!titik && label) titik = await cariTitik(nama, pusat);
 
-      // Coba dengan konteks kota dulu; kalau gagal, coba nama saja.
-      let titik = await cariTitik(`${nama}, ${konteks}`, pusat);
-      if (!titik && kota) titik = await cariTitik(nama, pusat);
-
-      // Tetap tampilkan peta pusat kota walau nama tempat tidak ketemu.
-      if (!titik) {
-        const embedPusat = pusat
-          ? (() => {
-              const [plat, plon] = pusat;
-              const d = 0.12;
-              const bbox = [plon - d, plat - d, plon + d, plat + d]
-                .map((n) => n.toFixed(5))
-                .join("%2C");
-              return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${plat.toFixed(5)}%2C${plon.toFixed(5)}`;
-            })()
-          : null;
-        return { name: nama, osmUrl, embedUrl: embedPusat };
-      }
-
-      const { lat, lon } = titik;
-      const d = 0.015;
-      const bbox = [lon - d, lat - d, lon + d, lat + d]
-        .map((n) => n.toFixed(5))
-        .join("%2C");
-      return {
-        name: nama,
-        lat,
-        lon,
-        osmUrl,
-        embedUrl: `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(5)}%2C${lon.toFixed(5)}`,
-      };
-    })
-  );
-  return hasil;
+  if (!titik) {
+    return {
+      name: nama,
+      osmUrl,
+      embedUrl: pusat ? embedDenganMarker(pusat[0], pusat[1], 0.12) : null,
+    };
+  }
+  return {
+    name: nama,
+    lat: titik.lat,
+    lon: titik.lon,
+    osmUrl,
+    embedUrl: embedDenganMarker(titik.lat, titik.lon),
+  };
 }
+
+/**
+ * Nama yang jelas-jelas bukan destinasi wisata. Dipakai supaya jawaban AI
+ * yang mengarang "Pegadaian", "bank", dll. tidak ikut masuk ke peta.
+ */
+const NAMA_SAMPAH =
+  /\b(pegadaian|bank|atm|kantor|sekolah|kampus|rumah sakit|apotek|spbu|pom bensin|pinjaman|kredit|promo|diskon|jasa|toko hardware|mall|plaza)\b/i;
 
 /**
  * AI tidak selalu patuh menulis baris LOKASI:. Kalau tidak ada, ambil nama
  * tempat dari daftar jawaban; kalau tetap kosong, pakai data planner lokal.
  * Dengan begini toggle "Peta" hampir pasti menampilkan peta.
  */
-function namaTempatFallback(reply, kota) {
+function namaTempatFallback(reply, kota, diperbolehkan = null) {
   const dariJawaban = String(reply || "")
     .split("\n")
     .map((baris) =>
@@ -286,7 +279,14 @@ function namaTempatFallback(reply, kota) {
         .split(/[—–,]/)[0]
         .trim()
     )
-    .filter((nama) => nama.length >= 4 && nama.length <= 60 && !/^(LOKASI|Catatan|Tips)$/i.test(nama))
+    .filter(
+      (nama) =>
+        nama.length >= 4 &&
+        nama.length <= 60 &&
+        !NAMA_SAMPAH.test(nama) &&
+        !/^(LOKASI|Catatan|Tips|Kesimpulan)$/i.test(nama) &&
+        (!diperbolehkan || diperbolehkan.includes(nama))
+    )
     .slice(0, 4);
   if (dariJawaban.length) return dariJawaban;
 
@@ -297,6 +297,84 @@ function namaTempatFallback(reply, kota) {
   ];
   const unik = [...new Set(lokal.map((item) => item.name))];
   return unik.slice(0, 4);
+}
+
+const AREA_KOTA = {
+  kuta: "Kuta",
+  ubud: "Ubud",
+  seminyak: "Seminyak",
+  lembang: "Lembang",
+  dago: "Dago",
+  braga: "Braga",
+  cikole: "Cikole",
+  puncak: "Puncak",
+  cisarua: "Cisarua",
+  cibodas: "Cibodas",
+};
+
+function areaDariPesan(normalized) {
+  return Object.keys(AREA_KOTA).find((area) => normalized.includes(area)) || null;
+}
+
+/**
+ * Kandidat terverifikasi untuk satu kota. Diurutkan: sesuai area yang disebut
+ * user (mis. Kuta), lalu yang paling relevan dengan minat, lalu rating tertinggi.
+ */
+function kandidatTerverifikasi(kotaKey, normalized) {
+  const areaMode = /\b(sekitar|luar kota|near|sekitar kota)\b/.test(normalized)
+    ? "near"
+    : "in";
+  const gabung = [
+    ...getRecommendationCandidates(areaMode, kotaKey),
+    ...getRecommendationCandidates(areaMode === "in" ? "near" : "in", kotaKey),
+  ];
+  const unik = [...new Map(gabung.map((item) => [item.name, item])).values()];
+
+  const area = areaDariPesan(normalized);
+  let hasil = unik;
+  if (area) {
+    const sesuai = unik.filter((item) =>
+      `${item.name} ${item.address}`.toLowerCase().includes(area)
+    );
+    if (sesuai.length) hasil = [...sesuai, ...unik.filter((item) => !sesuai.includes(item))];
+  }
+
+  let minat = null;
+  if (/\b(kuliner|makan|food|resto|warung|makanan)\b/.test(normalized)) minat = "food";
+  else if (/\b(alam|nature|taman|gunung|hutan|pantai|beach)\b/.test(normalized)) minat = "alam";
+  else if (/\b(budaya|culture|sejarah|keraton|museum)\b/.test(normalized)) minat = "culture";
+
+  if (minat) {
+    const cocok = hasil.filter((item) =>
+      minat === "alam"
+        ? ["nature", "adventure", "beach"].includes(item.category)
+        : item.category === minat
+    );
+    if (cocok.length >= 2) hasil = [...cocok, ...hasil.filter((item) => !cocok.includes(item))];
+  }
+  return { daftar: hasil, area };
+}
+
+/** Jawaban Searching untuk kota yang datanya tersedia: 100% dari data lokal. */
+function balasanKotaTerverifikasi(kotaKey, normalized) {
+  const label = cityLabels[kotaKey] || kotaKey;
+  const { daftar, area } = kandidatTerverifikasi(kotaKey, normalized);
+  const judul = area ? `${AREA_KOTA[area]} - ${label}` : label;
+  const atas = daftar.slice(0, batasJumlah(normalized, 5));
+
+  const baris = atas
+    .map(
+      (item) =>
+        `- **${item.name}** - ${item.address}. Rating **${Number(item.rating).toFixed(1)}/5**.`
+    )
+    .join("\n");
+
+  return (
+    `## Tempat di ${judul}\n\n${baris}\n\n` +
+    `## Tips singkat\n` +
+    `- Cek jam buka dan harga tiket sebelum berangkat.\n` +
+    `- Nama di atas berasal dari data terverifikasi SETAPAK untuk ${label}.`
+  );
 }
 
 const GROUP_KEYS = ["Coffe And Snacks", "Outdoor parks & Trials"];
@@ -420,8 +498,8 @@ function parseRecommendations(text, minRating = 0) {
             ),
           };
         })
-        // Saring dulu sesuai bintang, baru urutkan tertinggi, baru potong 4.
-        .filter((item) => item.rating >= minRating)
+        // Saring dulu sesuai bintang & nama sampah, baru urutkan, baru potong 4.
+        .filter((item) => item.rating >= minRating && !NAMA_SAMPAH.test(item.name))
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 4);
     }
@@ -657,8 +735,27 @@ export async function handleChatRequest(req, res, env = process.env) {
                   mapsUrl: asli.mapsUrl,
                 };
               }
-              return { ...item, image: pool[index % pool.length] };
+              return { ...item, image: null, _pool: pool[index % pool.length] };
             });
+          }
+        }
+
+        // Foto dicari dari NAMA tempat (Wikipedia/Commons) supaya gambar = lokasi.
+        if (groups) {
+          for (const key of GROUP_KEYS) {
+            groups[key] = await Promise.all(
+              groups[key].map(async (item) => {
+                if (item.image) return item;
+                const foto = await fotoTempat(item.name, city);
+                const { _pool, ...sisa } = item;
+                return {
+                  ...sisa,
+                  image: foto?.image || _pool,
+                  infoUrl: foto?.link || null,
+                  mapsUrl: linkMaps(item.name, city),
+                };
+              })
+            );
           }
         }
 
@@ -716,44 +813,102 @@ export async function handleChatRequest(req, res, env = process.env) {
         source: result?.source || "template",
       };
     } else if (mode === "search" || mode === "plan") {
-      const tambahan =
-        mode === "search" && showMap
+      const normalized = normalizeText(message);
+      const kotaKey = mode === "search" ? resolveCity(normalized) : null;
+      const kandidat = kotaKey
+        ? kandidatTerverifikasi(kotaKey, normalized).daftar
+        : [];
+      const jawabanLokal = mode === "search" && kotaKey && kandidat.length >= 2;
+      const jawabanDunia =
+        mode === "search" && !jawabanLokal
+          ? jawabanDuniaDariPesan(normalized)
+          : null;
+
+      let reply;
+      const detail = {};
+
+      if (jawabanLokal) {
+        // Kota yang datanya sudah dicek: jawabannya murni dari data SETAPAK.
+        reply = balasanKotaTerverifikasi(kotaKey, normalized);
+        detail.source = "engine";
+
+        if (showMap && kotaKey) {
+          const label = cityLabels[kotaKey] || kotaKey;
+          detail.mapPlaces = await Promise.all(
+            kandidat
+              .slice(0, Math.min(4, batasJumlah(normalized, 4)))
+              .map((item) =>
+                petaUntuk(item.name, label, PUSAT_KOTA[kotaKey] || null)
+              )
+          );
+        }
+      } else if (jawabanDunia) {
+        // Kota/negara di luar data planner: jawab dari pengetahuan dunia yang
+        // sudah dikurasi. Tetap konkret, tapi tidak bisa salah menyebut lokasi.
+        reply = jawabanDunia.reply;
+        detail.source = "dunia";
+
+        if (showMap && jawabanDunia.places.length) {
+          detail.mapPlaces = await Promise.all(
+            jawabanDunia.places.slice(0, 4).map((item) =>
+              petaUntuk(
+                item.name,
+                jawabanDunia.label,
+                PUSAT_KOTA[jawabanDunia.kotaKey] || null
+              )
+            )
+          );
+        }
+      } else {
+        // Pertanyaan travel lain (harga, cuaca, perbandingan) dan mode
+        // Planning tetap pakai AI dengan prompt anti-halusinasi.
+        const tambahan = showMap
           ? "\n\nUser mengaktifkan peta. Jika kamu menyebut nama tempat, WAJIB akhiri jawaban dengan satu baris: LOKASI: Nama 1 | Nama 2 | Nama 3 (maksimal 4 nama, dipisah ' | ')."
           : "";
-      const result = await askAI({
-        message,
-        history,
-        env,
-        systemPrompt:
-          (mode === "search" ? SEARCH_SYSTEM_PROMPT : PLAN_SYSTEM_PROMPT) +
-          tambahan,
-        maxTokens: mode === "search" ? 500 : 400,
-      });
+        const result = await askAI({
+          message,
+          history,
+          env,
+          systemPrompt:
+            (mode === "search" ? SEARCH_SYSTEM_PROMPT : PLAN_SYSTEM_PROMPT) +
+            tambahan,
+          maxTokens: mode === "search" ? 500 : 400,
+        });
 
-      let reply = result?.reply || fallbackReply();
-      const detail = { source: result?.source || "template" };
+        reply = result?.reply || fallbackReply();
+        detail.source = result?.source || "template";
 
-      if (mode === "plan") {
-        detail.ready = /<<\s*SIAP\s*>>/.test(reply);
-        reply = reply.replace(/<<\s*SIAP\s*>>/g, "").trim();
-        if (!detail.ready) detail.ready = siapDariObrolan(history, message);
-      }
-
-      if (mode === "search" && showMap) {
-        const kota = resolveCity(normalizeText(message));
-        const barisLokasi = reply.match(/^LOKASI:\s*(.+)$/im);
-        let nama = [];
-
-        if (barisLokasi) {
-          reply = reply.replace(/^LOKASI:\s*.+$/im, "").trim();
-          nama = barisLokasi[1]
-            .split("|")
-            .map((item) => item.trim())
-            .filter(Boolean)
-            .slice(0, 4);
+        if (mode === "plan") {
+          detail.ready = /<<\s*SIAP\s*>>/.test(reply);
+          reply = reply.replace(/<<\s*SIAP\s*>>/g, "").trim();
+          if (!detail.ready) detail.ready = siapDariObrolan(history, message);
         }
-        if (!nama.length) nama = namaTempatFallback(reply, kota);
-        if (nama.length) detail.mapPlaces = await geocodeNama(nama, kota);
+
+        if (showMap) {
+          const kota = kotaKey || searchCityKey(normalized);
+          const barisLokasi = reply.match(/^LOKASI:\s*(.+)$/im);
+          let nama = [];
+
+          if (barisLokasi) {
+            reply = reply.replace(/^LOKASI:\s*.+$/im, "").trim();
+            nama = barisLokasi[1]
+              .split("|")
+              .map((item) => item.trim())
+              .filter(Boolean)
+              .slice(0, 4);
+          }
+          const diperbolehkan = kotaKey ? kandidat.map((item) => item.name) : null;
+          if (!nama.length) nama = namaTempatFallback(reply, kota, diperbolehkan);
+          if (diperbolehkan) nama = nama.filter((n) => diperbolehkan.includes(n));
+          if (nama.length) {
+            const label = cityLabels[kotaKey] || "";
+            detail.mapPlaces = await Promise.all(
+              nama.slice(0, 4).map((n) =>
+                petaUntuk(n, label, PUSAT_KOTA[kotaKey] || null)
+              )
+            );
+          }
+        }
       }
 
       payload = { reply, ...detail };

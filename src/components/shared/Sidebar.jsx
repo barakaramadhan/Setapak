@@ -8,19 +8,51 @@ import InputAll from "../ui/InputAll";
 const navigasiMenu = [
   { label: "Home", to: "/dashboard", icon: "fi fi-rr-house-blank" },
   { label: "Chats", to: "/chats", icon: "fi fi-rr-beacon" },
+  { label: "Plan", to: "/plan", icon: "fi fi-rr-list-check" },
   { label: "Trip", to: "/trip", icon: "fi fi-rr-briefcase-blank" },
   { label: "Explore", to: "/explore", icon: "fi fi-rr-search" },
 ];
+
+// Tombol aksi kecil dengan ikon SVG (pasti tampil, tanpa bergantung font ikon).
+function AksiChat({ label, onClick, children, aktif = false, bahaya = false }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium hover:bg-grey-label/20 ${
+        bahaya ? "text-red-600" : aktif ? "text-[#4f7fa6]" : "text-grey-light/80"
+      }`}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="14"
+        height="14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {children}
+      </svg>
+      {label}
+    </button>
+  );
+}
 
 function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
+  const [confirmId, setConfirmId] = useState(null);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { trips } = useTrips();
   const {
     chats,
+    activeId,
     newChat,
     openChat,
     renameChat,
@@ -45,7 +77,7 @@ function Sidebar() {
 
   return (
     <aside
-      className={`sticky top-4 flex h-[750px] shrink-0 flex-col overflow-hidden rounded-r-3xl border-2 border-l-0 border-grey-label/50 bg-white transition-[width] duration-300 ease-in-out ${
+      className={`sticky top-0 flex h-screen shrink-0 flex-col overflow-hidden rounded-r-3xl border-2 border-l-0 border-grey-label/50 bg-white transition-[width] duration-300 ease-in-out ${
         isOpen ? "w-72" : "w-20"
       }`}
     >
@@ -126,22 +158,23 @@ function Sidebar() {
           isOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
-        <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-grey-light/50">
-          Recent chats
+        <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wide text-grey-light/60">
+          Chats
         </p>
-        <div className="space-y-0.5">
+        {chats.length === 0 && (
+          <p className="px-2 text-xs text-grey-label">Belum ada chat.</p>
+        )}
+        <div className="space-y-1">
           {chats.map((chat) => {
             const trip = trips.find((item) => item.id === chat.tripId);
+            const aktif = chat.id === activeId;
             return (
               <div
                 key={chat.id}
-                className="flex items-center gap-1 rounded-lg px-2 py-1.5 hover:bg-grey-label/10"
+                className={`rounded-xl px-2 py-1.5 ${
+                  aktif ? "bg-[#83ADD0]/20" : "hover:bg-grey-label/10"
+                }`}
               >
-                <i
-                  className={`fi fi-rr-comment text-xs leading-none ${
-                    chat.pinned ? "text-[#6f9abf]" : "text-grey-light/40"
-                  }`}
-                />
                 {editingId === chat.id ? (
                   <InputAll
                     autoFocus
@@ -152,50 +185,69 @@ function Sidebar() {
                       if (e.key === "Escape") setEditingId(null);
                     }}
                     onBlur={() => simpanJudul(chat.id)}
-                    className="w-full text-xs"
+                    className="w-full !px-2 !py-1 text-sm"
                   />
                 ) : (
                   <button
                     type="button"
                     onClick={() => bukaChat(chat.id)}
-                    title={trip ? `Trip: ${trip.title}` : chat.title}
-                    className="min-w-0 flex-1 truncate text-left text-xs font-medium text-grey-light"
+                    title={chat.title}
+                    className="block w-full truncate text-left text-sm font-semibold text-grey-light"
                   >
+                    {chat.pinned && <span className="mr-1 text-[#6f9abf]">📌</span>}
                     {chat.title}
-                    {trip && (
-                      <span className="ml-1 rounded-full bg-[#83ADD0]/15 px-1 py-0.5 text-[9px] font-semibold text-[#6f9abf]">
-                        {trip.title}
-                      </span>
-                    )}
                   </button>
                 )}
-                <button
-                  type="button"
-                  title={chat.pinned ? "Lepaskan pin" : "Pin chat"}
-                  onClick={() => togglePin(chat.id)}
-                  className={chat.pinned ? "text-[#6f9abf]" : "text-grey-light/35"}
-                >
-                  <i className="fi fi-rr-pin text-[11px] leading-none" />
-                </button>
-                <button
-                  type="button"
-                  title="Ganti judul"
-                  onClick={() => {
-                    setEditingId(chat.id);
-                    setEditTitle(chat.title);
-                  }}
-                  className="text-grey-light/35 hover:text-grey-light"
-                >
-                  <i className="fi fi-rr-pencil text-[11px] leading-none" />
-                </button>
-                <button
-                  type="button"
-                  title="Hapus chat"
-                  onClick={() => deleteChat(chat.id)}
-                  className="text-grey-light/35 hover:text-red-500"
-                >
-                  <i className="fi fi-rr-trash text-[11px] leading-none" />
-                </button>
+                {trip && (
+                  <span className="mt-0.5 inline-block max-w-full truncate rounded-full bg-[#83ADD0]/20 px-2 py-0.5 text-[10px] font-semibold text-[#4f7fa6]">
+                    Trip: {trip.title}
+                  </span>
+                )}
+
+                {confirmId === chat.id ? (
+                  <div className="mt-1 flex items-center gap-2 text-xs">
+                    <span className="font-semibold text-red-600">Hapus chat ini?</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteChat(chat.id);
+                        setConfirmId(null);
+                      }}
+                      className="rounded-full bg-red-600 px-2.5 py-0.5 font-semibold text-white"
+                    >
+                      Ya
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmId(null)}
+                      className="rounded-full border border-grey-label px-2.5 py-0.5 font-semibold text-grey-light"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-1 flex items-center gap-1 text-grey-light">
+                    <AksiChat
+                      label={chat.pinned ? "Lepas pin" : "Pin"}
+                      onClick={() => togglePin(chat.id)}
+                      aktif={chat.pinned}
+                    >
+                      <path d="M12 17v5M9 3h6l-1 7 3 3v2H7v-2l3-3-1-7z" />
+                    </AksiChat>
+                    <AksiChat
+                      label="Ganti judul"
+                      onClick={() => {
+                        setEditingId(chat.id);
+                        setEditTitle(chat.title);
+                      }}
+                    >
+                      <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" />
+                    </AksiChat>
+                    <AksiChat label="Hapus" bahaya onClick={() => setConfirmId(chat.id)}>
+                      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                    </AksiChat>
+                  </div>
+                )}
               </div>
             );
           })}
