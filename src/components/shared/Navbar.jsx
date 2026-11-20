@@ -19,6 +19,7 @@ const sectionIds = [...leftLinks, ...rightLinks].map((link) => link.href.slice(1
 
 function Navbar() {
   const [solid, setSolid] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const active = useActiveSection(sectionIds);
 
   const listRef = useRef(null);
@@ -47,6 +48,12 @@ function Navbar() {
     } else {
       window.scrollTo({ top, behavior: "smooth" });
     }
+  };
+
+  // Klik menu versi mobile: scroll lalu tutup menu
+  const handleMobileClick = (e, href) => {
+    handleClick(e, href);
+    setMenuOpen(false);
   };
 
   // Geser "pill" ke menu yang aktif
@@ -117,7 +124,7 @@ function Navbar() {
   return (
     <header className="fixed top-3 inset-x-0 z-50 flex justify-center pointer-events-none">
       <nav
-        className={`pointer-events-auto rounded-full border px-6 py-2 transition-all duration-300 ${
+        className={`pointer-events-auto rounded-full border px-6 py-2 max-md:hidden transition-all duration-300 ${
           solid
             ? "bg-grey-new/50 backdrop-blur-md border-white/20"
             : "bg-transparent border-transparent"
@@ -145,6 +152,57 @@ function Navbar() {
           {rightLinks.map(renderLink)}
         </ul>
       </nav>
+
+      {/* Navbar tablet & mobile: logo di kiri, tombol menu di kanan */}
+      <div className="relative hidden w-full px-5 max-md:block max-sm:px-3">
+        <div
+          className={`pointer-events-auto flex items-center justify-between rounded-full border px-4 py-2 transition-all duration-300 ${
+            solid
+              ? "bg-grey-new/50 backdrop-blur-md border-white/20"
+              : "bg-transparent border-transparent"
+          }`}
+        >
+          <a href="#home" onClick={(e) => handleMobileClick(e, "#home")}>
+            <h1 className="font-clash font-bold text-2xl text-bright-white">
+              SETAPAK
+            </h1>
+          </a>
+
+          <button
+            type="button"
+            aria-label="Buka menu"
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-xl text-bright-white"
+          >
+            <i
+              className={`fi ${
+                menuOpen ? "fi-br-cross" : "fi-br-menu-burger"
+              } flex leading-none`}
+            ></i>
+          </button>
+        </div>
+
+        {/* Daftar menu muncul saat tombol ditekan */}
+        {menuOpen && (
+          <ul className="pointer-events-auto absolute right-5 top-full mt-2 w-56 rounded-2xl bg-bright-white p-2 shadow-lg max-sm:right-3">
+            {[...leftLinks, ...rightLinks].map(({ label, href }) => (
+              <li key={label}>
+                <a
+                  href={href}
+                  onClick={(e) => handleMobileClick(e, href)}
+                  className={`block rounded-xl px-4 py-2 font-jakarta text-sm font-semibold ${
+                    active === href.slice(1)
+                      ? "bg-dark-brown-new text-bright-white"
+                      : "text-dark-brown-new"
+                  }`}
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </header>
   );
 }

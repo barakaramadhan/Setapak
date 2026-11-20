@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import InputAll from "../../../components/ui/InputAll";
+import OutlineButton from "../../../components/ui/OutlineButton";
 
 const dummyUser = { name: "Fulan" };
 
@@ -8,15 +9,6 @@ const suggestions = [
   "Plan a trip to Japan",
   "Explore hidden gems in Bali",
   "7 days in Europe",
-];
-
-// DAFTAR TEMPAT (dummy)
-// Kalau pesan user mengandung salah satu nama di bawah, peta akan menampilkan tempat itu
-// dan pop up "Looks like you're headed to ..." akan muncul.
-// Silakan tambah nama kota lain di sini.
-const places = [
-  "Jakarta", "Bandung", "Bogor", "Bali", "Yogyakarta", "Surabaya",
-  "Malang", "Semarang", "Lombok", "Japan", "Tokyo", "Paris", "London", "Europe",
 ];
 
 // FUNGSI AI SEMENTARA (dummy)
@@ -37,8 +29,6 @@ function AiChat() {
   const [messages, setMessages] = useState([]); // { id, role: "user" | "ai", text }
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [destination, setDestination] = useState(""); // tempat tujuan yang terdeteksi, contoh: "Jakarta"
-  const [isChatOpen, setIsChatOpen] = useState(true); // true = panel chat terbuka, false = di-minimize
   const bottomRef = useRef(null);
 
   // otomatis scroll ke pesan terbaru
@@ -56,10 +46,6 @@ function AiChat() {
     ]);
     setInput("");
     setIsLoading(true);
-
-    // cari apakah ada nama tempat di pesan user
-    const found = places.find((p) => clean.toLowerCase().includes(p.toLowerCase()));
-    if (found) setDestination(found);
 
     const reply = await getAiReply(clean);
 
@@ -80,36 +66,8 @@ function AiChat() {
 
   const isEmpty = messages.length === 0;
 
-  // alamat peta Google (embed biasa, tidak perlu API key)
-  // kalau belum ada tempat terdeteksi, peta menampilkan Indonesia
-  const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(
-    destination || "Indonesia"
-  )}&z=11&output=embed`;
-
   return (
-    // pembungkus: chat di kiri, peta di kanan (di tablet/mobile jadi atas-bawah)
-    <div className="flex h-screen w-full max-md:flex-col">
-      {/* ===== PANEL CHAT ===== */}
-      {isChatOpen && (
-        <section
-          className={`font-jakarta relative flex flex-col px-10 pb-6 max-sm:px-4 ${
-            isEmpty
-              ? "mx-auto h-screen w-full max-w-4xl" // belum ada chat: tampilan awal
-              : "h-screen w-[45%] max-md:h-1/2 max-md:w-full" // sudah ada chat: setengah layar
-          }`}
-        >
-          {/* tombol panah untuk minimize chat (muncul setelah ada chat) */}
-          {!isEmpty && (
-            <button
-              type="button"
-              onClick={() => setIsChatOpen(false)}
-              title="Minimize chat"
-              className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full hover:bg-grey-label/15"
-            >
-              <i className="fi fi-rr-angle-small-left text-2xl leading-none pt-1 text-grey-light"></i>
-            </button>
-          )}
-
+    <section className="font-jakarta mx-auto flex h-screen w-full max-w-4xl flex-col px-10 pb-6 max-sm:px-4 bg-bright-white">
       {/* area pesan / sapaan awal */}
       <div className="flex-1 overflow-y-auto pt-10">
         {isEmpty ? (
@@ -124,14 +82,12 @@ function AiChat() {
 
             <div className="mt-3 flex flex-wrap gap-2">
               {suggestions.map((item) => (
-                <button
+                <OutlineButton
                   key={item}
-                  type="button"
+                  title={item}
                   onClick={() => sendMessage(item)}
-                  className="rounded-2xl border border-grey-label/80 px-3 py-2 text-sm font-medium text-grey-light hover:bg-grey-label/15"
-                >
-                  {item}
-                </button>
+                  className="rounded-2xl border-grey-label/80 px-3 py-2 text-sm font-medium text-grey-light hover:bg-grey-label/15"
+                />
               ))}
             </div>
           </div>
@@ -175,31 +131,6 @@ function AiChat() {
         )}
       </div>
 
-      {/* POP UP: selalu muncul setelah ada chat (sesuai mockup) */}
-      {!isEmpty && (
-        <div className="mb-4 flex items-center gap-4 rounded-2xl bg-white p-4 shadow-lg max-sm:flex-col max-sm:items-start">
-          <div>
-            <h2 className="font-bold text-grey-light">
-              {destination
-                ? `Looks like you’re headed to ${destination}.`
-                : "Looks like you’re planning a trip."}
-            </h2>
-            <p className="text-sm text-grey-light">
-              Create a trip to keep all your travel plans in one place, stash your
-              ideas and customize how Setapak helps you.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {}} // NANTI: arahkan ke halaman planning
-            className="flex shrink-0 items-center gap-2 rounded-2xl bg-[#D9B573] px-5 py-4 text-base font-medium text-grey-light hover:bg-[#D9B573]/90 max-sm:w-full max-sm:justify-center"
-          >
-            <i className="fi fi-sr-briefcase-blank leading-none pt-1"></i>
-            Creat Planning
-          </button>
-        </div>
-      )}
-
       {/* kolom input */}
       <div className="relative rounded-2xl bg-grey-light px-3 pb-12 pt-2">
         <InputAll
@@ -215,54 +146,12 @@ function AiChat() {
           type="button"
           onClick={() => sendMessage(input)}
           disabled={isLoading || !input.trim()}
-          className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-[#83ADD0] text-white disabled:opacity-50"
+          className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-arctic-blue text-white disabled:opacity-50"
         >
           <i className="fi fi-rr-arrow-small-up text-xl leading-none pt-1"></i>
         </button>
       </div>
-        </section>
-      )}
-
-      {/* ===== PANEL PETA (muncul setelah ada chat) ===== */}
-      {!isEmpty && (
-        <div
-          className={`relative flex-1 ${
-            // chat ditutup: peta digeser ke kiri 24px supaya masuk ke belakang sidebar (tidak ada celah)
-            isChatOpen ? "border-l border-grey-label/50" : "-ml-6"
-          }`}
-        >
-          <iframe
-            title="Peta"
-            src={mapUrl}
-            className="h-full w-full border-0"
-            loading="lazy"
-          ></iframe>
-
-          {isChatOpen ? (
-            // chat terbuka: tombol untuk memperbesar peta (menyembunyikan chat)
-            <button
-              type="button"
-              onClick={() => setIsChatOpen(false)}
-              title="Perbesar peta"
-              className="absolute bottom-6 right-6 flex h-10 w-10 items-center justify-center rounded-full bg-grey-light text-white shadow-lg hover:bg-grey-light/90"
-            >
-              <i className="fi fi-rr-expand leading-none pt-1"></i>
-            </button>
-          ) : (
-            // chat ditutup: tombol untuk membuka chat kembali
-            <button
-              type="button"
-              onClick={() => setIsChatOpen(true)}
-              title="Buka chat"
-              className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-grey-light px-4 py-2.5 font-jakarta text-sm font-medium text-white shadow-lg hover:bg-grey-light/90"
-            >
-              <i className="fi fi-rr-comment leading-none pt-1"></i>
-              Open chat
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+    </section>
   );
 }
 

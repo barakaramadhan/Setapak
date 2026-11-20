@@ -83,16 +83,16 @@ function FindYourPlace() {
   };
 
   return (
-    <section className="px-20 py-14 flex items-center bg-bright-white">
+    <section className="px-20 py-14 flex items-center max-md:flex-col max-md:items-start max-md:gap-10 max-md:px-10 max-sm:px-5 max-sm:py-6 max-sm:gap-6 bg-bright-white">
       <div className="flex-1">
-        <SectionMarker title="02  Pouplar Destination" className="mb-10 w-48" />
-        <h1 className="font-jakarta font-medium text-7xl text-grey-light">
+        <SectionMarker title="02  Pouplar Destination" className="mb-10 max-sm:mb-4 w-48" />
+        <h1 className="font-jakarta font-medium text-7xl max-md:text-5xl max-sm:text-3xl text-grey-light">
           Find Your
           <span className="font-clash font-semibold text-light-brown-new pl-3">
             Place
           </span>
         </h1>
-        <p className="font-jakarta font-normal text-grey-light text-base max-w-sm mt-4">
+        <p className="font-jakarta font-normal text-grey-light text-base max-sm:text-sm max-w-sm mt-4">
           Discover remarkable destinations, uncover hidden gems, and explore the
           beauty of places around the world.
         </p>
@@ -102,13 +102,13 @@ function FindYourPlace() {
         <img
           src={ImageCard}
           alt=""
-          className="w-full h-28 object-cover rounded-t-2xl"
+          className="w-full h-28 max-sm:h-16 object-cover rounded-t-2xl"
         />
 
-        <div className="px-5 py-6">
-          <div className="flex gap-6 pb-5">
+        <div className="px-5 py-6 max-sm:px-4">
+          <div className="flex gap-6 pb-5 max-sm:flex-col max-sm:gap-4">
             <div>
-              <p className="font-jakarta font-medium text-sm text-grey-light pb-2">
+              <p className="font-jakarta font-medium text-sm max-sm:text-base text-grey-light pb-2">
                 Destination
               </p>
               <InputAll
@@ -117,7 +117,7 @@ function FindYourPlace() {
               />
             </div>
             <div className="flex-1">
-              <p className="font-jakarta font-medium text-sm text-grey-light pb-2">
+              <p className="font-jakarta font-medium text-sm max-sm:text-base text-grey-light pb-2">
                 Category
               </p>
               <div className="relative">
@@ -159,9 +159,9 @@ function FindYourPlace() {
             </div>
           </div>
 
-          <div className="flex gap-6">
+          <div className="flex gap-6 max-sm:flex-col max-sm:gap-4">
             <div className="flex-1">
-              <p className="font-jakarta font-medium text-sm text-grey-light pb-2">
+              <p className="font-jakarta font-medium text-sm max-sm:text-base text-grey-light pb-2">
                 Date
               </p>
               <div ref={dateRef} className="relative gap-4">
@@ -237,7 +237,7 @@ function FindYourPlace() {
               </div>
             </div>
             <div className="flex-1">
-              <p className="font-jakarta font-medium text-sm text-grey-light pb-2">
+              <p className="font-jakarta font-medium text-sm max-sm:text-base text-grey-light pb-2">
                 Price
               </p>
               <InputAll
@@ -247,7 +247,7 @@ function FindYourPlace() {
             </div>
           </div>
 
-          <FillButton className="mt-6">Plan Trip</FillButton>
+          <FillButton className="mt-6 max-sm:mt-12 max-sm:w-full max-sm:py-4 max-sm:text-lg max-sm:bg-dark-brown-new max-sm:text-bright-white">Plan Trip</FillButton>
         </div>
       </div>
     </section>

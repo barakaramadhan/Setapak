@@ -8,14 +8,14 @@ function Recomendations() {
   const recomendations = [
     {
       id: 1,
-      image: ImageCard,
+      image: ImageCard2,
       title: "Rome",
       description: "Rome Metropolitan City, Italy",
       ratting: 4.5,
     },
     {
       id: 2,
-      image: ImageCard2,
+      image: ImageCard,
       title: "Braga",
       description: "Bandung, West Java, Indonesia",
       ratting: 4.5,
@@ -30,14 +30,14 @@ function Recomendations() {
   ];
 
   return (
-    <section className="sticky top-0 z-0 px-20 py-8 bg-bright-white">
+    <section className="sticky top-0 z-0 px-20 max-md:px-10 max-sm:px-5 py-8 bg-bright-white">
       <SectionMarker title="Recommendation" className="mb-6 w-36" />
 
-      <div className="flex gap-9 overflow-x-auto pb-4">
+      <div className="flex gap-9 max-md:gap-4 max-md:-mr-10 max-sm:-mr-5 overflow-x-auto pb-4">
         {recomendations.map((item) => (
           <div
             key={item.id}
-            className="group relative w-[362px] h-[399px] rounded-2xl overflow-hidden shrink-0 shadow-lg"
+            className="group relative w-[362px] h-[399px] max-md:w-60 max-md:h-72 rounded-2xl overflow-hidden shrink-0 shadow-lg"
           >
             <img
               src={item.image}

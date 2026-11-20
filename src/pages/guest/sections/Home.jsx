@@ -13,17 +13,17 @@ function Home() {
   }, []);
 
   return (
-      <section className="relative grid w-full overflow-hidden">
+      <section className="relative z-10 grid w-full overflow-hidden">
         <img
           src={ImageLangit}
           alt="Langit Home"
-          className="block w-full h-[900px] [grid-area:1/1] object-cover object-center rounded-b-4xl"
+          className="block w-full h-[900px] max-md:h-175 max-sm:h-130 [grid-area:1/1] object-cover object-center rounded-b-4xl"
         />
 
         <div
           ref={animasiRef}
           id="animasi-container"
-          className="absolute top-64 -right-12 w-[1500px] z-[5]"
+          className="absolute top-64 -right-12 w-[1500px] max-md:top-48 max-md:w-250 max-sm:top-40 max-sm:w-175 z-[5]"
         >
           <svg
             className="garis-svg w-full h-auto overflow-visible"
@@ -141,26 +141,26 @@ function Home() {
         <img
           src={ImageSecond}
           alt="Second Image"
-          className="block w-full h-[900px] [grid-area:1/1] object-cover object-center z-10 rounded-4xl"
+          className="block w-full h-[900px] max-md:h-175 max-sm:h-130 [grid-area:1/1] object-cover object-center z-10 rounded-4xl"
         />
 
         <div>
-          <div className="absolute top-48 right-[442px] z-10 leading-none">
-            <h1 className="font-jakarta text-5xl font-medium text-white">
-              Plan Your Next <br />
-              Trip Across <br />
-              <span className="font-clash text-5xl font-semibold leading-0">
-                Multiple <br /> Destinations.
+          <div className="absolute top-48 right-[442px] max-md:right-auto max-md:left-12 max-md:top-40 max-sm:left-5 max-sm:top-56 z-10 leading-none">
+            <h1 className="font-jakarta text-5xl max-md:text-4xl font-medium text-white">
+              Plan Your Next <br className="max-sm:hidden" />
+              Trip Across <br className="max-sm:hidden" />
+              <span className="font-clash text-5xl max-md:text-4xl font-semibold leading-0">
+                Multiple <br className="max-sm:hidden" /> Destinations.
               </span>
             </h1>
             <p className="pt-3 font-jakarta text-white font-medium text-base w-2xs">
               Discover New Places and Create Your Perfect Journey.
             </p>
 
-            <FillButton className="mt-7">
+            <FillButton className="mt-7 max-sm:text-bright-white max-sm:ring-bright-white">
               <span className="inline-flex items-center justify-center gap-2">
                 <span>Let's Go</span>
-                <i className="fi fi-br-arrow-up-right leading-none"></i>
+                <i className="fi fi-br-arrow-up-right leading-none max-sm:hidden"></i>
               </span>
             </FillButton>
           </div>

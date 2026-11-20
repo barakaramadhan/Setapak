@@ -5,7 +5,6 @@ const navigasiMenu = [
   { label: "Home", to: "/dashboard", icon: "fi fi-rr-house-blank" },
   { label: "Chats", to: "/chats", icon: "fi fi-rr-beacon" },
   { label: "Trip", to: "/trip", icon: "fi fi-rr-briefcase-blank" },
-  { label: "Explore", to: "/explore", icon: "fi fi-rr-search" },
 ];
 
 function Sidebar() {
@@ -13,7 +12,7 @@ function Sidebar() {
 
   return (
     <aside
-      className={`sticky top-4 z-10 flex h-[750px] shrink-0 flex-col overflow-hidden rounded-r-3xl border-2 border-l-0 border-grey-label/50 bg-white transition-[width] duration-300 ease-in-out ${
+      className={`sticky top-4 flex h-[750px] shrink-0 flex-col overflow-hidden rounded-r-3xl border-2 border-l-0 border-grey-label/50 bg-white transition-[width] duration-300 ease-in-out ${
         isOpen ? "w-72" : "w-20"
       }`}
     >
