@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTrips } from "../../store/useTrips";
-import { askSetapak } from "../../api/chat";
+import { askCreatePlan } from "../../api/chat";
 import { formatRangeId } from "../../utils/tripDate";
 import {
   MODULES,
@@ -101,7 +101,7 @@ export default function TripWorkspace({ trip }) {
     setAiBusy(true);
     setAiPesan("");
     try {
-      const hasil = await askSetapak(prompt);
+      const hasil = await askCreatePlan(prompt);
       if (!hasil?.plan) {
         setAiPesan(
           "AI belum mengembalikan rencana terstruktur. Isi modul manual atau coba lagi di halaman Chat."

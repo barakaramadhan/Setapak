@@ -1,20 +1,15 @@
 // Gerbang AI untuk frontend.
-// Urutan: cache -> mesin lokal -> API /api/chat (server) -> jawaban darurat.
-// Tujuan: sesedikit mungkin pemanggilan API supaya kuota awet.
+// Setiap prompt SELALU lewat API /api/chat. Tidak ada cache jawaban dan tidak
+// ada jawaban lokal yang menggantikan AI. Data terverifikasi dikirim server
+// sebagai KONTEKS supaya AI tetap paham dunia tanpa mengarang lokasi.
+// API key tidak pernah masuk browser.
 
-import {
-  planTrip,
-  recommendPlaces,
-  searchCityKey,
-} from "./plannerEngine";
+import { recommendPlaces, searchCityKey } from "./plannerEngine";
+import { parseTripDate, parseTripDateRange } from "../utils/tripDate";
 
-// Versi dinaikkan ke v3 supaya hasil lama otomatis terbuang saat reset planner.
-const CACHE_KEY = "setapak:chat-cache:v4"; // ganti versi kalau format jawaban berubah
-const REC_CACHE_KEY = "setapak:recommend-cache:v4"; // cache khusus "For you"
+// Rencana terakhir masih disimpan lokal supaya halaman Schedule/Trip bisa
+// menampilkannya. Ini bukan cache jawaban AI.
 const PLAN_KEY = "setapak:last-plan";
-
-const OFFLINE_REPLY =
-  "Maaf, kuota AI lagi penuh. Saya masih bisa bantu rencana lokal, coba sebutkan kota dan durasi, misalnya: \"3 hari di Bogor budget 200rb\".";
 
 function readStorage(key, fallback) {
   try {
@@ -33,11 +28,113 @@ function writeStorage(key, value) {
   }
 }
 
-function makeKey(text) {
-  return String(text || "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
+/**
+ * Profil trip diekstrak dari SEMUA pesan user, bukan 6–8 pesan terakhir.
+ * Setiap request AI membawa profil ini supaya kota, durasi, budget, dan
+ * preferensi makanan tidak ditanyakan ulang oleh prompt Planning/planFields.
+ */
+const LABEL_DESTINASI = {
+  makkah: "Makkah", mekah: "Makkah", mecca: "Makkah",
+  madinah: "Madinah", medina: "Madinah",
+  jeddah: "Jeddah", jedda: "Jeddah",
+  jepang: "Jepang", japan: "Jepang", singapura: "Singapura", singapore: "Singapura",
+  korea: "Korea", thailand: "Thailand", malaysia: "Malaysia", vietnam: "Vietnam",
+  turki: "Turki", mesir: "Mesir", palestina: "Palestina",
+  amerika: "Amerika", australia: "Australia",
+  bogor: "Bogor", yogyakarta: "Yogyakarta", jogja: "Yogyakarta", bandung: "Bandung",
+  jakarta: "Jakarta", malang: "Malang", surabaya: "Surabaya", semarang: "Semarang",
+  bekasi: "Bekasi", depok: "Depok", tangerang: "Tangerang", solo: "Solo",
+  makassar: "Makassar", bali: "Bali", lombok: "Lombok",
+};
+
+export function extractTripFacts(history = []) {
+  const teks = (Array.isArray(history) ? history : [])
+    .filter((item) => (item?.role || "user") === "user")
+    .map((item) => String(item?.text || ""))
+    .filter((item) => !/^\[Konteks dari chat/i.test(item))
+    .join(" ")
     .trim();
+  const lower = teks.toLowerCase();
+
+  const destinations = [];
+  Object.entries(LABEL_DESTINASI).forEach(([kunci, label]) => {
+    const pola = new RegExp(`(^|[^a-z])${kunci}([^a-z]|$)`);
+    if (pola.test(lower) && !destinations.includes(label)) destinations.push(label);
+  });
+
+  const cocokDurasi =
+    lower.match(/\b(\d{1,2})\s*(hari|malam|days?|minggu)\b/) ||
+    lower.match(/\b(\d{1,2})\s*weeks?\b/);
+  let days = cocokDurasi ? Number(cocokDurasi[1]) : null;
+  if (days !== null && /minggu|week/.test(cocokDurasi[2] || "")) days *= 7;
+  if (days === null && /\b(seminggu|sepekan)\b/.test(lower)) days = 7;
+
+  const rentang = parseTripDateRange(teks);
+  const startDate = rentang?.start || parseTripDate(teks) || null;
+
+  const angkaBudget = lower.match(/(?:rp\.?\s*)?([\d.,]+)\s*(juta|jt|rb|ribu)\b/);
+  const budget = angkaBudget ? angkaBudget[0].replace(/\s+/g, " ").trim() : null;
+
+  const food = /\b(makanan indonesia|masakan indonesia|kuliner indonesia|makan indonesia|resto indonesia|nasi goreng|rendang|sate|gado-?gado)\b/.test(lower)
+    ? "makanan Indonesia"
+    : null;
+  const purpose = /\b(umroh|haji|ibadah|ziarah|makkah|madinah|masjidil haram|masjid nabawi)\b/.test(lower)
+    ? "ibadah"
+    : null;
+  const tema = purpose || (lower.match(/\b(santai|keluarga|petualangan|kuliner|budaya|romantis)\b/) || [])[0] || null;
+  const companions = (lower.match(/\b(istri|suami|pasangan|berdua|keluarga|anak-anak|anak|teman)\b/) || [])[0] || null;
+  const dokumen = /\b(paspor|visa|dokumen|izin)\b/.test(lower);
+  const transport = /\b(pesawat|kereta|bus|transport|penerbangan|flight)\b/.test(lower);
+  const akomodasi = /\b(hotel|villa|hostel|menginap|akomodasi|penginapan)\b/.test(lower);
+
+  const knownKeys = [];
+  const knownModules = [];
+  if (destinations.length) {
+    knownKeys.push("kota");
+    knownModules.push("destination");
+  }
+  if (days !== null || startDate) {
+    knownKeys.push("durasi");
+    knownModules.push("dates");
+  }
+  if (budget) {
+    knownKeys.push("budget");
+    knownModules.push("budget");
+  }
+  if (food) {
+    knownKeys.push("makanan");
+    knownModules.push("food");
+  }
+  if (tema || companions) {
+    knownKeys.push("tema");
+    knownModules.push("overview");
+  }
+  if (dokumen) {
+    knownKeys.push("dokumen");
+    knownModules.push("documents");
+  }
+  if (transport) {
+    knownKeys.push("transport");
+    knownModules.push("transportation");
+  }
+  if (akomodasi) {
+    knownKeys.push("akomodasi");
+    knownModules.push("accommodation");
+  }
+
+  return {
+    destinations: destinations.slice(0, 6),
+    destinationLabel: destinations.slice(0, 6).join(" + "),
+    days: days !== null ? Math.min(30, Math.max(1, days)) : null,
+    startDate,
+    budget,
+    food,
+    purpose,
+    tema,
+    companions,
+    knownKeys,
+    knownModules,
+  };
 }
 
 /** Simpan rencana terakhir supaya dashboard bisa menampilkannya. */
@@ -51,68 +148,46 @@ export function getLastPlan() {
 }
 
 /**
- * Tanya SETAPAK.
+ * Tanya SETAPAK. Selalu memanggil AI lewat server.
  * @param {string} message
  * @param {Array<{role:string,text:string}>} history
  * @param {{mode?: "chat"|"search"|"plan", showMap?: boolean}} options
- * @returns {Promise<{reply: string, source: string, plan?: object, ready?: boolean, mapPlaces?: Array, cached?: boolean}>}
+ * @returns {Promise<{reply: string, source: string, plan?: object, ready?: boolean, mapPlaces?: Array}>}
  */
 export async function askSetapak(
   message,
   history = [],
   { mode = "chat", showMap = false } = {}
 ) {
-  // Mode dan toggle peta ikut masuk kunci cache supaya jawaban tidak tertukar.
-  const key = makeKey(`${mode}:${showMap ? "map" : "teks"}:${message}`);
-  const cache = readStorage(CACHE_KEY, {});
-
-  // 1. Pernah ditanya? Langsung jawab, tanpa API.
-  if (cache[key]) return { ...cache[key], cached: true };
-
-  // 2. Mesin lokal dulu (instan, gratis) — hanya untuk obrolan biasa.
-  if (mode === "chat") {
-    const local = planTrip(message);
-    if (local.handled) {
-      const result = { reply: local.reply, source: "engine", plan: local.plan };
-      saveLastPlan(local.plan);
-      cache[key] = result;
-      writeStorage(CACHE_KEY, cache);
-      return result;
-    }
-  }
-
-  // 3. Baru panggil AI lewat server (API key tidak pernah masuk browser).
   try {
+    const facts = extractTripFacts([...history, { role: "user", text: message }]);
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, history, mode, showMap }),
+      body: JSON.stringify({ message, history, mode, showMap, facts }),
     });
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const data = await response.json();
     const result = {
-      reply: data.reply || OFFLINE_REPLY,
+      reply:
+        data.reply ||
+        "Maaf, AI belum mengembalikan jawaban. Coba ulangi pertanyaanmu ya.",
       source: data.source || "ai",
-      // Server belum selalu mengirim plan; kalau ada, simpan supaya Schedule
-      // dan halaman Trip bisa memakainya.
+      ...(Array.isArray(data.options) ? { options: data.options } : {}),
       ...(data.plan ? { plan: data.plan } : {}),
       ...(typeof data.ready === "boolean" ? { ready: data.ready } : {}),
       ...(Array.isArray(data.mapPlaces) ? { mapPlaces: data.mapPlaces } : {}),
+      ...(data.handoff === true ? { handoff: true } : {}),
     };
     if (data.plan) saveLastPlan(data.plan);
-
-    cache[key] = result;
-    writeStorage(CACHE_KEY, cache);
     return result;
   } catch (error) {
     console.warn("[setapak] AI API gagal:", error.message);
     return {
       reply:
-        mode === "plan"
-          ? "Kuota AI sedang penuh. Coba singkat lagi ya, atau ketik / untuk mulai rencana baru."
-          : OFFLINE_REPLY,
+        "Koneksi ke server SETAPAK sedang terputus. Coba lagi sebentar ya — pertanyaanmu belum sempat dijawab AI.",
       source: "offline",
     };
   }
@@ -121,6 +196,7 @@ export async function askSetapak(
 /** AI menentukan field yang masih dibutuhkan sebelum plan dibuat. */
 export async function askPlanFields(history = []) {
   try {
+    const facts = extractTripFacts(history);
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -128,6 +204,7 @@ export async function askPlanFields(history = []) {
         mode: "planFields",
         message: "Data apa saja yang masih dibutuhkan untuk melengkapi rencana ini?",
         history,
+        facts,
       }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -140,7 +217,7 @@ export async function askPlanFields(history = []) {
 }
 
 /** AI menyusun plan final dari obrolan + jawaban field. */
-export async function askCreatePlan(ringkasan) {
+export async function askCreatePlan(ringkasan, facts = null) {
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
@@ -149,6 +226,7 @@ export async function askCreatePlan(ringkasan) {
         mode: "createPlan",
         message: ringkasan,
         history: [],
+        facts,
       }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -162,10 +240,10 @@ export async function askCreatePlan(ringkasan) {
 
 /**
  * Rekomendasi kartu "For you" lewat AI (mode = "in" / "near").
- * - Kota/area baru disimpan di planner data bersama di server, jadi pencarian
- *   yang sama selalu menghasilkan kartu yang sama untuk semua orang.
- * - refresh = true (tombol reload) melewati hasil lama dan minta variasi baru.
- * @returns {Promise<{groups: object, source: string, cached?: boolean}>}
+ * Kota/area baru disimpan di planner data bersama di server, jadi pencarian
+ * yang sama selalu menghasilkan kartu yang sama untuk semua orang.
+ * Tidak ada cache browser: tombol reload selalu meminta variasi baru ke AI.
+ * @returns {Promise<{groups: object, source: string}>}
  */
 export async function askRecommendations(
   city,
@@ -178,10 +256,6 @@ export async function askRecommendations(
 
   const batas = Number(minRating) || 0;
   const kunciKota = searchCityKey(cleanCity);
-  const key = makeKey(`rec:${mode}:${kunciKota}:${batas}`);
-  const cache = readStorage(REC_CACHE_KEY, {});
-  if (!refresh && cache[key]) return { ...cache[key], cached: true };
-
   const pakaiDataLokal = () => ({
     groups: recommendPlaces(mode, kunciKota, batas),
     source: "engine",
@@ -205,14 +279,10 @@ export async function askRecommendations(
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const data = await response.json();
-    if (!data.groups) return cache[key] || pakaiDataLokal();
-
-    const result = { groups: data.groups, source: data.source || "ai" };
-    cache[key] = result;
-    writeStorage(REC_CACHE_KEY, cache);
-    return result;
+    if (!data.groups) return pakaiDataLokal();
+    return { groups: data.groups, source: data.source || "ai" };
   } catch (error) {
     console.warn("[setapak] rekomendasi AI gagal:", error.message);
-    return cache[key] || pakaiDataLokal();
+    return pakaiDataLokal();
   }
 }

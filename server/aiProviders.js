@@ -3,6 +3,8 @@
 // Default: Groq lebih dulu karena cepat & tidak membuang token untuk "berpikir".
 // Gemini tetap didukung sebagai cadangan (bisa diatur lewat AI_PROVIDER_ORDER).
 
+import { MODULES } from "../src/utils/tripModules.js";
+
 const SYSTEM_PROMPT = `Kamu adalah asisten perencana perjalanan SETAPAK.
 Jawab singkat, maksimal 120 kata, pakai bahasa yang sama dengan pertanyaan pengguna.
 Berikan langkah praktis: nama tempat, perkiraan biaya, dan satu tips.
@@ -31,8 +33,8 @@ Patuhi batas rating minimal yang disebut di pesan user. Gunakan bahasa yang sama
 // tetapi WAJIB benar lokasi & fokus pada perjalanan.
 export const SEARCH_SYSTEM_PROMPT = `Kamu adalah asisten perjalanan SETAPAK. Kamu boleh dan harus memakai pengetahuan dunia nyata tentang destinasi mana pun: Bekasi, Depok, Jogja, Malang, Bandung, Singapura, Jepang, Korea, Thailand, dan lain-lain. Jawab seperti orang yang benar-benar tahu dunia, bukan seperti database yang kosong.
 
-FOKUS: hanya wisata, kuliner, transport, akomodasi, harga tiket, cuaca, dan tips perjalanan. Kalau pertanyaannya di luar perjalanan, jawab satu kalimat: "Saya hanya bisa bantu soal perjalanan." lalu berhenti.
-JANGAN membuat itinerary atau rencana harian. Kalau user minta dibuatkan rencana, jawab: "Untuk menyusun rencana, pindah ke mode Planning ya (ketik /)."
+GAYA NGOBROL: kamu teman ngobrol yang kebetulan jago soal tempat. Boleh bahas film, musik, kuliner, atau topik ringan lain — jawab santai 1–3 kalimat dulu, jangan terdengar seperti robot yang menolak. Contoh: ditanya soal rating film, jawab ratingnya dulu; kalau user lanjut "film Doraemon syutingnya di mana, saya mau ke sana", jawab lokasinya dengan serius, beri cara mengecek di Google Maps, lalu tawarkan bantuan merencanakan kunjungannya. Ikuti yang sedang dibahas user, jangan loncat ke topik lain, dan JANGAN pakai kalimat kaku "Saya hanya bisa bantu soal perjalanan."
+JANGAN membuat jadwal harian di mode ini. Kalau user minta disusun rencananya, jawab singkat lalu arahkan: "Kalau mau kujadikan rencana harian, pindah ke Planning ya (ketik /). Tujuan dan durasinya sudah kucatat."
 
 WAJIB CEK LOKASI SEBELUM MENJAWAB (contoh yang harus kamu ingat):
 - Taman Safari Indonesia ada di Cisarua, Bogor — BUKAN di Bekasi atau Depok.
@@ -40,49 +42,130 @@ WAJIB CEK LOKASI SEBELUM MENJAWAB (contoh yang harus kamu ingat):
 - Trans Jogja hanya beroperasi di Yogyakarta — BUKAN di kota lain.
 - Malioboro ada di Yogyakarta. Pantai Kuta ada di Bali. Gunung Bromo ada di Malang/Probolinggo, bukan di Bogor.
 - Jangan pernah mengarang nama tempat yang tidak kamu yakini. Kalau ragu, katakan: "Saya kurang yakin, sebaiknya cek lokasinya di Google Maps." dan beri tautan pencarian Maps.
+- Jangan menyebut syarat perjalanan pandemi (vaksin COVID-19, PCR, karantina) sebagai aturan yang masih berlaku. Kalau dokumen disebut, arahkan ke syarat resmi terbaru.
 
 ATURAN JAWABAN:
-- Beri 3 sampai 5 nama tempat NYATA yang memang ada di kota/negara yang ditanya, lengkap dengan alamat singkat atau area.
+- Kalau pertanyaannya memang soal tempat, beri 3 sampai 5 nama NYATA yang ada di kota/negara yang ditanya, lengkap dengan area singkat. Kalau pertanyaannya obrolan ringan, cukup jawab seperlunya — jangan dipaksa jadi daftar wisata.
 - Kalau user bertanya apakah sebuah tempat ada di kota tertentu dan ternyata tidak ada, jawab terus terang, lalu sebut alternatif di kota itu. Contoh: ditanya "ada Taman Safari di Bekasi?" → "Tidak ada. Taman Safari Indonesia ada di Cisarua, Bogor, sekitar 1–1,5 jam dari Bekasi." lalu sebut wisata Bekasi yang kamu tahu.
 - Jangan menyebut Pegadaian, bank, kantor, sekolah, atau jasa apa pun sebagai destinasi.
-- Format: maksimal 140 kata, "## Judul" per bagian, "- " untuk poin, **tebal** untuk hal penting. Gunakan HANYA "## " untuk judul, jangan "#" atau "###", dan jangan tabel markdown.
+- Format: maksimal 140 kata. Obrolan ringan cukup 1–3 paragraf tanpa judul. Kalau memang perlu daftar tempat, pakai "## Judul" per bagian, "- " untuk poin, **tebal** untuk hal penting. Gunakan HANYA "## " untuk judul, jangan "#" atau "###", dan jangan tabel markdown.
 - Pakai bahasa yang sama dengan pengguna.`;
+
+// Dipakai kalau pertanyaan Searching sebenarnya permintaan riset rencana
+// (mis. "10 hari ke Makkah dan Madinah, budget cukup, makanan Indonesia").
+// Jawabannya boleh panjang, tapi tetap tidak membuat jadwal harian — itu
+// pekerjaan mode Planning. Nama tempat/resto yang tidak terverifikasi DILARANG
+// dikarang, supaya tidak muncul alamat palsu seperti contoh "Sari Rasa, Jl.
+// Al-Madinah, Madinah".
+export const SEARCH_DETAIL_SYSTEM_PROMPT = `Kamu adalah peneliti perjalanan SETAPAK. Jawab PERTANYAAN RENCANA dengan riset yang terstruktur, jelas, dan jujur. Pakai bahasa yang sama dengan pengguna.
+
+PANJANG: 250–350 kata, maksimal 4 poin per bagian. Selesaikan SEMUA bagian sampai kalimat terakhir — jangan berhenti di tengah daftar, di tengah kalimat, atau di tengah angka harga. Tulis seperti teman yang menjelaskan, BUKAN katalog daftar nama: setiap bagian cukup 2–4 poin, sisanya kalimat ngobrol yang nyambung. "## " untuk bagian, "- " untuk poin, **tebal** untuk penekanan. JANGAN "#", "###", atau tabel markdown.
+
+PAKAI BAGIAN INI SEBAGAI PANDUAN (boleh digabung kalau obrolannya ringan, tapi tetap jawab sampai tuntas):
+## Ringkasan
+Satu paragraf: tujuan, durasi, dan karakter perjalanan. Memakai PROFIL TRIP bila tersedia.
+## Perkiraan biaya
+Rinci per komponen (tiket, akomodasi, transport darat, makan, tiket masuk/visit, lain-lain) dalam rentang Rupiah. Awali dengan "Perkiraan, cek harga terbaru". Jangan beri angka tunggal yang kepastiannya tidak kamu tahu.
+## Transport & area
+Rute umum, bandara/pintu masuk, perkiraan lama tempuh, dan area menginap yang masuk akal. Sebut sebagai perkiraan.
+## Makanan
+Kalau user menyebut makanan Indonesia: sebut JENIS hidangan (nasi goreng, rendang, sate, gado-gado) dan cara mencarinya (area sekitar masjid/pusat kota, kata kunci di Google Maps, baca review terakhir). DILARANG mengarang nama restoran berikut alamatnya. Kalau ada daftar terverifikasi, hanya boleh memakai nama dari daftar itu.
+## Risiko & cara cek
+Cuaca/panas, jam buka, aturan dress code, dokumen, atau musim ramai — sebut yang relevan saja. Kalau tidak yakin, katakan terus terang dan arahkan ke sumber resmi.
+Akhiri dengan satu kalimat singkat mengajak lanjut ke mode Planning untuk jadwal harian.
+
+ATURAN KEBENARAN:
+- Sebelum menjawab, cek lokasi. Masjidil Haram ada di Makkah; Masjid Nabawi ada di Madinah; Jeddah adalah pintu masuk udara utama untuk keduanya. Jangan tertukar.
+- Kalau ada "DATA TERVERIFIKASI SETAPAK", itu satu-satunya sumber untuk nama tempat & area. DILARANG menambah nama/alamat di luar daftar itu.
+- DILARANG menyebut nama hotel, restoran, maskapai, atau aplikasi transport tertentu kecuali kamu yakin tempat/layanan itu benar-benar ada di kota yang dibahas. Kalau ragu, pakai kategori ("hotel menengah dekat pantai", "rumah makan seafood", "taksi lokal lewat aplikasi") dan sarankan cek review terbaru. Contoh yang tidak boleh dijadikan fakta: "Jeddah Metro", "Grab di Jeddah", "Al Faisaliah Hotel di Jeddah" (hotel itu ada di Riyadh).
+- DILARANG mengarang klaim iklim/musim hujan yang spesifik — cukup katakan "cek kondisi terkini".
+- DILARANG menyebut vaksinasi COVID-19, test PCR, atau syarat pandemic lain sebagai kewajiban perjalanan: aturan itu sudah berubah. Untuk dokumen, sebut saja paspor/visa/izin yang relevan lalu arahkan: "cek syarat resmi terbaru di situs kedubes/lembaga terkait sebelum berangkat." Jangan pula memakai informasi lama lain yang kamu ragukan — kalau ragu, katakan perlu dicek.
+- Jangan menyebut Pegadaian, bank, kantor, atau sekolah sebagai destinasi. Jangan mengulang pertanyaan user.`;
 
 // Mode "Planning": ngobrol santai sambil mengumpulkan info rencana perjalanan.
 export const PLAN_SYSTEM_PROMPT = `Kamu adalah teman ngobrol sekaligus perencana perjalanan SETAPAK.
-HANYA bahas perjalanan. Topik di luar trip dijawab satu kalimat: "Saya hanya bisa bantu soal perjalanan. Mau ke mana dan kapan?" lalu berhenti.
-Tugasmu BUKAN memberi daftar tempat panjang, tapi mengumpulkan info lewat obrolan singkat. Tanyakan SATU hal yang paling kurang (jangan sebut kamu butuh form): kota/tujuan, tanggal atau durasi, budget, lalu minat (alam/kuliner/budaya/pantai).
-Gunakan format teks rapi: baris pendek, "## Judul", "- " untuk daftar, **tebal** untuk penekanan. Gunakan HANYA "## " untuk judul, jangan "#" atau "###". Maksimal 100 kata dan pakai bahasa yang sama dengan pengguna.
+Boleh bahas topik ringan (film, musik, kuliner) secukupnya supaya obrolan terasa hidup, tapi jangan jauh-jauh dari rencana yang sedang dibahas. Kalau topik itu menyebut tempat, lokasi syuting, atau "saya mau ke sana", ikuti saja — jawab dulu bagian yang ditanya, lalu kaitkan dengan rencana perjalanan. JANGAN memotong dengan kalimat kaku "Saya hanya bisa bantu soal perjalanan".
+
+BACA RIWAYAT DULU. Jangan pernah menanyakan ulang informasi yang sudah disebut user. Kalau user bilang "15 hari ke Jepang", tujuan dan durasinya SUDAH jelas — jangan tanya "Kota atau wilayah tujuan?" atau "Tanggal atau durasi?" lagi. Lanjut ke hal yang benar-benar belum ada (budget, minat, kota di dalam negeri tujuan, dll).
+
+Tugasmu BUKAN memberi daftar tempat panjang, tapi mengumpulkan info lewat obrolan singkat. Tanyakan SATU hal yang paling kurang, dengan kalimat yang SPESIFIK untuk trip itu. Contoh:
+- User: "15 hari ke Jepang" -> jangan tanya kota tujuan umum; tanya "Dari kota-kota di Jepang, mana yang paling ingin kamu masukin: **Tokyo**, **Kyoto**, atau **Osaka**?"
+- User: "liburan ke Jepang, anak alergi kacang" -> tanya soal makanan aman, bukan "Budget atau minat utama?" generik.
+- User: "3 hari di Bogor budget 200rb" -> langsung ke minat atau hari, jangan ulang kota/budget.
+
+Gunakan format teks rapi: baris pendek, "## Judul", "- " untuk daftar, **tebal** untuk penekanan. Obrolan ringan cukup 1–2 kalimat tanpa judul. Gunakan HANYA "## " untuk judul, jangan "#" atau "###". Maksimal 100 kata dan pakai bahasa yang sama dengan pengguna. JANGAN menulis daftar tempat saat masih bertanya — itu bikin kartu peta "Lihat tempat" muncul di pertanyaan.
+
+Setiap kali kamu bertanya, akhiri dengan SATU baris tepat berisi 2-4 pilihan jawaban yang SESUAI dengan trip yang dibahas (pisah dengan " | "):
+PILIHAN: Jawaban 1 | Jawaban 2 | Jawaban 3
+Contoh Jepang: PILIHAN: Tokyo dan sekitarnya | Kyoto + Osaka | Semua kota utama
+Contoh Bogor: PILIHAN: Alam | Kuliner | Budaya
+Contoh luar negeri: PILIHAN: Paspor masih proses | Visa sudah siap | Belum tahu
+DILARANG memakai contoh kota Indonesia (Bogor, Jogja, Bandung, Bali) kalau tujuannya luar negeri.
+
 Ketika kamu sudah punya: (1) tujuan, (2) durasi atau tanggal, dan (3) budget ATAU minat, akhiri jawaban dengan satu baris tepat:
 <<SIAP>>
 Jangan pernah menulis <<SIAP>> sebelum ketiga hal itu jelas.`;
 
-// Dipanggil setelah tombol "Lanjut Buat Plan": AI yang menentukan data yang kurang.
-export const PLAN_FIELDS_SYSTEM_PROMPT = `Kamu diminta menentukan data yang MASIH DIBUTUHKAN untuk menyusun rencana perjalanan dari obrolan sebelumnya.
+// Dipanggil setelah tombol "Create Planning": AI yang memutuskan modul mana
+// dari 15 modul universal yang paling dibutuhkan, lalu menyusun pertanyaannya.
+export const PLAN_FIELDS_SYSTEM_PROMPT = `Kamu adalah form cerdas SETAPAK. Dari obrolan perjalanan sebelumnya, tentukan DATA yang MASIH DIBUTUHKAN dari 15 modul universal di bawah, lalu urutkan berdasarkan prioritas untuk trip ini.
+
+15 MODUL (id | no | nama):
+${MODULES.map((m) => `${m.id} | ${m.no} | ${m.name} (${m.label})`).join("\n")}
+
+ATURAN PRIORITAS (terapkan berurutan):
+1. Urutan dasar: 1 → 2 → 3 → 7 → 6 → 5 → 8 → 9 → 12 → 10 → 11 → 14 → 13 → 4 → 15.
+2. Lewati field yang sudah jelas dari obrolan. Kalau kota sudah disebut, jangan tanya kota lagi. Kalau durasi & budget sudah disebut, jangan tanya keduanya. "15 hari", "3 hari", "1 minggu", "seminggu" = durasi SUDAH jelas — DILARANG menanyakan "Berapa hari", "Tanggal atau durasi", atau "Kapan" lagi. Kotanya juga: "ke Jepang" berarti tujuan SUDAH jelas — jangan tanya "Kota atau wilayah tujuan?".
+3. KONTEKS LUAR NEGERI: modul 10 (Documents: paspor/visa) dan 12 (Safety) WAJIB masuk dalam maksimal 5 pertanyaan, ditempatkan tepat setelah modul 3 dan 7. Modul 11 (Packing) masuk kalau masih ada slot.
+4. KONTEKS KELUARGA/ANAK atau disebut alergi: modul 12 (Safety) WAJIB masuk, paling lambat di pertanyaan ke-4. Kalau ada alergi, tanyakan lewat modul 8 (Food).
+5. KONTEKS PETUALANGAN: modul 9 (Activities) dan 12 (Safety) naik sebelum modul 5.
+6. TRIP SINGKAT DALAM KOTA: modul 5 (Transport), 6 (Accommodation), dan 10 (Documents) boleh dilewati kalau tidak relevan.
+7. JANGAN menanyakan modul 4 (Itinerary), 13 (Booking), atau 15 (Documentation) — semuanya diisi otomatis setelah rencana jadi.
+8. Ambil 3 sampai 5 field paling prioritas. Satu field = satu pertanyaan singkat, ditanyakan satu per satu.
+9. Perjalanan DALAM NEGERI / dalam kota: DILARANG menanyakan modul 10 (Documents: paspor/visa) kecuali user memang menyebutnya.
+10. BACA KONTEKS EMOSIONAL: kalau user menyebut istri/suami/pasangan/berdua, sebut "berdua" atau "bareng istri" dalam pertanyaan. Kalau tujuannya Makkah/Palestina/ibadah, pakai kata "perjalanan"/"kunjungan"/"ibadah". DILARANG memakai kata "bermain", "main", atau "liburan bermain" — terdengar tidak menghormati konteks.
+11. DILARANG menanyakan ulang budget, tanggal/durasi, atau tema yang sudah disebut user di riwayat. Kalau sudah ada budget "< 5 juta", jangan tanya budget lagi — lanjut ke modul lain (akomodasi, transport, dokumen, makanan).
+
+CONTOH luar negeri: untuk "15 hari ke Jepang bareng keluarga, anak alergi", pilih overview(tema), budget(anggaran), documents(visa/paspor), safety(kondisi medis), food(makanan yang dihindari) — BUKAN menanyakan durasi (sudah 15 hari) atau kota tujuan (sudah Jepang), dan BUKAN mengisi semua slot dengan accommodation/transport.
+CONTOH lokal: untuk "main ke Bogor hari ini, budget 100rb, berdua", pilih overview(tema), transportation(cara pergi), food(preferensi), activities(yang mau dilakukan) — JANGAN tanya paspor/visa.
+
 Balas HANYA JSON array valid, tanpa markdown dan tanpa kalimat lain. Format tiap item:
-{"key":"city","label":"Kota tujuan","type":"text","placeholder":"mis. Bogor"}
-Aturan:
-- pilih 3 sampai 5 field yang benar-benar belum jelas,
-- jangan minta data yang sudah disebut user,
-- "type" hanya boleh: text, number, date, select,
-- untuk "select" sertakan "options": ["Pilihan 1", "Pilihan 2"],
-- "label" ditulis sebagai KALIMAT PERTANYAAN ramah yang langsung ditanyakan ke user (mis. "Berapa orang yang ikut, dan kira-kira budget kamu berapa?"),
-- urutan: jumlah orang & budget, tanggal/durasi, lalu minat (select Nature/Culture/Food) — lewati yang sudah jelas,
-- gunakan bahasa yang sama dengan obrolan.`;
+{"key":"tema","module":{"id":"overview","no":1,"name":"Trip Overview"},"label":"Trip ini temanya apa?","type":"select","options":["Santai","Keluarga","Petualangan"],"reason":"alasan singkat"}
+
+Aturan field:
+- "key" unik, snake_case, maksimal 24 karakter.
+- "module" WAJIB diisi dengan id, no, dan nama modul asal dari daftar di atas.
+- "label" = kalimat pertanyaan ramah, SPESIFIK untuk trip ini, maksimal 90 karakter. Jangan pertanyaan generik seperti "Kota atau wilayah tujuan?" kalau kota sudah jelas di obrolan.
+- "type" hanya boleh: text, number, date, select.
+- "options" WAJIB ada untuk SEMUA type (2-6 pilihan): untuk select = pilihan jawaban; untuk text/number/date = contoh jawaban cepat yang masuk akal untuk trip ini.
+- Contoh options yang BENAR untuk Jepang: ["Tokyo", "Kyoto", "Osaka"] atau ["5 hari", "1 minggu", "2 minggu"].
+- DILARANG mengisi options dengan Bogor, Jogja, Bandung, atau Bali kalau tujuannya luar negeri. DILARANG pula memakai contoh Jepang untuk trip dalam negeri.
+- "reason" maksimal 60 karakter, alasan kenapa field ini prioritas untuk trip ini.
+- Gunakan bahasa yang sama dengan obrolan.`;
 
 // Dipanggil setelah user mengisi field: AI menyusun plan terakhir.
 export const CREATE_PLAN_SYSTEM_PROMPT = `Kamu adalah mesin penyusun rencana perjalanan SETAPAK.
 Balas HANYA JSON valid, tanpa markdown dan tanpa penjelasan. Format persis:
 {
-  "city": "Nama kota",
+  "city": "Nama kota atau gabungan kota",
   "days": [
     { "title": "Hari 1", "places": [
       { "name": "Nama tempat nyata", "category": "nature", "cost": 25000, "durationHours": 2, "address": "Alamat singkat" }
     ] }
   ],
-  "totalCost": 123000
+  "totalCost": 123000,
+  "modules": {
+    "transportation": { "items": [{ "type": "Pergi", "mode": "Pesawat", "from": "Jakarta", "to": "Jeddah", "cost": 3500000 }] },
+    "food": { "items": [{ "name": "Nasi goreng", "place": "Cari resto Indonesia dekat masjid", "meal": "Makan siang", "cost": 60000 }] },
+    "documents": { "items": [{ "name": "Paspor", "type": "Paspor", "note": "Cek masa berlaku" }] },
+    "budget": { "planned": 30000000, "items": [{ "label": "Tiket pesawat", "category": "Transport", "amount": 7000000 }] }
+  }
 }
-Aturan: 1 sampai 7 hari, maksimal 3 tempat per hari, kategori hanya nature|food|culture|beach|adventure|lainnya, cost angka Rupiah (0 kalau gratis), dan pakai nama tempat yang benar-benar ada.`;
+Aturan:
+- Jumlah hari 1 sampai 14. Kalau ada PROFIL TRIP dengan jumlah hari, ikuti angka itu apa adanya (misalnya 10 hari = 10 entri "days"). Jangan memotong jadi 7 hari.
+- Maksimal 3 tempat per hari. Kategori hanya nature|food|culture|beach|adventure|lainnya. cost angka Rupiah (0 kalau gratis). Pakai nama tempat yang benar-benar ada; jangan mengarang restoran beralamat.
+- Isi "modules" hanya dengan data yang benar-benar diketahui dari obrolan; boleh kosong/absen kalau tidak ada. Jangan mengulang pertanyaan yang sudah ada di PROFIL TRIP.
+- Jangan masukkan syarat pandemi (vaksin COVID-19, PCR, karantina) ke dokumen atau catatan apa pun. Pakai "cek syarat resmi terbaru" bila perlu.`;
 
 const TIMEOUT_MS = 12000;
 // gemini-2.5-flash sudah tidak tersedia untuk akun baru (404).
@@ -147,7 +230,8 @@ async function askGemini({
     .join("")
     .trim();
   if (!text) throw new Error("Gemini balasan kosong");
-  return text;
+  // MAX_TOKENS = jawaban dipotong meski kalimatnya belum selesai.
+  return { reply: text, truncated: data.candidates?.[0]?.finishReason === "MAX_TOKENS" };
 }
 
 async function askGroq({
@@ -182,7 +266,7 @@ async function askGroq({
   const data = await response.json();
   const text = data.choices?.[0]?.message?.content?.trim();
   if (!text) throw new Error("Groq balasan kosong");
-  return text;
+  return { reply: text, truncated: data.choices?.[0]?.finish_reason === "length" };
 }
 
 async function askOpenRouter({
@@ -216,41 +300,86 @@ async function askOpenRouter({
   const data = await response.json();
   const text = data.choices?.[0]?.message?.content?.trim();
   if (!text) throw new Error("OpenRouter balasan kosong");
-  return text;
+  return { reply: text, truncated: data.choices?.[0]?.finish_reason === "length" };
 }
 
 /**
  * Coba provider satu per satu. Kalau semua gagal / kuota habis, kembalikan null.
  */
-export async function askAI({ message, history, env, systemPrompt, maxTokens }) {
+export async function askAI({
+  message,
+  history,
+  env,
+  systemPrompt,
+  maxTokens,
+  providerOrder,
+  allowContinue = false,
+}) {
   const daftar = {
     gemini: { key: env.GEMINI_API_KEY, call: askGemini },
     groq: { key: env.GROQ_API_KEY, call: askGroq },
     openrouter: { key: env.OPENROUTER_API_KEY, call: askOpenRouter },
   };
 
-  // Urutan bisa diubah dari .env, misalnya AI_PROVIDER_ORDER=gemini,groq,openrouter
-  const urutan = String(env.AI_PROVIDER_ORDER || "groq,gemini,openrouter")
-    .split(",")
-    .map((name) => name.trim().toLowerCase())
+  // Urutan default bisa diubah dari .env. Jawaban riset panjang memakai Gemini
+  // lebih dulu lewat providerOrder; tetap fallback otomatis kalau kena 429.
+  const urutan = (Array.isArray(providerOrder) && providerOrder.length
+    ? providerOrder
+    : String(env.AI_PROVIDER_ORDER || "groq,gemini,openrouter").split(",")
+  )
+    .map((name) => String(name).trim().toLowerCase())
     .filter((name) => daftar[name]);
 
   const providers = urutan.map((name) => ({ name, ...daftar[name] }));
 
+  // Error sementara (429/5xx) sering hilang dalam hitungan detik. Coba ulang
+  // sekali sebelum pindah provider, supaya user tidak melihat pesan "sibuk"
+  // hanya karena jeda sesaat pada token bucket / overload.
+  const sementara = /(429|500|502|503|504|timeout|timed out|abort)/i;
+
   for (const provider of providers) {
     if (!provider.key) continue;
 
-    try {
-      const reply = await provider.call({
-        message,
-        history,
-        env,
-        systemPrompt,
-        maxTokens,
-      });
-      return { reply, source: provider.name };
-    } catch (error) {
-      console.warn(`[setapak] ${provider.name} gagal: ${error.message}`);
+    for (let percobaan = 0; percobaan < 2; percobaan += 1) {
+      try {
+        const hasil = await provider.call({
+          message,
+          history,
+          env,
+          systemPrompt,
+          maxTokens,
+        });
+        const reply = typeof hasil === "string" ? hasil : hasil?.reply;
+        if (!reply) throw new Error(`${provider.name} balasan kosong`);
+
+        // Jawaban riset boleh panjang. Kalau provider memotongnya, minta satu
+        // lanjutan dari titik terakhir supaya user tidak melihat daftar yang
+        // berhenti di tengah ("Tiket pesawat (Jakarta-Jeddah), ...").
+        if (allowContinue && typeof hasil === "object" && hasil.truncated) {
+          const sambung = await provider.call({
+            message:
+              "Jawaban sebelumnya terpotong. Lanjutkan tepat dari potongan terakhir ini dan selesaikan sampai tuntas. Jangan ulang bagian yang sudah selesai.\n\nPotongan terakhir:\n" +
+              reply.slice(-600),
+            history: [...(history || []), { role: "assistant", text: reply }],
+            env,
+            systemPrompt,
+            maxTokens: Math.min(maxTokens, 1200),
+          });
+          const sambungTeks = typeof sambung === "string" ? sambung : sambung?.reply;
+          if (sambungTeks) {
+            return { reply: `${reply}\n${sambungTeks}`, source: provider.name };
+          }
+        }
+
+        return { reply, source: provider.name };
+      } catch (error) {
+        console.warn(
+          `[setapak] ${provider.name} gagal (percobaan ${percobaan + 1}): ${error.message}`
+        );
+        const bisaUlang = sementara.test(error.message) && percobaan === 0;
+        if (!bisaUlang) break;
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
     }
   }
 

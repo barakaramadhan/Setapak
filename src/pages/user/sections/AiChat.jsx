@@ -6,6 +6,7 @@ import {
   askPlanFields,
   askCreatePlan,
   saveLastPlan,
+  extractTripFacts,
 } from "../../../api/chat";
 import { planTrip, resolveCity, cityLabels } from "../../../api/plannerEngine";
 import MapPane from "../../../components/ui/MapPane";
@@ -54,12 +55,6 @@ const suggestions = [
   "3 hari di Yogyakarta budget 300rb",
   "Hidden gems di Bogor",
   "5 days in Japan",
-];
-
-const FIELD_DARURAT = [
-  { key: "people", label: "Seru! Berapa orang yang ikut, dan kira-kira budget kamu berapa?", type: "text", placeholder: "" },
-  { key: "dates", label: "Oke! Mau berapa hari, atau dari tanggal berapa sampai tanggal berapa?", type: "text", placeholder: "" },
-  { key: "interests", label: "Terakhir, kamu lebih suka suasana yang seperti apa?", type: "select", options: ["Nature", "Culture", "Food"] },
 ];
 
 // Inline markdown: **tebal**, *miring*, `kode`, dan [teks](tautan).
@@ -224,6 +219,111 @@ function Avatar({ ai, src }) {
   );
 }
 
+// Semua pilihan cepat berasal dari AI (field "options" / baris PILIHAN:).
+// Tidak ada contoh hardcoded — supaya trip ke Jepang tidak ditawari Bogor.
+function opsiAi(field) {
+  return Array.isArray(field?.options) ? field.options : [];
+}
+
+function WizardForm({ field, index, total, modules = [], onSubmit, ringkas = false }) {
+  const [value, setValue] = useState("");
+  const [terkirim, setTerkirim] = useState(false);
+  const opsi = opsiAi(field);
+
+  const kirim = (teks) => {
+    const bersih = String(teks ?? value).trim();
+    if (!bersih || terkirim) return;
+    setTerkirim(true);
+    setValue("");
+    onSubmit(bersih);
+  };
+
+  return (
+    <div className="mt-3 rounded-2xl border border-[#83ADD0]/40 bg-white p-3 shadow-sm">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-[#6f9abf]">
+          <i className="fi fi-rr-list-check text-[11px] leading-none"></i>
+          {ringkas
+            ? "Jawab pertanyaan AI"
+            : field?.module?.name
+              ? `Modul ${field.module.no} · ${field.module.name}`
+              : "Isi untuk lanjut"}
+        </span>
+        {!ringkas ? (
+          <span className="text-[10px] font-semibold text-grey-light/60">
+            {index + 1} / {total}
+          </span>
+        ) : null}
+      </div>
+      {!ringkas && index === 0 && modules.length > 1 ? (
+        <div className="mb-2 flex flex-wrap gap-1">
+          {modules.map((m, i) => (
+            <span
+              key={`${m?.id || m?.name || "modul"}-${i}`}
+              className="rounded-full bg-grey-label/20 px-2 py-0.5 text-[9px] font-semibold text-grey-light/70"
+            >
+              {m?.no ? `${m.no}. ` : ""}{m?.name || "Modul"}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {!ringkas ? (
+        <div className="mb-2 h-1 overflow-hidden rounded-full bg-grey-label/25">
+          <div
+            className="h-full rounded-full bg-[#83ADD0] transition-all"
+            style={{ width: `${Math.round(((index + 1) / total) * 100)}%` }}
+          />
+        </div>
+      ) : null}
+      {!ringkas && field?.reason ? (
+        <p className="mb-2 text-[10px] italic text-grey-light/60">
+          Prioritas: {field.reason}
+        </p>
+      ) : null}
+      {opsi.length ? (
+        <div className="flex flex-wrap gap-2">
+          {opsi.map((item) => (
+            <button
+              key={item}
+              type="button"
+              disabled={terkirim}
+              onClick={() => kirim(item)}
+              className="rounded-xl border border-[#83ADD0] bg-[#83ADD0]/5 px-3 py-2 text-xs font-semibold text-[#6f9abf] transition-colors hover:bg-[#83ADD0]/15 disabled:opacity-50"
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          kirim();
+        }}
+        className={`flex items-center gap-2 ${opsi.length ? "mt-3 border-t border-grey-label/30 pt-3" : ""}`}
+      >
+        <InputAll
+          type="text"
+          value={value}
+          maxLength={120}
+          disabled={terkirim}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Atau ketik jawabanmu..."
+          className="min-w-0 flex-1 !px-2 !py-1.5 text-sm text-grey-light placeholder:text-grey-light/60"
+        />
+        <button
+          type="submit"
+          disabled={terkirim || !value.trim()}
+          aria-label="Kirim jawaban"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#83ADD0] text-white disabled:opacity-40"
+        >
+          <i className="fi fi-rr-arrow-small-up text-lg leading-none pt-0.5"></i>
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function AiChatInner() {
   const [mode, setMode] = useState("search"); // "search" = cari info, "plan" = susun rencana
   const [showMap, setShowMap] = useState(false);
@@ -246,6 +346,9 @@ function AiChatInner() {
 
   const messages = useMemo(() => activeChat?.messages || [], [activeChat]);
   const kota = useMemo(() => kotaDariObrolan(messages), [messages]);
+  // Profil trip dibaca dari SEMUA pesan user. Fakta ini yang dikirim ke AI
+  // supaya kota/durasi/budget/makanan tidak ditanyakan ulang.
+  const facts = useMemo(() => extractTripFacts(messages), [messages]);
   const inisial = (displayName(user) || "U").slice(0, 1).toUpperCase();
 
   // Tempat terakhir yang punya koordinat -> ditampilkan di peta kanan.
@@ -294,7 +397,6 @@ function AiChatInner() {
     (field) =>
       kirimAi({
         text: field.label,
-        options: field.type === "select" ? field.options || [] : undefined,
         wizardKey: field.key,
       }),
     [kirimAi]
@@ -315,7 +417,11 @@ function AiChatInner() {
         setWiz({ ...wiz, values, stage: "summary" });
         await kirimAi({
           text: "Siap, semua yang aku butuhkan sudah lengkap. Cek ringkasannya dulu ya.",
-          summary: wiz.fields.map((f) => ({ label: f.label, value: values[f.key] || "-" })),
+          summary: wiz.fields.map((f) => ({
+            label: f.label,
+            value: values[f.key] || "-",
+            modul: f.module?.name || "",
+          })),
         });
       }
     },
@@ -352,13 +458,16 @@ function AiChatInner() {
         const result = await askSetapak(clean, history, { mode, showMap });
         const prefill = mode === "plan" ? null : buildTripPrefill(clean, result.plan);
         if (prefill && result.plan) prefill.plan = normalizePlan(result.plan, prefill);
-        if (mode === "plan" && result.ready) setReadyForPlan(true);
+        // Searching untuk permintaan rencana mengembalikan handoff: kartu
+        // Planning langsung muncul dengan profil yang sudah terisi.
+        if (result.handoff || (mode === "plan" && result.ready)) setReadyForPlan(true);
 
         await appendMessage(chatId, {
           id: crypto.randomUUID(),
           role: "ai",
           text: result.reply,
           source: result.source,
+          options: result.options, // pilihan cepat BUILT BY AI
           prefill,
           mapPlaces: result.mapPlaces,
         });
@@ -452,7 +561,11 @@ function AiChatInner() {
     setIsLoading(true);
     try {
       const { fields } = await askPlanFields(riwayatObrolan());
-      const daftar = (fields.length ? fields : FIELD_DARURAT).slice(0, 5);
+      const daftar = fields.slice(0, 5);
+      if (!daftar.length) {
+        await kirimAi({ text: "Aku belum bisa menentukan pertanyaan lanjutan. Coba lagi ya." });
+        return;
+      }
       setReadyForPlan(false);
       setWiz({ fields: daftar, idx: 0, values: {}, stage: "ask" });
       await tanyaField(daftar[0]);
@@ -479,7 +592,7 @@ function AiChatInner() {
       let plan = lokal.handled ? lokal.plan : null;
       let sumber = lokal.handled ? "engine" : null;
       if (!plan) {
-        const hasilAI = await askCreatePlan(ringkasan);
+        const hasilAI = await askCreatePlan(ringkasan, facts);
         plan = hasilAI.plan;
         sumber = hasilAI.source;
       }
@@ -496,7 +609,11 @@ function AiChatInner() {
       const hariDariRentang = rentang
         ? Math.round((new Date(rentang.end) - new Date(rentang.start)) / 86400000) + 1
         : 0;
-      const hari = Math.min(7, Math.max(1, hariDariRentang || Number(cocokHari?.[1]) || plan.days.length));
+      // Gunakan durasi dari profil trip: rencana 10 hari tidak boleh jadi 7 hari.
+      const hari = Math.min(
+        14,
+        Math.max(1, facts.days || hariDariRentang || Number(cocokHari?.[1]) || plan.days.length)
+      );
       const endDate = rentang?.end || addDaysToKey(tanggal, hari - 1);
       const kotaTrip = plan.city || kota || "";
       const judul = `Trip ke ${kotaTrip || "perjalanan"} · ${hari} hari`;
@@ -532,6 +649,13 @@ function AiChatInner() {
   };
 
   const isEmpty = messages.length === 0;
+  const ringkasanFakta = [
+    facts.destinationLabel || kota || null,
+    facts.days ? `${facts.days} hari` : null,
+    facts.food || null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const opsiAktif = wiz?.stage === "ask" ? wiz.fields[wiz.idx] : null;
   const terakhirId = messages[messages.length - 1]?.id;
   const petaTampil = showMap;
@@ -604,7 +728,7 @@ function AiChatInner() {
                 {salam()}, {displayName(user)}! Where are we heading next?
               </h1>
               <p className="mt-2 text-sm text-grey-light/60">
-                Saya hanya membahas perjalanan. Ketik <b>/</b> untuk mode Planning, lalu pilih chat lain sebagai konteks.
+                Boleh ngobrol apa dulu juga. Kalau mau disusun jadi rencana, ketik <b>/</b> atau pilih mode Planning.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {suggestions.map((item) => (
@@ -638,19 +762,27 @@ function AiChatInner() {
                     <div className="min-w-0 flex-1 pt-1">
                       {ai ? <AiText text={msg.text} /> : <p className="text-sm text-grey-light">{msg.text}</p>}
 
-                      {msg.options?.length && msg.id === terakhirId && opsiAktif ? (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {msg.options.map((opsi) => (
-                            <button
-                              key={opsi}
-                              type="button"
-                              onClick={() => jawabWizard(opsi)}
-                              className="rounded-full border border-[#83ADD0] bg-white px-3 py-1 text-xs font-semibold text-[#6f9abf] hover:bg-[#83ADD0]/10"
-                            >
-                              {opsi}
-                            </button>
-                          ))}
-                        </div>
+                      {msg.wizardKey && msg.id === terakhirId && opsiAktif ? (
+                        <WizardForm
+                          field={opsiAktif}
+                          index={wiz.idx}
+                          total={wiz.fields.length}
+                          modules={wiz.fields.map((f) => f.module).filter(Boolean)}
+                          onSubmit={jawabWizard}
+                        />
+                      ) : null}
+
+                      {ai &&
+                      msg.id === terakhirId &&
+                      !wiz &&
+                      !isLoading &&
+                      Array.isArray(msg.options) &&
+                      msg.options.length ? (
+                        <WizardForm
+                          ringkas
+                          field={{ options: msg.options }}
+                          onSubmit={sendMessage}
+                        />
                       ) : null}
 
                       {msg.summary ? (
@@ -659,6 +791,11 @@ function AiChatInner() {
                           <div className="mt-2 grid grid-cols-2 gap-2 max-sm:grid-cols-1">
                             {msg.summary.map((row) => (
                               <div key={row.label} className="rounded-xl border border-grey-label/50 px-3 py-2">
+                                {row.modul ? (
+                                  <p className="text-[10px] font-bold uppercase tracking-wide text-[#6f9abf]">
+                                    {row.modul}
+                                  </p>
+                                ) : null}
                                 <p className="text-[10px] text-grey-light/60">{row.label}</p>
                                 <p className="text-sm font-semibold text-grey-light">{row.value}</p>
                               </div>
@@ -722,7 +859,9 @@ function AiChatInner() {
                 <div className="flex items-center justify-between gap-4 rounded-2xl border border-grey-label/30 bg-white p-4 shadow-md">
                   <div>
                     <p className="text-sm font-bold text-grey-light">
-                      Looks like you’re headed to {kota || "your destination"}.
+                      {ringkasanFakta
+                        ? `Siap lanjut: ${ringkasanFakta}.`
+                        : `Looks like you’re headed to ${kota || "your destination"}.`}
                     </p>
                     <p className="text-xs text-grey-light/70">
                       Create a trip to keep all your travel plans in one place, stash your ideas and customize how Setapak helps you.

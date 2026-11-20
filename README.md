@@ -180,11 +180,14 @@ cache memory. Setelah itu pencarian berikutnya dijawab AI lagi dan hasilnya disi
 kembali. Tombol **reload** melakukan hal yang sama untuk satu kota: melewati data lama,
 minta tempat lain ke AI (nama yang sedang tampil dilarang dipakai), lalu menimpaninya.
 
-Kuota dijaga dengan: batas token (400 untuk chat, 800 untuk rekomendasi), riwayat
-cukup 8 pesan, input maksimal 500 karakter, cache 1 hari, dan rate limit 10
-request/menit per IP. Membesar-besarkan batas token **tidak dikenakan biaya** di
-free tier, tapi hanya membuat satu jawaban lebih panjang — jadi kuota harian lebih
-cepat habis. Itu sebabnya batasnya sengaja tetap kecil.
+Kuota dijaga dengan: batas token (500 untuk chat singkat, 2000 untuk riset rencana
+di mode Searching, 2600 untuk membuat rencana, 1600 untuk rekomendasi), riwayat
+cukup 8 pesan, input maksimal 500 karakter, dan rate limit 10 request/menit per IP.
+**Jawaban riset panjang dan pembuatan rencana memakai Gemini lebih dulu** lewat
+`providerOrder`; kalau kena 429, otomatis jatuh ke Groq lalu OpenRouter. Kalau
+jawaban riset tetap terpotong (`MAX_TOKENS` / `finish_reason: length`), AI diminta
+melanjutkan sekali dari titik terakhir. Pertanyaan singkat tetap memakai urutan
+provider dari `.env` (default: Groq duluan).
 
 ### Catatan OpenRouter (cadangan ke-3)
 

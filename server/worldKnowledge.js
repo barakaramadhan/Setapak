@@ -366,6 +366,7 @@ export function jawabanDuniaDariPesan(normalized) {
       kotaKey,
       label,
       places: alternatif,
+      fakta,
       reply:
         `## ${fakta.nama} tidak ada di ${label}\n\n` +
         `Tidak ada. **${fakta.nama}** ada di **${fakta.lokasi}**` +
@@ -381,6 +382,7 @@ export function jawabanDuniaDariPesan(normalized) {
       kotaKey,
       label,
       places: daftar,
+      fakta,
       reply:
         `## ${fakta.nama}\n\n` +
         `Ya, **${fakta.nama}** ada di **${fakta.lokasi}**.\n\n` +
@@ -392,6 +394,7 @@ export function jawabanDuniaDariPesan(normalized) {
     kotaKey,
     label,
     places: daftar,
+    fakta,
     reply:
       `## Tempat di ${label}\n\n${barisTempat(daftar)}\n\n` +
       `## Kenapa ini?\n${kota.intro}\n\n` +
