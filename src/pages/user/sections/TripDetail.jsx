@@ -277,7 +277,7 @@ function TripDetail() {
           </div>
 
           {/* Kotak Budget */}
-          <div className="p-6 border border-grey-label/70 rounded-2xl bg-white">
+          <div className="p-6 border border-grey-label/70 rounded-4xl bg-white">
             <h3 className="font-jakarta font-bold text-grey-light text-base mb-2">Budget</h3>
             <p className="font-jakarta font-bold text-2xl">
               {tripData.budgetDetails.usedFormatted}
