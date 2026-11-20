@@ -176,7 +176,7 @@ function HomeUser() {
 
   return (
     // [PERBAIKAN 1]: Ditambah max-w-7xl mx-auto w-full agar layout terpusat rapi
-    <section className="font-jakarta max-w-7xl mx-auto w-full">
+    <section className="font-jakarta max-w-7xl mx-auto w-full bg-bright-white">
       {/* bagian atas: sapaan + lonceng + profil */}
       <header className="flex items-start justify-between px-10 pt-9">
         <div>
@@ -328,7 +328,7 @@ function HomeUser() {
                     onClick={() => setSelectedDate(date)}
                     className={`h-9 rounded-xl text-base font-jakarta font-medium text-grey-light/80 ${
                       isSelected
-                        ? "bg-[#83ADD0] text-white"
+                        ? "bg-arctic-blue text-white"
                         : "text-grey-light hover:bg-grey-label/30"
                     }`}
                   >
@@ -351,7 +351,7 @@ function HomeUser() {
                   key={item.id}
                   className="flex items-center gap-2 rounded-2xl border-2 border-grey-label/80 bg-white px-3 py-3"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#83ADD0] text-white">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-arctic-blue text-white">
                     <i className="fi fi-rr-marker leading-none text-sm pt-1"></i>
                   </span>
                   <div className="min-w-0">
@@ -384,7 +384,7 @@ function HomeUser() {
                 type="button"
                 onClick={() => setMode(m)}
                 className={`rounded-full px-3 py-1 text-sm font-jakarta font-medium capitalize ${
-                  mode === m ? "bg-[#83ADD0] text-white" : "text-grey-light/80"
+                  mode === m ? "bg-arctic-blue text-white" : "text-grey-light/80"
                 }`}
               >
                 {m}

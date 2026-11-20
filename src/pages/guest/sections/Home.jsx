@@ -13,7 +13,7 @@ function Home() {
   }, []);
 
   return (
-      <section className="relative grid w-full overflow-hidden">
+      <section className="relative z-10 grid w-full overflow-hidden">
         <img
           src={ImageLangit}
           alt="Langit Home"

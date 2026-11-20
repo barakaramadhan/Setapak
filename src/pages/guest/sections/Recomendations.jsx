@@ -8,14 +8,14 @@ function Recomendations() {
   const recomendations = [
     {
       id: 1,
-      image: ImageCard,
+      image: ImageCard2,
       title: "Rome",
       description: "Rome Metropolitan City, Italy",
       ratting: 4.5,
     },
     {
       id: 2,
-      image: ImageCard2,
+      image: ImageCard,
       title: "Braga",
       description: "Bandung, West Java, Indonesia",
       ratting: 4.5,

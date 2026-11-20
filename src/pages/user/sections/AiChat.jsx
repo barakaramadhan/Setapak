@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import InputAll from "../../../components/ui/InputAll";
+import OutlineButton from "../../../components/ui/OutlineButton";
 
 const dummyUser = { name: "Fulan" };
 
@@ -66,7 +67,7 @@ function AiChat() {
   const isEmpty = messages.length === 0;
 
   return (
-    <section className="font-jakarta mx-auto flex h-screen w-full max-w-4xl flex-col px-10 pb-6 max-sm:px-4">
+    <section className="font-jakarta mx-auto flex h-screen w-full max-w-4xl flex-col px-10 pb-6 max-sm:px-4 bg-bright-white">
       {/* area pesan / sapaan awal */}
       <div className="flex-1 overflow-y-auto pt-10">
         {isEmpty ? (
@@ -81,14 +82,12 @@ function AiChat() {
 
             <div className="mt-3 flex flex-wrap gap-2">
               {suggestions.map((item) => (
-                <button
+                <OutlineButton
                   key={item}
-                  type="button"
+                  title={item}
                   onClick={() => sendMessage(item)}
-                  className="rounded-2xl border border-grey-label/80 px-3 py-2 text-sm font-medium text-grey-light hover:bg-grey-label/15"
-                >
-                  {item}
-                </button>
+                  className="rounded-2xl border-grey-label/80 px-3 py-2 text-sm font-medium text-grey-light hover:bg-grey-label/15"
+                />
               ))}
             </div>
           </div>
@@ -147,7 +146,7 @@ function AiChat() {
           type="button"
           onClick={() => sendMessage(input)}
           disabled={isLoading || !input.trim()}
-          className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-[#83ADD0] text-white disabled:opacity-50"
+          className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-arctic-blue text-white disabled:opacity-50"
         >
           <i className="fi fi-rr-arrow-small-up text-xl leading-none pt-1"></i>
         </button>

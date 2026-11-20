@@ -26,3 +26,9 @@
   --color-grey-label: #969696;
   --color-arctic-blue: #83ADD0
 }
+
+@layer base{
+  body{
+    @apply bg-bright-white;
+  }
+}

@@ -4,16 +4,16 @@ import SectionMarker from '../../../components/ui/SectionMarker'
 
 function About() {
   return (
-    <section className="relative overflow-hidden bg-bright-white pt-32 pb-32 px-52">
+    <section className="relative overflow-hidden bg-bright-white -mt-8 pt-40 pb-32 px-52">
       <img
         src={MapsHome}
         alt=""
-        className="absolute -left-20 -top-40 z-0 w-250 h-200 object-contain opacity-20"
+        className="absolute -left-20 -top-32 z-0 w-250 h-200 object-contain opacity-20"
       />
       <div className="relative z-10 flex flex-col items-end gap-6">
         <div className="flex justify-center gap-10">
           <div className="flex gap-3 items-center">
-            <i className="fi fi-sr-users-alt text-base text-[#83ADD0] flex"></i>
+            <i className="fi fi-sr-users-alt text-base text-arctic-blue flex"></i>
             <p className="font-jakarta font-semibold text-sm text-grey-light">
               We are Setapak
             </p>

@@ -35,7 +35,7 @@ function SignIn() {
                 <p className="font-jakarta font-normal text-base text-grey-light">
                   Password
                 </p>
-                <a href="/forgot-password" className="text-sm text-[#83ADD0] font-jakarta font-normal">
+                <a href="/forgot-password" className="text-sm text-arctic-blue font-jakarta font-normal">
                   Forgot your password?
                 </a>
               </div>
@@ -57,7 +57,7 @@ function SignIn() {
 
           <h3 className="text-center mt-6 font-jakarta font-normal text-base text-grey-light">
             Don't have an account yet?{" "}
-            <a href="/sign-up" className="text-[#83ADD0] font-jakarta font-bold text-base">
+            <a href="/sign-up" className="text-arctic-blue font-jakarta font-bold text-base">
               Sign Up
             </a>
           </h3>

@@ -7,7 +7,7 @@ import FillButton from "../../../components/ui/FillButton";
 // import ImagePlan4 from "../../../assets/images/imageplan4.webp"
 function TripPlanning() {
   return (
-    <section className="px-20">
+    <section className="px-20 bg-bright-white">
       <div>
         <SectionMarker title="Plan a trip" className="mb-3"/>
         <h1 className="font-jakarta font-bold text-5xl text-grey-light max-w-2xl leading-tight pb-2">

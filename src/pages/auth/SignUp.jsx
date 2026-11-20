@@ -72,7 +72,7 @@ function SignUp() {
             Don't have an account yet?{" "}
             <a
               href="/sign-up"
-              className="text-[#83ADD0] font-jakarta font-bold text-base"
+              className="text-arctic-blue font-jakarta font-bold text-base"
             >
               Sign In
             </a>
