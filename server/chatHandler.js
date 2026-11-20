@@ -36,6 +36,32 @@ import {
   getSavedRecommendations,
   saveRecommendations,
 } from "./plannerStore.js";
+import {
+  pertanyaanDobel,
+  terpotong,
+  rapikanAkhir,
+  catatanKoreksi,
+} from "./qualityGuard.js";
+import {
+  kumpulkanLapangan,
+  perkuatRencana,
+  blokKebutuhan,
+  cocokkanNama,
+  tempatDalamTeks,
+  keKartuPeta,
+} from "./liveKnowledge.js";
+
+// Pesan yang layak diberi data lapangan (peta nyata). Obrolan ringan tidak.
+const TOPIK_PERJALANAN =
+  /(wisata|tempat|jalan-jalan|liburan|trip|itinerar|rute|makan|kuliner|hotel|nginap|menginap|penginapan|cuaca|biaya|budget|rencana|rekomendasi|destinasi|kunjung|dekat|murah|gratis|umroh|umrah|ibadah|masjid|pantai|gunung|museum|taman|seru|worth|visit|things to do|where to|eat|stay|berapa hari|hari di|ada apa|mau ke|pergi ke|ke sana)/i;
+
+/** Teks yang HANYA ditulis user (bukan jawaban AI), dipakai membaca kebutuhan. */
+function teksUser(history = [], message = "") {
+  return [
+    ...history.filter((h) => (h?.role || "user") === "user").map((h) => h?.text || ""),
+    message,
+  ].join(" ");
+}
 
 const RATE_WINDOW = 60 * 1000; // 1 menit
 const RATE_LIMIT = 10; // maksimal 10 request/menit per IP
@@ -506,6 +532,11 @@ function parsePlanJson(text, fakta = null) {
             cost: Math.max(0, Number(tempat?.cost) || 0),
             durationHours: Math.max(1, Number(tempat?.durationHours) || 2),
             address: String(tempat?.address || "").slice(0, 140),
+            ref: tempat?.ref ? String(tempat.ref).slice(0, 8) : null,
+            why: String(tempat?.why || "").slice(0, 100),
+            startTime: /^\d{1,2}:\d{2}$/.test(String(tempat?.startTime || ""))
+              ? String(tempat.startTime)
+              : "",
           })),
       })),
       totalCost: Math.max(0, Number(raw.totalCost) || 0),
@@ -769,6 +800,7 @@ Ketika pesan user memuat "DATA TERVERIFIKASI SETAPAK", perlakukan data itu sebag
 - DILARANG mengganti destinasi yang ditanya (user cari Kuta, jawab Kuta — jangan Bali secara umum).
 - Kalau user menyebut tempat yang tidak ada di daftar, jawab terus terang "tidak ada", lalu sebut alternatif dari daftar.
 - Kalau ada catatan FAKTA LOKASI, ikuti itu apa adanya.
+Ketika pesan memuat "DATA LAPANGAN" (peta nyata OpenStreetMap + panduan + cuaca), itu juga sumber kebenaran: nama yang ada di salah satu dari dua daftar boleh dipakai. Kalau keduanya bertentangan, DATA TERVERIFIKASI SETAPAK menang. Ikuti "CARA PAKAI DATA LAPANGAN" dan blok KEBUTUHAN bila ada.
 Tetap jawab ramah dan pakai format Markdown yang diminta system prompt. Ikuti panjang jawaban yang ditentukan system prompt (boleh panjang untuk riset rencana).`;
 
 function konteksTerverifikasi({ label, daftar = [], area = null, fakta = null, batas = 5 }) {
@@ -1106,9 +1138,33 @@ export async function handleChatRequest(req, res, env = process.env) {
             ? `\n\nNama tempat yang BOLEH dipakai HANYA ini (salin alamatnya apa adanya):\n${barisLokal(daftarLokal)}\nJangan pakai nama atau alamat di luar daftar. Tempat kategori food masuk "Coffe And Snacks", sisanya masuk "Outdoor parks & Trials". Jangan mengulang tempat yang sama di dua kategori.`
             : "";
 
+        // Kota di luar data kurasi: nama tempat diambil dari peta nyata (bukan karangan AI).
+        let kandidatLive = [];
+        if (!daftarLokal.length && areaMode === "in") {
+          const lap = await kumpulkanLapangan({
+            message: city,
+            fakta: { destinations: [city] },
+            pakaiPesan: false,
+            ringan: true,
+            batasMs: 6000,
+          });
+          kandidatLive = (lap?.places || []).filter(
+            (item) => !namaLama.includes(item.name)
+          );
+        }
+        const aturanLive = kandidatLive.length
+          ? `\n\nNama tempat yang BOLEH dipakai HANYA ini (peta nyata, salin nama persis):\n${kandidatLive
+              .slice(0, 24)
+              .map(
+                (item) =>
+                  `- ${item.name} | ${item.alamat || `${item.jarak.toFixed(1)} km dari pusat`} | kategori ${item.jenis === "kuliner" ? "food" : "outdoor"}`
+              )
+              .join("\n")}\nTempat kategori food masuk "Coffe And Snacks", sisanya "Outdoor parks & Trials". Jangan mengulang tempat yang sama di dua kategori.`
+          : "";
+
         const aiMessage = `Beri rekomendasi tempat ${
           areaMode === "in" ? "di dalam kota" : "di sekitar luar kota"
-        } ${city}. Rating minimal ${minRating}. Isi tepat 4 tempat di dua kategori: Coffe And Snacks dan Outdoor parks & Trials. Urutkan dari rating tertinggi. Setiap tempat WAJIB punya "image" berupa URL langsung ke file gambar (.jpg/.png/.webp), jangan kosong. Balas JSON sesuai format.${aturanNama}`;
+        } ${city}. Rating minimal ${minRating}. Isi tepat 4 tempat di dua kategori: Coffe And Snacks dan Outdoor parks & Trials. Urutkan dari rating tertinggi. Setiap tempat WAJIB punya "image" berupa URL langsung ke file gambar (.jpg/.png/.webp), jangan kosong. Balas JSON sesuai format.${aturanNama}${aturanLive}`;
 
         const result = await askAI({
           message: aiMessage,
@@ -1139,6 +1195,19 @@ export async function handleChatRequest(req, res, env = process.env) {
                   address: asli.address,
                   image: asli.image,
                   mapsUrl: asli.mapsUrl,
+                };
+              }
+              const live = kandidatLive.length
+                ? cocokkanNama(item.name, kandidatLive)
+                : null;
+              if (live) {
+                return {
+                  ...item,
+                  name: live.name,
+                  address: live.alamat || item.address,
+                  image: live.foto || null, // foto resmi dari tag OSM bila ada
+                  _pool: pool[index % pool.length],
+                  mapsUrl: linkMaps(live.name, city),
                 };
               }
               return { ...item, image: null, _pool: pool[index % pool.length] };
@@ -1214,17 +1283,45 @@ export async function handleChatRequest(req, res, env = process.env) {
       };
     } else if (mode === "createPlan") {
       // Rencana 10–14 hari + modul butuh output JSON panjang: Gemini duluan.
-      const result = await askAI({
+      // Data nyata dulu (peta, panduan, cuaca), baru AI menyusun dari data itu.
+      const hariPlan = Math.min(14, Math.max(1, fakta?.days || 3));
+      const lapangan = await kumpulkanLapangan({
         message,
+        fakta,
+        pakaiPesan: false,
+        teksKota: message,
+        // rencana panjang butuh kandidat lebih banyak supaya tempat tidak berulang
+        maksTempat: [Math.min(40, hariPlan * 3 + 6), Math.min(16, hariPlan + 6)],
+        batasMs: 9000,
+      });
+      const result = await askAI({
+        message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}`,
         history: [],
         env,
         systemPrompt: CREATE_PLAN_SYSTEM_PROMPT + profil,
-        maxTokens: 2600,
+        maxTokens: 3600,
         providerOrder: ["gemini", "groq", "openrouter"],
       });
+      let plan = parsePlanJson(result?.reply, fakta);
+      let sumberPlan = result?.source;
+      // JSON gagal/terpotong (rencana panjang): coba sekali lagi, lebih ringkas, provider lain dulu.
+      if (!plan) {
+        const ulang = await askAI({
+          message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}\n\nKOREKSI WAJIB: balasan sebelumnya bukan JSON yang utuh. Balas HANYA JSON valid dan LENGKAP. Boleh kosongkan "modules" dan singkatkan "why" supaya JSON pasti selesai.`,
+          history: [],
+          env,
+          systemPrompt: CREATE_PLAN_SYSTEM_PROMPT + profil,
+          maxTokens: 3600,
+          providerOrder: ["groq", "gemini", "openrouter"],
+        });
+        plan = parsePlanJson(ulang?.reply, fakta);
+        if (plan) sumberPlan = ulang?.source;
+      }
+      // Tiap tempat dicocokkan ke peta nyata; yang tidak terbukti ada dibuang.
+      if (plan && lapangan) plan = await perkuatRencana(plan, lapangan);
       payload = {
-        plan: parsePlanJson(result?.reply, fakta),
-        source: result?.source || "template",
+        plan,
+        source: sumberPlan || "template",
       };
     } else if (mode === "search" || mode === "plan") {
       const normalized = normalizeText(message);
@@ -1261,6 +1358,30 @@ export async function handleChatRequest(req, res, env = process.env) {
         ? "\n\nUser mengaktifkan peta. Jika kamu menyebut nama tempat, WAJIB akhiri jawaban dengan satu baris: LOKASI: Nama 1 | Nama 2 | Nama 3 (maksimal 4 nama, dipisah ' | '). Nama itu harus berasal dari data terverifikasi di atas."
         : "";
 
+      // Data lapangan nyata untuk tujuan yang sedang dibahas (gagal jaringan -> null,
+      // alur lama tetap jalan). Obrolan ringan tidak memicu pengambilan data.
+      const gerbangLapangan =
+        mode === "plan"
+          ? TOPIK_PERJALANAN.test(message)
+          : butuhRisetDetail || TOPIK_PERJALANAN.test(message);
+      let lapangan = null;
+      if (gerbangLapangan) {
+        lapangan = await kumpulkanLapangan({
+          message,
+          fakta,
+          teksKota: teksUser(history, message),
+        });
+      } else if (mode === "plan" && fakta?.destinations?.length) {
+        // Hangatkan data supaya "Create Planning" nanti langsung cepat.
+        kumpulkanLapangan({ message, fakta, pakaiPesan: false }).catch(() => {});
+      }
+      const blokLapangan = lapangan?.blok || "";
+      const blokButuh = blokKebutuhan(teksUser(history, message));
+      const catatanPlan =
+        mode === "plan" && blokLapangan
+          ? "\n\nCatatan mode Planning: pakai data lapangan HANYA untuk membuat pertanyaanmu spesifik dan relevan (musim, zona, pilihan yang memang ada). JANGAN menulis daftar tempat saat masih bertanya."
+          : "";
+
       const systemPrompt =
         (mode === "search"
           ? butuhRisetDetail
@@ -1271,18 +1392,39 @@ export async function handleChatRequest(req, res, env = process.env) {
         profil +
         tambahanPeta;
 
-      const result = await askAI({
-        message: `${message}${konteks}`,
+      const pesanAI = `${message}${konteks}${blokLapangan}${blokButuh}${catatanPlan}`;
+      const opsiAI = {
         history,
         env,
         systemPrompt,
-        // Riset panjang butuh ruang lebih besar: 1000 token sering habis
-        // tepat di bagian terakhir karena token berpikir Gemini ikut dihitung.
         maxTokens: butuhRisetDetail ? 2000 : mode === "search" ? 500 : 400,
         providerOrder: butuhRisetDetail ? ["gemini", "groq", "openrouter"] : undefined,
-        allowContinue: butuhRisetDetail,
-      });
+        // Kalau provider melaporkan jawaban terpotong, lanjutkan sekali (semua mode).
+        allowContinue: true,
+      };
+      let result = await askAI({ message: pesanAI, ...opsiAI });
 
+      // Penjaga mutu: jangan menanyakan hal yang sudah diketahui / sudah pernah
+      // ditanya, dan jangan menyerahkan jawaban yang berhenti di tengah kalimat.
+      if (result?.reply) {
+        const dobel = pertanyaanDobel(result.reply, fakta, history);
+        const potong = terpotong(result.reply);
+        if (dobel.length || potong) {
+          const ulang = await askAI({
+            message: `${pesanAI}${catatanKoreksi({ dobel, potong })}`,
+            ...opsiAI,
+            allowContinue: false,
+          });
+          if (
+            ulang?.reply &&
+            !pertanyaanDobel(ulang.reply, fakta, history).length
+          ) {
+            result = ulang;
+          }
+        }
+        // Masih menggantung? Rapikan ujungnya secara lokal.
+        result = { ...result, reply: rapikanAkhir(result.reply) };
+      }
       let reply =
         result?.reply ||
         // Jaring pengaman terakhir kalau semua provider AI sedang gagal.
@@ -1292,6 +1434,13 @@ export async function handleChatRequest(req, res, env = process.env) {
         fallbackReply();
 
       const detail = { source: result?.source || "engine" };
+      if (lapangan) {
+        detail.grounding = {
+          tujuan: lapangan.dests.map((d) => d.display || d.name),
+          tempat: lapangan.places.length,
+          cuaca: lapangan.cuaca || null,
+        };
+      }
       if (butuhRisetDetail) detail.handoff = true;
 
       // Pilihan jawaban juga harus dari AI, bukan contoh hardcoded di browser.
@@ -1312,15 +1461,17 @@ export async function handleChatRequest(req, res, env = process.env) {
       }
 
       if (showMap) {
-        const diperbolehkan = jawabanLokal
+        const livePlaces = lapangan?.places || [];
+        const namaKurasi = jawabanLokal
           ? kandidat.map((item) => item.name)
-          : jawabanDunia?.places.map((item) => item.name) || null;
+          : jawabanDunia?.places.map((item) => item.name) || [];
+        const diperbolehkan = [...namaKurasi, ...livePlaces.map((item) => item.name)];
 
         // Destinasi di luar data kurasi (mis. USA, Palestina, Makkah) tidak
         // punya nama tempat terverifikasi. Jangan ever bikin kartu "Lihat
         // tempat" dari kalimat/opsi jawaban — itu bukan tempat, hasilnya
         // kartu palsu seperti "USA: wisata sejarah".
-        if (diperbolehkan?.length) {
+        if (diperbolehkan.length) {
           const kotaPeta = jawabanLokal ? kotaKey : jawabanDunia?.kotaKey;
           const labelPeta = jawabanLokal
             ? cityLabels[kotaKey] || ""
@@ -1337,15 +1488,28 @@ export async function handleChatRequest(req, res, env = process.env) {
               .filter(Boolean)
               .slice(0, 4);
           }
+          // Nama dari AI dicocokkan toleran ke daftar nyata (huruf/kata sedikit beda tetap kena).
+          if (!nama.length && livePlaces.length) {
+            nama = tempatDalamTeks(reply, livePlaces).map((p) => p.name);
+          }
           if (!nama.length) nama = namaTempatFallback(reply, kotaPeta, diperbolehkan);
-          nama = nama.filter((n) => diperbolehkan.includes(n));
-          if (!nama.length) nama = diperbolehkan.slice(0, 4);
+          nama = nama
+            .map((n) =>
+              diperbolehkan.includes(n) ? n : cocokkanNama(n, livePlaces)?.name || null
+            )
+            .filter(Boolean);
+          // Tanpa nama yang terbukti ada, jangan memunculkan peta sembarang (kecuali data kurasi).
+          if (!nama.length && namaKurasi.length) nama = namaKurasi.slice(0, 4);
 
           if (nama.length) {
             detail.mapPlaces = await Promise.all(
               [...new Set(nama)]
                 .slice(0, Math.min(4, batasJumlah(normalized, 4)))
-                .map((n) => petaUntuk(n, labelPeta, pusat))
+                .map((n) => {
+                  // Tempat dari peta nyata sudah punya koordinat: tak perlu geocode lagi.
+                  const live = livePlaces.find((p) => p.name === n);
+                  return live ? keKartuPeta(live, embedDenganMarker) : petaUntuk(n, labelPeta, pusat);
+                })
             );
           }
         }

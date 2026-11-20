@@ -180,6 +180,7 @@ export async function askSetapak(
       ...(typeof data.ready === "boolean" ? { ready: data.ready } : {}),
       ...(Array.isArray(data.mapPlaces) ? { mapPlaces: data.mapPlaces } : {}),
       ...(data.handoff === true ? { handoff: true } : {}),
+      ...(data.grounding ? { grounding: data.grounding } : {}),
     };
     if (data.plan) saveLastPlan(data.plan);
     return result;

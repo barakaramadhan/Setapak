@@ -10,6 +10,7 @@ import {
 } from "../../../api/chat";
 import { planTrip, resolveCity, cityLabels } from "../../../api/plannerEngine";
 import MapPane from "../../../components/ui/MapPane";
+import { ringkasPlan } from "../../../utils/planSummary";
 import { useAuth, displayName } from "../../../store/useAuth";
 import {
   addDaysToKey,
@@ -470,6 +471,7 @@ function AiChatInner() {
           options: result.options, // pilihan cepat BUILT BY AI
           prefill,
           mapPlaces: result.mapPlaces,
+          grounding: result.grounding,
         });
       } finally {
         loadingRef.current = false;
@@ -639,7 +641,7 @@ function AiChatInner() {
       setWiz(null);
       await kirimAi({
         source: sumber || "ai",
-        text: `Planning selesai! Rencana ${hari} hari${kotaTrip ? ` ke ${kotaTrip}` : ""} sudah tersimpan. Plan-nya tersimpan di halaman Plan.`,
+        text: `Planning selesai! Rencana ${hari} hari${kotaTrip ? ` ke ${kotaTrip}` : ""} sudah tersimpan. Plan-nya tersimpan di halaman Plan.\n\n${ringkasPlan(plan)}`.trim(),
         tripCreated: true,
       });
     } finally {
@@ -826,6 +828,7 @@ function AiChatInner() {
                               ? "Mode lokal"
                               : "AI"}
                           {msg.cached ? " · cached" : ""}
+                          {msg.grounding?.tempat ? ` · peta nyata (${msg.grounding.tempat} tempat)` : ""}
                         </span>
                       )}
                       {msg.mapPlaces?.length ? <TempatCards places={msg.mapPlaces} /> : null}
