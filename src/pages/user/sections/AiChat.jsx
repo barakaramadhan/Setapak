@@ -29,7 +29,12 @@ import { placeImages } from "../../../data/placeImages";
 const FOTO_TERVERIFIKASI = new Set(Object.values(placeImages));
 function gambarBolehTampil(url) {
   const s = String(url || "");
-  return FOTO_TERVERIFIKASI.has(s) || s.startsWith("https://images.unsplash.com/");
+  return (
+    FOTO_TERVERIFIKASI.has(s) ||
+    s.startsWith("https://images.unsplash.com/") ||
+    // Foto resmi dari Google Maps (diambil server, tanpa API key di URL).
+    /^https:\/\/[a-z0-9-]+\.(?:googleusercontent|ggpht)\.com\//i.test(s)
+  );
 }
 
 function salam() {
@@ -207,9 +212,33 @@ function TempatCards({ places }) {
           ) : null}
           <div className="px-3 py-2">
             <p className="truncate text-sm font-semibold text-grey-light">{item.name}</p>
-            <span className="text-[11px] font-medium text-[#6f9abf] group-hover:underline">
+            {item.sumber === "google" ? (
+              <>
+                {Number.isFinite(item.rating) ? (
+                  <p className="mt-0.5 text-xs text-grey-light/80">
+                    <span className="font-semibold">★ {item.rating.toFixed(1)}</span>
+                    {item.ulasan > 0
+                      ? ` (${item.ulasan.toLocaleString("id-ID")} ulasan)`
+                      : ""}
+                    {typeof item.bukaSekarang === "boolean" ? (
+                      <span
+                        className={`ml-2 font-semibold ${item.bukaSekarang ? "text-emerald-600" : "text-red-500"}`}
+                      >
+                        {item.bukaSekarang ? "Buka sekarang" : "Tutup"}
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
+                {item.address ? (
+                  <p className="mt-0.5 line-clamp-2 text-[11px] text-grey-light/70">
+                    {item.address}
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+            <span className="mt-0.5 block text-[11px] font-medium text-[#6f9abf] group-hover:underline">
               <i className="fi fi-rr-marker mr-1 text-[10px] leading-none"></i>
-              Lihat tempat
+              {item.sumber === "google" ? "Buka di Google Maps" : "Lihat tempat"}
             </span>
           </div>
         </a>

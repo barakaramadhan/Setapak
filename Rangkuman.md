@@ -9,6 +9,7 @@
 | `src/data/plannerData.js` | Data destinasi Bogor, Yogyakarta, Bali, Bandung |
 | `src/data/placeImages.js` | Foto asli tempat + cadangan |
 | `server/aiProviders.js` | 100milionseek → Ollama → Groq → Gemini → OpenRouter + system prompt |
+| `server/geoapify.js` | Integrasi Geoapify (geocoding & places/POI) untuk data lokasi/tempat |
 | `server/chatHandler.js` | Endpoint `/api/chat` (chat + rekomendasi) |
 | `server/worldKnowledge.js` | Pengetahuan dunia yang dikurasi (Bekasi, Depok, Jepang, Singapura, Malang, dll.) + fakta lokasi yang sering tertukar |
 | `server/plannerStore.js` | Planner data bersama (Supabase + memory) |
@@ -40,6 +41,7 @@
 | `src/components/shared/Sidebar.jsx` | New Chat bikin chat baru; daftar chat (pilih, rename, pin, hapus, badge trip) tepat di bawah garis Explore |
 | `server/aiProviders.js` | Integrasi provider **100milionseek** (OpenAI-compatible, `deepseek-v4.1-flash-free`, 100M token/akun/hari) dan **Ollama** (OpenAI-compatible `/v1/chat/completions`, lokal/self-host gratis) + fallback Groq/Gemini/OpenRouter. Urutan default otomatis memprioritaskan provider yang dikonfigurasi (`100milionseek,ollama,...`). Prompt AI trip (Searching/Planning/field/JSON plan) tetap dipertahankan. |
 | `server/chatHandler.js` | Mode baru + geocode Nominatim/OpenStreetMap (gratis, tanpa API key). `providerOrder` untuk riset detail & pembuatan rencana kini memprioritaskan 100milionseek/Ollama (bila dikonfigurasi) lalu Gemini/Groq/OpenRouter, dengan fallback & retry. Peta selalu muncul saat toggle aktif, geocode dibatasi ±0.5° sekitar kota. Nama sampah (Pegadaian/bank/dll.) difilter, jumlah tempat mengikuti angka di prompt. |
+| `server/liveKnowledge.js` | Data lapangan lokasi/tempat: dukung Geoapify (`GEOAPIFY_API_KEY`) untuk geocoding tujuan dan Places/POI, dengan fallback ke Google Places/OSM (Nominatim/Overpass) + Wikivoyage/Wikipedia + Open-Meteo. |
 | `server/placeMedia.js` | Pencarian foto Wikipedia/Commons kini menolak judul orang/kejadian (mis. Anies Baswedan) dan mengharuskan token nama tempat cocok; nama yang terlalu umum memakai gambar cadangan |
 | `src/main.jsx` | Pasang `ChatsProvider` |
 | `supabase/schema.sql` | Tabel `chats` + RLS (judul, pin, `trip_id`) |
@@ -47,8 +49,9 @@
 | `vite.config.js` | Middleware `/api/chat` untuk dev |
 | `package.json` | Script `reset:planner` |
 | `eslint.config.js` | `globals.node` untuk folder server |
-| `README.md` | Dokumentasi AI, env, kuota (termasuk 100milionseek), reset, Auth, Trip |
-| `.env.example` | Tambah variabel `HUNDREDMILLIONSEEK_API_KEY` / `HUNDREDMILLIONSEEK_MODEL`, `OLLAMA_BASE_URL` / `OLLAMA_MODEL` / `OLLAMA_API_KEY`, dan penjelasan urutan provider |
+| `README.md` | Dokumentasi AI, env, kuota (termasuk 100milionseek, Ollama, dan Geoapify untuk lokasi/tempat), reset, Auth, Trip |
+| `.env` | Ditambahkan variabel `HUNDREDMILLIONSEEK_API_KEY`, konfigurasi `OLLAMA_*`, dan `GEOAPIFY_API_KEY` (placeholder) |
+| `.env.example` | Tambah variabel `HUNDREDMILLIONSEEK_API_KEY` / `HUNDREDMILLIONSEEK_MODEL`, `OLLAMA_BASE_URL` / `OLLAMA_MODEL` / `OLLAMA_API_KEY`, `GEOAPIFY_API_KEY`, dan penjelasan urutan provider |
 | `src/index.css` | `@media print` untuk cetak workspace |
 | `src/pages/user/DashboardUser.jsx` | Hapus import tak terpakai |
 | `UserLayout.jsx`, `Footer.jsx`, `Sidebar.jsx`, `InputAll.jsx` | Hapus import React tak terpakai |
@@ -92,4 +95,4 @@ Tidak ada file yang dihapus. Yang dibuang hanya **kode dummy/mock** di `AiChat.j
 
 ---
 
-Verifikasi (setelah penambahan 100milionseek & Ollama): `npm run lint` ✅ · `npm run build` ✅
+Verifikasi (setelah penambahan 100milionseek, Ollama, & Geoapify): `node --check` (server) ✅ · `npm run lint` ✅ · `npm run build` ✅

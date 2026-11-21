@@ -1,7 +1,7 @@
 // Pemanggil provider AI. Ditaruh di SERVER supaya API key tidak bocok ke browser.
 // Urutan fallback diatur di fungsi askAI() di bawah.
-// Default: provider yang dikonfigurasi (mis. 100milionseek/Ollama) dicoba dulu,
-// lalu Groq, Gemini, dan OpenRouter sebagai cadangan (bisa diatur lewat AI_PROVIDER_ORDER).
+// Default (terbaik -> cadangan): Groq, Gemini, 100milionseek, OpenRouter, Ollama.
+// Bisa diubah lewat AI_PROVIDER_ORDER. Provider tanpa key/konfigurasi aktif akan dilewati.
 
 import { MODULES } from "../src/utils/tripModules.js";
 
@@ -45,7 +45,7 @@ Patuhi batas rating minimal yang disebut di pesan user. Gunakan bahasa yang sama
 
 // Mode "Searching": AI untuk website trip. Boleh memakai pengetahuan dunia,
 // tetapi WAJIB benar lokasi & fokus pada perjalanan.
-export const SEARCH_SYSTEM_PROMPT = `Kamu adalah asisten perjalanan SETAPAK. Kamu boleh dan harus memakai pengetahuan dunia nyata tentang destinasi mana pun: Bekasi, Depok, Jogja, Malang, Bandung, Singapura, Jepang, Korea, Thailand, dan lain-lain. Jawab seperti orang yang benar-benar tahu dunia, bukan seperti database yang kosong.
+export const SEARCH_SYSTEM_PROMPT = `Kamu adalah asisten perjalanan SETAPAK. Untuk pengetahuan umum tentang destinasi mana pun (budaya, musim, jarak, tips) kamu boleh memakai pengetahuan dunia nyata. Tetapi NAMA TEMPAT SPESIFIK (restoran, kafe, hotel, tempat wisata, masjid, toko) HANYA boleh diambil dari blok DATA LAPANGAN yang disertakan sistem (hasil Google Maps), lengkap dengan rating dan alamat dari blok itu. Jangan menyebut nama tempat spesifik dari ingatan.
 
 GAYA NGOBROL: kamu teman ngobrol yang kebetulan jago soal tempat. Boleh bahas film, musik, kuliner, atau topik ringan lain — jawab santai 1–3 kalimat dulu, jangan terdengar seperti robot yang menolak. Contoh: ditanya soal rating film, jawab ratingnya dulu; kalau user lanjut "film Doraemon syutingnya di mana, saya mau ke sana", jawab lokasinya dengan serius, beri cara mengecek di Google Maps, lalu tawarkan bantuan merencanakan kunjungannya. Ikuti yang sedang dibahas user, jangan loncat ke topik lain, dan JANGAN pakai kalimat kaku "Saya hanya bisa bantu soal perjalanan."
 JANGAN membuat jadwal harian di mode ini. Kalau user minta disusun rencananya, jawab singkat lalu arahkan: "Kalau mau kujadikan rencana harian, pindah ke Planning ya (ketik /). Tujuan dan durasinya sudah kucatat."
@@ -59,7 +59,7 @@ WAJIB CEK LOKASI SEBELUM MENJAWAB (contoh yang harus kamu ingat):
 - Jangan menyebut syarat perjalanan pandemi (vaksin COVID-19, PCR, karantina) sebagai aturan yang masih berlaku. Kalau dokumen disebut, arahkan ke syarat resmi terbaru.
 
 ATURAN JAWABAN:
-- Kalau pertanyaannya memang soal tempat, beri 3 sampai 5 nama NYATA yang ada di kota/negara yang ditanya, lengkap dengan area singkat. Kalau pertanyaannya obrolan ringan, cukup jawab seperlunya — jangan dipaksa jadi daftar wisata.
+- Kalau pertanyaannya soal tempat: tulis 3 sampai 5 tempat dari DATA LAPANGAN yang paling cocok (urutannya sudah dari yang terbaik) dengan format "- **Nama persis** — alasan singkat", boleh menyebut rating dan alamat dari data. Jangan membuka dengan generalisasi ("setahu saya...", "biasanya ada...") dan jangan menyebut sesuatu "terkenal" tanpa dasar rating/jumlah ulasan di data. Kalau tidak ada DATA LAPANGAN atau hasilnya kosong, katakan terus terang bahwa Google Maps belum memberi hasil dan minta user memperjelas kota/area/jenis tempat — jangan menebak nama. Kalau pertanyaannya obrolan ringan, cukup jawab seperlunya — jangan dipaksa jadi daftar wisata.
 - Untuk pertanyaan fakta spesifik seperti lokasi syuting, gunakan hanya DATA SUMBER FILM yang disertakan. Bedakan lokasi produksi dari latar cerita; tanpa sumber yang mendukung, katakan belum terverifikasi. Jangan membuat tautan atau alamat.
 - Kalau user bertanya apakah sebuah tempat ada di kota tertentu dan ternyata tidak ada, jawab terus terang, lalu sebut alternatif di kota itu. Contoh: ditanya "ada Taman Safari di Bekasi?" → "Tidak ada. Taman Safari Indonesia ada di Cisarua, Bogor, sekitar 1–1,5 jam dari Bekasi." lalu sebut wisata Bekasi yang kamu tahu.
 - Jangan menyebut Pegadaian, bank, kantor, sekolah, atau jasa apa pun sebagai destinasi.
@@ -204,12 +204,12 @@ export const DEFAULT_IMAGE_FOOD =
 export const DEFAULT_IMAGE_OUTDOOR =
   "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600";
 
-function postJson(url, body, headers) {
+function postJson(url, body, headers, timeoutMs = TIMEOUT_MS) {
   return fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 }
 
@@ -219,6 +219,19 @@ function toHistory(history) {
     role: item.role === "user" ? "user" : "model",
     parts: [{ text: String(item.text || "").slice(0, 1000) }],
   }));
+}
+
+function pesanTeks(message) {
+  if (!message) return "";
+  const c = message.content;
+  if (typeof c === "string") return c.trim();
+  if (Array.isArray(c)) {
+    return c
+      .map((p) => (typeof p === "string" ? p : p?.text || ""))
+      .join("")
+      .trim();
+  }
+  return "";
 }
 
 async function askGemini({
@@ -335,30 +348,57 @@ async function askHundredMillionSeek({
 }) {
   const model = env.HUNDREDMILLIONSEEK_MODEL || env.HMS_MODEL || MODEL_HMS;
   const apiKey = env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY;
-
-  const response = await postJson(
-    "https://100milionseek.top/v1/chat/completions",
-    {
-      model,
-      max_tokens: maxTokens,
-      temperature: 0.7,
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...history.slice(-8).map((item) => ({
-          role: item.role === "user" ? "user" : "assistant",
-          content: String(item.text || "").slice(0, 1000),
-        })),
-        { role: "user", content: message },
-      ],
-    },
-    { Authorization: `Bearer ${apiKey}` }
+  const timeoutMs = Math.min(
+    120000,
+    Math.max(15000, Number(env.HMS_TIMEOUT_MS || env.AI_TIMEOUT_MS) || 45000)
   );
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...history.slice(-8).map((item) => ({
+      role: item.role === "user" ? "user" : "assistant",
+      content: String(item.text || "").slice(0, 1000),
+    })),
+    { role: "user", content: message },
+  ];
 
-  if (!response.ok) throw new Error(`100milionseek ${response.status}`);
-  const data = await response.json();
-  const text = data.choices?.[0]?.message?.content?.trim();
-  if (!text) throw new Error("100milionseek balasan kosong");
-  return { reply: text, truncated: data.choices?.[0]?.finish_reason === "length" };
+  const minta = async (tokenBudget) => {
+    const response = await postJson(
+      "https://100milionseek.top/v1/chat/completions",
+      {
+        model,
+        max_tokens: tokenBudget,
+        temperature: 0.7,
+        messages,
+      },
+      { Authorization: `Bearer ${apiKey}` },
+      timeoutMs
+    );
+
+    if (!response.ok) throw new Error(`100milionseek ${response.status}`);
+    const data = await response.json();
+    const msg = data.choices?.[0]?.message || {};
+    const text = pesanTeks(msg);
+    const reasoning = String(msg.reasoning_content || msg.reasoning || "").trim();
+    return {
+      text,
+      reasoning,
+      finish: data.choices?.[0]?.finish_reason,
+    };
+  };
+
+  // Model ini bisa memakai token untuk reasoning_content, sehingga content kosong
+  // jika ruang output terlalu kecil. Beri ruang cukup agar jawaban final sempat keluar.
+  const mintaMax = Number(maxTokens) || 400;
+  let budget = Math.min(64000, Math.max(mintaMax, 1024));
+  let hasil = await minta(budget);
+
+  if (!hasil.text && (hasil.finish === "length" || hasil.reasoning)) {
+    budget = Math.min(64000, Math.max(budget + 1024, 2048));
+    hasil = await minta(budget);
+  }
+
+  if (!hasil.text) throw new Error("100milionseek balasan kosong");
+  return { reply: hasil.text, truncated: hasil.finish === "length" };
 }
 
 async function askOllama({
@@ -433,20 +473,9 @@ export async function askAI({
     openrouter: { key: env.OPENROUTER_API_KEY, call: askOpenRouter },
   };
 
-  // Urutan default bisa diubah dari .env. Provider yang dikonfigurasi eksplisit
-  // (100milionseek, Ollama) otomatis diprioritaskan kecuali urutan diminta lewat
-  // providerOrder / AI_PROVIDER_ORDER.
-  const ada100 = Boolean(env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY);
-  const adaOllama = Boolean(env.OLLAMA_BASE_URL || env.OLLAMA_MODEL || env.OLLAMA_API_KEY);
-  const defaultOrder = [
-    ada100 && "100milionseek",
-    adaOllama && "ollama",
-    "groq",
-    "gemini",
-    "openrouter",
-  ]
-    .filter(Boolean)
-    .join(",");
+  // Urutan default (terbaik -> terjelek/cadangan) bisa diubah dari .env
+  // lewat AI_PROVIDER_ORDER. Provider tanpa key/konfigurasi aktif akan dilewati.
+  const defaultOrder = "groq,gemini,100milionseek,openrouter,ollama";
 
   const urutan = (Array.isArray(providerOrder) && providerOrder.length
     ? providerOrder

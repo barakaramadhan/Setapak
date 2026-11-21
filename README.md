@@ -143,6 +143,9 @@ HUNDREDMILLIONSEEK_API_KEY=hms-...
 # OLLAMA_MODEL=llama3.2
 # OLLAMA_API_KEY=
 
+# Opsional: data lokasi/tempat (Geoapify)
+# GEOAPIFY_API_KEY=...
+
 # Opsional: cadangan/fallback
 GEMINI_API_KEY=API_KEY_DARI_AI_STUDIO
 GEMINI_MODEL=gemini-3.8-flash
@@ -157,10 +160,12 @@ OPENROUTER_MODEL=google/gemma-4-31b-it:free
 >
 > **Ollama**: **gratis** kalau dipakai secara lokal/self-host karena open-source dan berjalan di komputer/server kamu sendiri (tanpa biaya token API), tapi tetap memakai resource perangkat (CPU/RAM/GPU) dan kualitas/kecepatan tergantung model & hardware. SETAPAK memanggil endpoint OpenAI-compatible Ollama (`/v1/chat/completions`, default `http://localhost:11434/v1`). Untuk Ollama Cloud/endpoint hosted lain, isi `OLLAMA_BASE_URL` (+ `OLLAMA_API_KEY` jika diminta); biaya/limit mengikuti layanan tersebut.
 >
+> **Geoapify** (`https://www.geoapify.com/`): API untuk geocoding (mencari lokasi/tujuan) dan Places/POI (tempat wisata, kuliner, dll.). Butuh `GEOAPIFY_API_KEY` (ada paket/kuota gratis terbatas, cek ketentuan di situs Geoapify). Jika diisi, SETAPAK dapat memakai Geoapify sebagai sumber data lokasi/tempat dan tetap punya fallback ke sumber lain (Google Places/OSM, Wikivoyage/Wikipedia, Open-Meteo) bila diperlukan.
+>
 > `gemini-2.5-flash` sudah tidak tersedia untuk akun baru (HTTP 404). Kalau model
 > default berubah, cukup ganti `GEMINI_MODEL` di `.env` tanpa mengubah kode.
 >
-> Urutan default (provider yang dikonfigurasi diprioritaskan): `100milionseek,ollama,groq,gemini,openrouter`. Gemini 3.x menghitung token "berpikir" sebagai bagian dari batas output, jadi jawaban pendek bisa terpotong jadi kosong. Gemini sudah diatur `thinkingLevel: LOW`. Di free tier **tidak ada tagihan** — kalau kuota habis cukup dapat `429`.
+> Urutan default (terbaik → cadangan, provider tanpa key/konfigurasi dilewati): `groq,gemini,100milionseek,openrouter,ollama`. Bisa diubah lewat `AI_PROVIDER_ORDER`. 100milionseek punya kuota harian besar tetapi kadang lebih lambat; Groq/Gemini biasanya lebih responsif. Gemini 3.x menghitung token "berpikir" sebagai bagian dari batas output, jadi jawaban pendek bisa terpotong jadi kosong. Gemini sudah diatur `thinkingLevel: LOW`. Di free tier **tidak ada tagihan** — kalau kuota habis cukup dapat `429`.
 
 Tanpa API key/provider AI pun aplikasi tetap jalan — pertanyaan yang dikenal mesin lokal
 (misalnya `3 hari di Yogyakarta budget 300rb`) tetap dijawab instan.
@@ -217,6 +222,10 @@ dapat dibatasi saat kapasitas penuh — lihat `https://100milionseek.top/`.
 **Ollama lokal itu gratis** (open-source) untuk dipakai sebagai API di mesin sendiri: tidak ada biaya per-token seperti layanan hosted. Kamu perlu menginstal Ollama, menjalankannya, dan men-download model (`ollama pull <model>`). Performa/kapasitas bergantung pada hardware dan model yang dipilih. Endpoint OpenAI-compatible biasanya tersedia di `http://localhost:11434/v1`.
 
 Jika kamu memakai endpoint Ollama yang di-host (cloud/pihak ketiga), ketentuan biaya, kuota, dan autentikasi mengikuti layanan tersebut (isi `OLLAMA_BASE_URL` dan `OLLAMA_API_KEY` bila diperlukan).
+
+### Catatan Geoapify (lokasi/tempat)
+
+Geoapify menyediakan API geocoding dan data tempat/POI yang bisa dipakai untuk fitur "lokasi-lokasi" (mencari tujuan, koordinat, dan daftar tempat). SETAPAK sudah mendukung integrasi ini via `GEOAPIFY_API_KEY` di server (`server/geoapify.js` + `server/liveKnowledge.js`). Geoapify umumnya punya **free tier/kuota gratis terbatas** (detail & limit dapat berubah, cek di https://www.geoapify.com/). Jika key tidak diisi atau request gagal, sistem akan fallback ke sumber data lain yang tersedia (mis. Google Places bila dikonfigurasi, atau OpenStreetMap/Nominatim/Overpass).
 
 ### Catatan 100milionseek
 

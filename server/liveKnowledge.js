@@ -13,6 +13,9 @@
 // Semua kegagalan jaringan bersifat AMAN: fungsi mengembalikan null dan alur
 // lama (data kurasi + AI) tetap jalan.
 
+import { cariGoogle, gabungGoogle, googleAktif, teksUlasan } from "./googlePlaces.js";
+import { geocodeGeoapify, geoapifyAktif, cariTempatGeoapify } from "./geoapify.js";
+
 const UA = {
   "User-Agent": "SETAPAK/1.0 (travel planner)",
   "Accept-Language": "id,en;q=0.8",
@@ -285,10 +288,19 @@ export function blokKebutuhan(teks) {
 
 // ------------------------------------------------------- 1. tujuan -> koordinat
 
-export function geocodeTujuan(query) {
+export function geocodeTujuan(query, env = process.env) {
   const q = String(query || "").trim().slice(0, 80);
   if (q.length < 3) return Promise.resolve(null);
+  const runtimeEnv = env || process.env;
   return ingat(`geo:${q.toLowerCase()}`, 24 * JAM, async () => {
+    if (geoapifyAktif(runtimeEnv)) {
+      try {
+        const g = await geocodeGeoapify(q, { env: runtimeEnv });
+        if (g) return g;
+      } catch {
+        // fallback ke Nominatim (OSM)
+      }
+    }
     const data = await getJson(
       `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=3&addressdetails=1&namedetails=1&accept-language=id&q=${encodeURIComponent(q)}`,
       5000
@@ -354,7 +366,8 @@ function kandidatDariPesan(pesan = "") {
 }
 
 /** Tujuan yang sedang dibahas (maks 2): dari pesan terbaru lalu profil trip. */
-export async function tentukanTujuan({ message = "", fakta = null, pakaiPesan = true }) {
+export async function tentukanTujuan({ message = "", fakta = null, pakaiPesan = true, env = process.env }) {
+  const e = env || process.env;
   const kandidat = [
     ...(pakaiPesan ? kandidatDariPesan(message) : []),
     ...(fakta?.destinations || []),
@@ -364,7 +377,7 @@ export async function tentukanTujuan({ message = "", fakta = null, pakaiPesan = 
     if (ditemukan.length >= 2) break;
     let dest = null;
     try {
-      dest = await geocodeTujuan(nama);
+      dest = await geocodeTujuan(nama, e);
     } catch {
       dest = null;
     }
@@ -597,6 +610,67 @@ async function ambilTempat(dest, hari) {
   });
 }
 
+// ------------------------------------------- 2b. tempat nyata (GOOGLE MAPS)
+
+/** Tujuan "semu" untuk pertanyaan tempat yang tidak punya kota/negara terbaca. */
+function tujuanGoogle(label) {
+  const nama = String(label || "").trim().slice(0, 80);
+  return {
+    query: nama,
+    name: nama,
+    nameEn: nama,
+    display: nama,
+    label: nama,
+    lat: 0,
+    lon: 0,
+    bbox: { s: 0, n: 0, w: 0, e: 0 },
+    country: "",
+    cc: "",
+    spanKm: 0,
+    skala: "google",
+  };
+}
+
+const KUERI_KATEGORI = [
+  (n) => `tempat wisata terbaik di ${n}`,
+  (n) => `restoran dan tempat makan populer di ${n}`,
+  (n) => `wisata alam di ${n}`,
+  (n) => `museum dan tempat bersejarah di ${n}`,
+];
+
+/**
+ * Tempat dari Google Places. Dengan `kueri` (pertanyaan user) hanya satu pencarian
+ * yang dijalankan persis seperti yang ditanyakan. Tanpa `kueri` (menyusun rencana)
+ * dipakai beberapa pencarian kategori supaya ada variasi wisata + kuliner.
+ * Melempar error kalau semua pencarian ditolak Google (pemanggil memakai cadangan).
+ */
+export async function ambilTempatGoogle(dest, { env, kueri = "", hari, ringan = false, fetchFn } = {}) {
+  const punyaTitik = dest.skala !== "google" && Number.isFinite(dest.lat);
+  const bias = punyaTitik && (dest.skala === "kota" || dest.skala === "poi")
+    ? { lat: dest.lat, lon: dest.lon }
+    : null;
+  const radiusM = dest.skala === "poi" ? 4000 : Math.min(30000, Math.max(5000, (dest.spanKm / 2) * 1000));
+  const daftarKueri = kueri
+    ? [kueri]
+    : (ringan ? KUERI_KATEGORI.slice(0, 2) : KUERI_KATEGORI).map((buat) => buat(dest.name));
+
+  const hasil = await Promise.allSettled(
+    daftarKueri.map((q) =>
+      cariGoogle({ query: q, env, pusat: bias, radiusM, maks: kueri ? 12 : 8, fetchFn })
+    )
+  );
+  const berhasil = hasil.filter((h) => h.status === "fulfilled").map((h) => h.value);
+  if (!berhasil.length) throw hasil[0]?.reason || new Error("Google Places gagal");
+
+  const gabung = gabungGoogle(...berhasil).map((p) => ({
+    ...p,
+    jarak: punyaTitik ? jarakKm(dest, p) : 0,
+  }));
+  const terpilih = pilihTempat(gabung);
+  const zona = zonakan(terpilih, hari || 3);
+  return terpilih.map((p, i) => ({ ...p, zona: HURUF[zona[i]] || "A" }));
+}
+
 // ------------------------------------------- 3. panduan lokal (Wikivoyage/Wiki)
 
 const BAGIAN_VOYAGE = [
@@ -751,6 +825,22 @@ async function ambilCuaca(dest, fakta) {
 // --------------------------------------------------------------- 5. gabungan
 
 function barisTempat(p, id) {
+  if (p.sumber === "google") {
+    const bagian = [
+      id,
+      p.name,
+      p.jenis,
+      p.rating ? `rating ${p.rating.toFixed(1)} (${teksUlasan(p.ulasan)})` : "belum ada rating",
+      p.alamat || "alamat tidak tersedia",
+    ];
+    if (p.masakan) bagian.push(`tipe: ${p.masakan}`);
+    if (p.jam) bagian.push(p.jam);
+    if (p.website) bagian.push(`website ${p.website}`);
+    if (p.phone) bagian.push(`telp ${p.phone}`);
+    bagian.push(`zona ${p.zona}`);
+    if (p.jarak > 0) bagian.push(`${p.jarak.toFixed(1)} km dari pusat`);
+    return bagian.join(" | ");
+  }
   const bagian = [
     id,
     p.name,
@@ -759,19 +849,32 @@ function barisTempat(p, id) {
     `zona ${p.zona}`,
     `${p.jarak.toFixed(1)} km dari pusat`,
   ];
+  if (p.alamat) bagian.push(`alamat: ${p.alamat}`);
   if (p.jam) bagian.push(`jam ${p.jam}`);
   if (p.biaya) bagian.push(p.biaya);
   if (p.masakan) bagian.push(`masakan ${p.masakan}`);
   if (p.halal) bagian.push(p.halal);
+  if (p.website) bagian.push(`website ${p.website}`);
+  if (p.phone) bagian.push(`telp ${p.phone}`);
+  if (p.mapsUrl) bagian.push(`maps ${p.mapsUrl}`);
   return bagian.join(" | ");
 }
 
 const ATURAN_PAKAI = `CARA PAKAI DATA LAPANGAN (WAJIB):
-1. Daftar TEMPAT berasal dari peta nyata (OpenStreetMap). Rekomendasikan nama hanya dari daftar itu. Jika kategori yang diminta tidak ada di daftar, katakan belum bisa memverifikasi dan jangan mengarang alternatif.
+1. Daftar TEMPAT berasal dari peta nyata (OpenStreetMap/Geoapify). Rekomendasikan nama hanya dari daftar itu. Jika kategori yang diminta tidak ada di daftar, katakan belum bisa memverifikasi dan jangan mengarang alternatif.
 2. DILARANG mengarang alamat, harga pasti, atau jam buka. Kalau jam buka tidak ada di data, tulis "cek jam buka terbaru".
 3. Satu hari sebaiknya satu ZONA (atau zona bertetangga) supaya tidak bolak-balik. Jarak "km dari pusat" membantu memperkirakan waktu tempuh.
 4. Sesuaikan dengan CUACA dan KEBUTUHAN yang terbaca. Kalau data terbatas / kota kecil, katakan terus terang — jangan dipaksakan.
 5. Panduan Wikivoyage hanya latar kontekstual; jangan menyalin nama atau klaim yang kamu ragukan.`;
+
+const ATURAN_PAKAI_GOOGLE = `CARA PAKAI DATA LAPANGAN (WAJIB):
+1. Daftar TEMPAT berasal dari Google Maps (Google Places), diurutkan dari yang paling layak (rating x jumlah ulasan). Sebut nama tempat HANYA dari daftar itu dan salin nama persis. DILARANG menambah nama dari ingatan/pengetahuan umum. DILARANG menjawab dengan generalisasi ("setahu saya...", "biasanya ada...") sebagai pengganti data.
+2. Rating, jumlah ulasan, alamat, dan status buka HANYA boleh diambil dari daftar. Jam buka lengkap, harga, dan menu tidak ada di data: tulis "cek jam buka & harga terbaru di Google Maps".
+3. Google Maps tidak memuat siapa pemilik atau asal-usul sebuah usaha. Jangan mengklaim "milik/buatan orang Indonesia" kecuali tipe tempatnya di daftar jelas menunjukkannya (mis. "Indonesian restaurant", "Restoran Padang"). Kalau tidak jelas, katakan bahwa ini hasil pencarian Google Maps yang paling sesuai dan kepemilikannya tidak tercantum.
+4. Kalau daftar kosong atau tidak cocok dengan permintaan: katakan terus terang Google Maps tidak mengembalikan hasil yang cocok, lalu minta user memperjelas area atau jenis tempat. Jangan mengisi dengan tebakan.
+5. Tulis tempat sebagai poin: "- **Nama persis** — alasan singkat cocok untuk user". Rating dan alamat boleh disebut apa adanya dari daftar.
+6. Satu hari sebaiknya satu ZONA (atau zona bertetangga) supaya tidak bolak-balik. Jarak "km dari pusat" membantu memperkirakan waktu tempuh.
+7. Sesuaikan dengan CUACA dan KEBUTUHAN yang terbaca. Panduan Wikivoyage hanya latar kontekstual, bukan sumber nama tempat.`;
 
 export function jawabanTempatRekreasi(teks, lapangan, fakta = null) {
   if (!/\b(dufan|taman hiburan|theme park|amusement park|water[\s-]?park|wahana|roller[\s-]?coaster|water slide|seluncuran air)\b/i.test(String(teks || ""))) {
@@ -812,10 +915,21 @@ export async function kumpulkanLapangan({
   batasMs = 8000,
   teksKota = "", // teks tempat mencari nama kota di dalam negara (jawaban user)
   maksTempat = [18, 8], // [wisata, kuliner] per tujuan yang masuk prompt
+  env = null, // bila ada GOOGLE_MAPS_API_KEY/Geoapify key, tempat/lokasi bisa diambil dari penyedia itu
+  kueri = "", // pertanyaan tempat user (untuk Google text search); kosong = pencarian kategori
+  fetchFn = undefined,
 } = {}) {
+  const e = env || process.env;
+  const pakaiGoogle = Boolean(env) && googleAktif(env);
+  const pakaiGeoapify = geoapifyAktif(e);
   const kerja = async () => {
-    const dasar = await tentukanTujuan({ message, fakta, pakaiPesan });
-    if (!dasar.length) return null;
+    let dasar = await tentukanTujuan({ message, fakta, pakaiPesan, env: e });
+    if (!dasar.length) {
+      // Google bisa mencari tanpa kota/negara yang terbaca ("warung padang terdekat").
+      const label = kueri || fakta?.destinations?.[0] || "";
+      if (!pakaiGoogle || !label) return null;
+      dasar = [tujuanGoogle(label)];
+    }
 
     // "Jepang" saja tidak punya daftar tempat; kota yang disebut user (Tokyo, Kyoto)
     // ditambahkan sebagai tujuan sendiri supaya tetap berbasis peta nyata.
@@ -830,18 +944,61 @@ export async function kumpulkanLapangan({
 
     const hasil = await Promise.all(
       dests.map(async (dest, i) => {
+        const semu = dest.skala === "google";
+        const ambilDaftar = async () => {
+          if (pakaiGoogle) {
+            // Pertanyaan spesifik: satu pencarian saja (untuk tujuan pertama).
+            if (kueri && i > 0) return { daftar: [], sumber: "google" };
+            try {
+              const daftar = await ambilTempatGoogle(dest, {
+                env: e,
+                kueri,
+                hari: fakta?.days,
+                ringan,
+                fetchFn,
+              });
+              return { daftar, sumber: "google" };
+            } catch (error) {
+              console.warn("[setapak] Google Places gagal, pakai sumber lain:", error.message);
+            }
+          }
+          if (semu) return { daftar: [], sumber: "osm" };
+          if (pakaiGeoapify) {
+            try {
+              const daftarG = await cariTempatGeoapify(dest, {
+                env: e,
+                fetchFn,
+                kueri,
+                limit: Math.max(30, (maksTempat?.[0] || 18) + (maksTempat?.[1] || 8) + 10),
+              });
+              if (daftarG.length >= 4) {
+                const terpilih = pilihTempat(daftarG);
+                const zona = zonakan(terpilih, fakta?.days || 3);
+                return {
+                  daftar: terpilih.map((p, zi) => ({ ...p, zona: HURUF[zona[zi]] || "A" })),
+                  sumber: "geoapify",
+                };
+              }
+            } catch (error) {
+              console.warn("[setapak] Geoapify places gagal, pakai OpenStreetMap:", error.message);
+            }
+          }
+          return { daftar: await ambilTempat(dest, fakta?.days), sumber: "osm" };
+        };
         const [tempat, voyage, wiki, cuaca] = await Promise.allSettled([
-          ambilTempat(dest, fakta?.days),
-          ringan ? null : ambilVoyage(dest),
-          ringan ? null : ambilWikipedia(dest),
-          ringan || i > 0 ? null : ambilCuaca(dest, fakta),
+          ambilDaftar(),
+          ringan || semu ? null : ambilVoyage(dest),
+          ringan || semu ? null : ambilWikipedia(dest),
+          ringan || semu || i > 0 ? null : ambilCuaca(dest, fakta),
         ]);
         const nilai = (r) => (r.status === "fulfilled" ? r.value : null);
-        const semuaTempat = nilai(tempat) || [];
+        const hasilTempat = nilai(tempat) || { daftar: [], sumber: "osm" };
+        const semuaTempat = hasilTempat.daftar;
         // Banyak kota dalam satu negara: bagi kapasitas supaya prompt tidak membengkak.
         const bagi = Math.max(1, dests.filter((x) => x.indukNegara).length);
-        const batasW = dest.indukNegara ? Math.ceil(maksTempat[0] / bagi) + 2 : maksTempat[0];
-        const batasK = dest.indukNegara ? Math.ceil(maksTempat[1] / bagi) + 1 : maksTempat[1];
+        const [kapW, kapK] = kueri && hasilTempat.sumber === "google" ? [12, 12] : maksTempat;
+        const batasW = dest.indukNegara ? Math.ceil(kapW / bagi) + 2 : kapW;
+        const batasK = dest.indukNegara ? Math.ceil(kapK / bagi) + 1 : kapK;
         const dipotong = [
           ...semuaTempat.filter((p) => p.jenis !== "kuliner").slice(0, batasW),
           ...semuaTempat.filter((p) => p.jenis === "kuliner").slice(0, batasK),
@@ -849,6 +1006,7 @@ export async function kumpulkanLapangan({
         return {
           dest,
           tempat: dipotong,
+          sumber: hasilTempat.sumber,
           voyage: nilai(voyage),
           wiki: nilai(wiki),
           cuaca: nilai(cuaca),
@@ -860,8 +1018,12 @@ export async function kumpulkanLapangan({
     const byId = new Map();
     const bagianBlok = [];
     let cuacaTeks = null;
-    hasil.forEach(({ dest, tempat, voyage, wiki, cuaca }) => {
-      const baris = [`Tujuan terbaca: ${dest.display || dest.name} (skala: ${dest.skala}, pusat ${dest.lat.toFixed(3)},${dest.lon.toFixed(3)})`];
+    hasil.forEach(({ dest, tempat, sumber, voyage, wiki, cuaca }) => {
+      const baris = [
+        dest.skala === "google"
+          ? `Pencarian Google Maps: "${kueri || dest.name}"`
+          : `Tujuan terbaca: ${dest.display || dest.name} (skala: ${dest.skala}, pusat ${dest.lat.toFixed(3)},${dest.lon.toFixed(3)})`,
+      ];
       if (wiki) baris.push(`Ringkasan: ${wiki}`);
       if (voyage) baris.push(`Panduan Wikivoyage (ringkas):\n${voyage}`);
       if (cuaca) {
@@ -876,7 +1038,17 @@ export async function kumpulkanLapangan({
           byId.set(id, lengkap);
           return barisTempat(p, id);
         });
-        baris.push(`TEMPAT (id | nama | jenis | zona | jarak | catatan):\n${daftar.join("\n")}`);
+        baris.push(
+          sumber === "google"
+            ? `TEMPAT dari Google Maps${kueri ? ` untuk pencarian "${kueri}"` : ""} (id | nama | jenis | rating | alamat | tipe | status | zona | jarak):\n${daftar.join("\n")}`
+            : sumber === "geoapify"
+              ? `TEMPAT dari Geoapify (peta/lokasi) (id | nama | jenis | zona | jarak | catatan; catatan bisa berisi alamat/jam/masakan/halal/website/telp/maps bila tersedia):\n${daftar.join("\n")}`
+              : `TEMPAT dari OpenStreetMap (id | nama | jenis | zona | jarak | catatan):\n${daftar.join("\n")}`
+        );
+      } else if (sumber === "google") {
+        baris.push(
+          `TEMPAT: Google Maps TIDAK mengembalikan hasil${kueri ? ` untuk pencarian "${kueri}"` : ` untuk ${dest.name}`}. Katakan terus terang hal itu, minta user memperjelas area atau jenis tempat, dan JANGAN menyebut nama tempat dari ingatan.`
+        );
       } else if (dest.skala === "negara") {
         baris.push(
           "TEMPAT: tujuan ini setingkat negara, jadi tidak ada daftar tempat. Pilih kota/wilayah dari panduan di atas, lalu rekomendasikan secukupnya dan jujur soal ketidakpastian."
@@ -887,11 +1059,20 @@ export async function kumpulkanLapangan({
       bagianBlok.push(baris.join("\n"));
     });
 
+    const sumberTempat = hasil.some((h) => h.sumber === "google")
+      ? "google"
+      : hasil.some((h) => h.sumber === "geoapify")
+        ? "geoapify"
+        : "osm";
+    const labelPeta = sumberTempat === "geoapify" ? "Geoapify" : "OpenStreetMap";
     const blok =
-      `\n\n=== DATA LAPANGAN (OpenStreetMap, Wikipedia, Wikivoyage, Open-Meteo — diambil sekarang) ===\n` +
-      `${bagianBlok.join("\n\n")}\n\n${ATURAN_PAKAI}\n=== AKHIR DATA LAPANGAN ===`;
+      sumberTempat === "google"
+        ? `\n\n=== DATA LAPANGAN (TEMPAT: Google Maps / Google Places; konteks: Wikipedia, Wikivoyage, Open-Meteo — diambil sekarang) ===\n` +
+          `${bagianBlok.join("\n\n")}\n\n${ATURAN_PAKAI_GOOGLE}\n=== AKHIR DATA LAPANGAN ===`
+        : `\n\n=== DATA LAPANGAN (TEMPAT: ${labelPeta}; konteks: Wikipedia, Wikivoyage, Open-Meteo — diambil sekarang) ===\n` +
+          `${bagianBlok.join("\n\n")}\n\n${ATURAN_PAKAI}\n=== AKHIR DATA LAPANGAN ===`;
 
-    return { blok, places, dests, byId, cuaca: cuacaTeks };
+    return { blok, places, dests, byId, cuaca: cuacaTeks, sumber: sumberTempat, kueri };
   };
 
   try {
@@ -1037,9 +1218,32 @@ function urutkanDekat(tempat) {
  * Setelah AI menyusun plan: cocokkan tiap tempat ke data nyata (ref / nama / geocode),
  * buang yang tidak bisa dibuktikan ada, urutkan dekat-ke-dekat, hitung jarak per hari.
  */
-export async function perkuatRencana(plan, lapangan, { batasMs = 4500 } = {}) {
+/** Cari satu tempat di Google Maps; hanya diterima kalau namanya benar-benar mirip. */
+async function cariTempatDiGoogle(nama, lapangan, env, fetchFn) {
+  for (const dest of (lapangan.dests || []).slice(0, 2)) {
+    const bias =
+      dest.skala === "kota" || dest.skala === "poi" ? { lat: dest.lat, lon: dest.lon } : null;
+    try {
+      const hasil = await cariGoogle({
+        query: dest.skala === "google" ? nama : `${nama} ${dest.name}`,
+        env,
+        pusat: bias,
+        maks: 3,
+        fetchFn,
+      });
+      const cocok = cocokkanNama(nama, hasil);
+      if (cocok) return { ...cocok, kota: dest.name };
+    } catch {
+      // coba tujuan berikutnya
+    }
+  }
+  return null;
+}
+
+export async function perkuatRencana(plan, lapangan, { batasMs = 4500, env = null, fetchFn } = {}) {
   if (!plan || !Array.isArray(plan.days) || !lapangan) return plan;
   const mulai = Date.now();
+  const pakaiGoogle = lapangan.sumber === "google" && Boolean(env) && googleAktif(env);
   let jatahGeocode = 8;
   let terverifikasi = 0;
   let dibuang = 0;
@@ -1052,7 +1256,14 @@ export async function perkuatRencana(plan, lapangan, { batasMs = 4500 } = {}) {
       if (hit && !cocokkanNama(t.name, [hit])) hit = null; // ref tidak cocok nama -> abaikan
       if (!hit) hit = cocokkanNama(t.name, lapangan.places);
 
+      // Google aktif: tempat di luar daftar harus dibuktikan lewat Google Maps, bukan OSM.
+      if (!hit && pakaiGoogle && jatahGeocode > 0 && Date.now() - mulai < batasMs) {
+        jatahGeocode -= 1;
+        hit = await cariTempatDiGoogle(t.name, lapangan, env, fetchFn);
+      }
+
       if (hit) {
+        const google = hit.sumber === "google";
         hasil.push({
           ...t,
           name: hit.name,
@@ -1060,19 +1271,22 @@ export async function perkuatRencana(plan, lapangan, { batasMs = 4500 } = {}) {
           lat: hit.lat,
           lon: hit.lon,
           verified: true,
-          sumber: "osm",
+          sumber: google ? "google" : "osm",
           zona: hit.zona,
           jenisAsli: hit.jenis,
           openingHours: hit.jam || "",
           image: hit.foto || undefined,
-          mapsUrl: mapsUrl(hit.name, hit.kota),
+          ...(google
+            ? { placeId: hit.placeId, rating: hit.rating, ulasan: hit.ulasan }
+            : {}),
+          mapsUrl: google ? hit.mapsUrl : mapsUrl(hit.name, hit.kota),
         });
         terverifikasi += 1;
         continue;
       }
 
       let titik = null;
-      if (jatahGeocode > 0 && Date.now() - mulai < batasMs) {
+      if (!pakaiGoogle && jatahGeocode > 0 && Date.now() - mulai < batasMs) {
         jatahGeocode -= 1;
         titik = await geocodeDalam(t.name, lapangan.dests);
       }
@@ -1122,7 +1336,12 @@ export async function perkuatRencana(plan, lapangan, { batasMs = 4500 } = {}) {
   }
 
   plan.grounding = {
-    sumber: ["OpenStreetMap", "Wikipedia/Wikivoyage", "Open-Meteo"],
+    sumber:
+      lapangan.sumber === "google"
+        ? ["Google Maps (Places API)", "Wikipedia/Wikivoyage", "Open-Meteo"]
+        : lapangan.sumber === "geoapify"
+          ? ["Geoapify (peta & lokasi)", "Wikipedia/Wikivoyage", "Open-Meteo"]
+          : ["OpenStreetMap", "Wikipedia/Wikivoyage", "Open-Meteo"],
     tujuan: lapangan.dests.map((d) => d.display || d.name),
     cuaca: lapangan.cuaca || null,
     tempatTerverifikasi: terverifikasi,
@@ -1134,6 +1353,22 @@ export async function perkuatRencana(plan, lapangan, { batasMs = 4500 } = {}) {
 
 /** Satu tempat -> bentuk yang dipakai kartu peta di chat. */
 export function keKartuPeta(p, embed) {
+  if (p.sumber === "google") {
+    return {
+      name: p.name,
+      lat: p.lat,
+      lon: p.lon,
+      sumber: "google",
+      placeId: p.placeId,
+      mapsUrl: p.mapsUrl,
+      link: p.mapsUrl,
+      address: p.alamat || "",
+      kategori: p.masakan || "",
+      ...(p.rating ? { rating: p.rating, ulasan: p.ulasan } : {}),
+      ...(typeof p.bukaSekarang === "boolean" ? { bukaSekarang: p.bukaSekarang } : {}),
+      ...(p.foto ? { image: p.foto } : {}),
+    };
+  }
   return {
     name: p.name,
     lat: p.lat,

@@ -53,7 +53,7 @@ function MapPane({ places = [], center = null, className = "" }) {
       const tautanMaps = document.createElement("a");
       tautanMaps.textContent = "Buka di Google Maps";
       tautanMaps.href =
-        typeof p.mapsUrl === "string" && /^https:\/\/www\.google\.com\/maps\//.test(p.mapsUrl)
+        typeof p.mapsUrl === "string" && /^https:\/\/(?:www\.google\.com\/maps\/|maps\.google\.com\/|maps\.app\.goo\.gl\/|goo\.gl\/maps\/)/.test(p.mapsUrl)
           ? p.mapsUrl
           : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(nama)}`;
       tautanMaps.target = "_blank";
