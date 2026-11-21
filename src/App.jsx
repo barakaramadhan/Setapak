@@ -7,36 +7,39 @@ import LandingPage from "./pages/guest/LandingPage";
 import UserLayout from "./components/layouts/UserLayout";
 import DashboardUser from "./pages/user/DashboardUser";
 import AiChat from "./pages/user/sections/AiChat";
+import YourPlan from "./pages/user/sections/YourPlan";
+import TripDetail from "./pages/user/sections/TripDetail";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 import TripPage from "./pages/user/TripPage";
 
-// MODE PENGEMBANGAN HALAMAN USER
-// true  -> npm run dev langsung menampilkan Dashboard User (alamat "/" diarahkan ke "/dashboard")
-// false -> normal: alamat "/" menampilkan Landing Page
-const START_AT_DASHBOARD = true;
+// HALAMAN AWAL SAAT DEVELOPMENT
+const START_PAGE = "";
 
 function App() {
   return (
     <BrowserRouter>
       <SmoothScroll>
         <Routes>
-          {START_AT_DASHBOARD && (
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Kalau START_PAGE diisi, "/" langsung diarahkan ke sana */}
+          {START_PAGE && (
+            <Route path="/" element={<Navigate to={START_PAGE} replace />} />
           )}
 
           {/* Halaman untuk pengunjung (belum login) */}
           <Route element={<GuestLayout />}>
-            <Route path="/" element={<LandingPage />} />
+            {!START_PAGE && <Route path="/" element={<LandingPage />} />}
           </Route>
 
-          {/* Masuk / daftar (Supabase Auth) */}
+          {/* Halaman sign in / sign up */}
           <Route element={<AuthLayout />}>
+            <Route path="/sign-in" element={<SignIn />} />
+            <Route path="/sign-up" element={<SignUp />} />
             <Route path="/login" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
           </Route>
 
-          {/* Halaman user: hanya bisa diakses setelah login */}
+          {/* Halaman user: hanya bisa diakses setelah login (backend/main logic) */}
           <Route
             element={
               <RequireAuth>
@@ -46,18 +49,14 @@ function App() {
           >
             <Route path="/dashboard" element={<DashboardUser />} />
             <Route path="/chats" element={<AiChat />} />
-            {/* Halaman Plan sudah digabung ke Trip */}
             <Route path="/plan" element={<Navigate to="/trip" replace />} />
-            <Route path="/trip" element={<TripPage />} />
-            <Route path="/trip/:id" element={<TripPage />} />
+            {/* Keep baraka trip UI routes, backed by main trip logic/components where available */}
+            <Route path="/trip" element={<YourPlan />} />
+            <Route path="/trip/:id" element={<TripDetail />} />
+            <Route path="/trip/workspace/:id" element={<TripPage />} />
           </Route>
 
-          <Route
-            path="*"
-            element={
-              <Navigate to={START_AT_DASHBOARD ? "/dashboard" : "/"} replace />
-            }
-          />
+          <Route path="*" element={<Navigate to={START_PAGE || "/"} replace />} />
         </Routes>
       </SmoothScroll>
     </BrowserRouter>

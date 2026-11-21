@@ -9,7 +9,6 @@ const navigasiMenu = [
   { label: "Home", to: "/dashboard", icon: "fi fi-rr-house-blank" },
   { label: "Chats", to: "/chats", icon: "fi fi-rr-beacon" },
   { label: "Trip", to: "/trip", icon: "fi fi-rr-briefcase-blank" },
-  { label: "Explore", to: "/explore", icon: "fi fi-rr-search" },
 ];
 
 // Tombol aksi kecil dengan ikon SVG (pasti tampil, tanpa bergantung font ikon).

@@ -191,7 +191,7 @@ function HomeUser() {
 
   return (
     // [PERBAIKAN 1]: Ditambah max-w-7xl mx-auto w-full agar layout terpusat rapi
-    <section className="font-jakarta max-w-7xl mx-auto w-full">
+    <section className="font-jakarta max-w-7xl mx-auto w-full bg-bright-white">
       {/* bagian atas: sapaan + lonceng + profil */}
       <header className="flex items-start justify-between px-10 pt-9">
         <div>
@@ -289,7 +289,7 @@ function HomeUser() {
                     <h3 className="font-clash text-4xl font-bold text-white tracking-normal">
                       {item.title}
                     </h3>
-                    <p className="text-xs font-normal leading-tight text-white">
+                    <p className="text-sm font-light leading-tight text-white">
                       {item.description}
                     </p>
                   </div>
@@ -339,7 +339,7 @@ function HomeUser() {
                 type="button"
                 onClick={() => pilihMode(m)}
                 className={`rounded-full px-3 py-1 text-sm font-jakarta font-medium capitalize ${
-                  mode === m ? "bg-[#83ADD0] text-white" : "text-grey-light/80"
+                  mode === m ? "bg-arctic-blue text-white" : "text-grey-light/80"
                 }`}
               >
                 {m}

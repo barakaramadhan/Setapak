@@ -13,6 +13,9 @@ function FillButton({
   const fillRef = useRef(null);
   const circle = useRef({ r: 0, x: 0, y: 0 });
 
+  // Fungsi untuk cek apakah layar saat ini mobile (sesuai max-sm Tailwind)
+  const isMobile = () => window.innerWidth < 640;
+
   const renderFill = () => {
     if (!fillRef.current) return;
     const { r, x, y } = circle.current;
@@ -33,6 +36,8 @@ function FillButton({
     Math.hypot(Math.max(x, w - x), Math.max(y, h - y));
 
   const handleEnter = (e) => {
+    if (isMobile()) return; // Hentikan eksekusi jika di mobile
+
     const { x, y, w, h } = getPos(e);
     circle.current.x = x;
     circle.current.y = y;
@@ -47,6 +52,8 @@ function FillButton({
   };
 
   const handleLeave = (e) => {
+    if (isMobile()) return; // Hentikan eksekusi jika di mobile
+
     const { x, y } = getPos(e);
     circle.current.x = x;
     circle.current.y = y;
@@ -85,6 +92,8 @@ function FillButton({
         style={{ clipPath: "circle(0px at 0px 0px)" }}
         className={twMerge(
           "pointer-events-none absolute inset-0 z-10 flex items-center justify-center whitespace-nowrap rounded-2xl font-jakarta font-extrabold",
+          // Tambahkan max-sm:hidden di sini untuk jaga-jaga agar layer fill benar-benar tidak tampil di mobile
+          "max-sm:hidden", 
           fillClassName
         )}
       >

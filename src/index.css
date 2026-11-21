@@ -24,6 +24,23 @@
   --color-bright-white: #FAFAFA;
   --color-grey-light: #292929;
   --color-grey-label: #969696;
+  --color-arctic-blue: #83ADD0;
+}
+
+@layer base {
+  body {
+    @apply bg-bright-white;
+  }
+}
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* Cetak / Simpan PDF dari workspace trip: hanya konten rencana yang keluar. */

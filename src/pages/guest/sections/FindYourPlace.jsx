@@ -83,31 +83,34 @@ function FindYourPlace() {
   };
 
   return (
-    <section className="px-20 py-14 flex items-center bg-bright-white">
-      <div className="flex-1">
-        <SectionMarker title="02  Pouplar Destination" className="mb-10 w-48" />
-        <h1 className="font-jakarta font-medium text-7xl text-grey-light">
+    <section className="px-20 py-14 flex flex-col lg:flex-row items-center gap-12 bg-bright-white max-sm:px-5 max-sm:py-10">
+      <div className="flex-1 w-full">
+        <SectionMarker
+          title="02 Popular Destination"
+          className="mb-10 max-sm:mb-6 px-6 py-2 max-sm:px-3 max-sm:py-1 max-sm:mb-5"
+        />
+        <h1 className="font-jakarta font-medium text-7xl text-grey-light max-sm:text-4xl max-sm:whitespace-nowrap">
           Find Your
-          <span className="font-clash font-semibold text-light-brown-new pl-3">
+          <span className="font-clash font-semibold text-light-brown-new pl-3 max-sm:pl-2">
             Place
           </span>
         </h1>
-        <p className="font-jakarta font-normal text-grey-light text-base max-w-sm mt-4">
+        <p className="font-jakarta font-normal text-grey-light text-base max-w-sm mt-4 max-sm:text-sm max-sm:max-w-full">
           Discover remarkable destinations, uncover hidden gems, and explore the
           beauty of places around the world.
         </p>
       </div>
 
-      <div className="w-full max-w-lg shrink-0 bg-white rounded-2xl shadow-xl">
+      <div className="w-full max-w-lg shrink-0 bg-white rounded-2xl shadow-xl max-sm:max-w-full">
         <img
           src={ImageCard}
           alt=""
-          className="w-full h-28 object-cover rounded-t-2xl"
+          className="w-full h-28 object-cover rounded-t-2xl max-sm:h-24"
         />
 
         <div className="px-5 py-6">
-          <div className="flex gap-6 pb-5">
-            <div>
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pb-4 sm:pb-5">
+            <div className="flex-1">
               <p className="font-jakarta font-medium text-sm text-grey-light pb-2">
                 Destination
               </p>
@@ -159,8 +162,8 @@ function FindYourPlace() {
             </div>
           </div>
 
-          <div className="flex gap-6">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+            <div className="flex-1 relative">
               <p className="font-jakarta font-medium text-sm text-grey-light pb-2">
                 Date
               </p>
@@ -176,11 +179,13 @@ function FindYourPlace() {
                 </div>
 
                 {isDateOpen && (
-                  <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-100 p-4 z-20">
+                  <div className="absolute left-0 max-sm:left-auto max-sm:right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-100 p-4 z-20">
                     <div className="flex items-center justify-between mb-3">
                       <button
                         type="button"
-                        onClick={() => setViewDate(new Date(year, month - 1, 1))}
+                        onClick={() =>
+                          setViewDate(new Date(year, month - 1, 1))
+                        }
                         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
                       >
                         <i className="fi fi-br-angle-small-left text-gray-400 text-lg leading-none"></i>
@@ -190,7 +195,9 @@ function FindYourPlace() {
                       </p>
                       <button
                         type="button"
-                        onClick={() => setViewDate(new Date(year, month + 1, 1))}
+                        onClick={() =>
+                          setViewDate(new Date(year, month + 1, 1))
+                        }
                         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
                       >
                         <i className="fi fi-br-angle-small-right text-gray-400 text-lg leading-none"></i>
@@ -247,7 +254,14 @@ function FindYourPlace() {
             </div>
           </div>
 
-          <FillButton className="mt-6">Plan Trip</FillButton>
+          <div className="mt-6 flex justify-start max-sm:justify-center w-full">
+            <FillButton
+              className="max-sm:px-32 max-sm:py-3 max-sm:text-white flex justify-center items-center text-center"
+              baseClassName="max-sm:bg-dark-brown-new ring-1 ring-inset ring-dark-brown-new text-dark-brown-new"
+            >
+              Plan Trip
+            </FillButton>
+          </div>
         </div>
       </div>
     </section>
