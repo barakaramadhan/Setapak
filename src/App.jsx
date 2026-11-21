@@ -13,7 +13,7 @@ import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 
 // HALAMAN AWAL SAAT DEVELOPMENT
-const START_PAGE = "/trip"; // Saya ubah ke "/trip" agar Anda langsung melihat halaman YourPlan saat npm run dev
+const START_PAGE = ""; // Saya ubah ke "/trip" agar Anda langsung melihat halaman YourPlan saat npm run dev
 
 function App() {
   return (

@@ -4,7 +4,7 @@ export default function SectionMarker({ title, className }) {
   return (
     <div
       className={twMerge(
-        "border-2 border-grey-light rounded-full w-28 h-10 flex items-center justify-center",
+        "border-2 border-grey-light rounded-full w-fit px-4 py-2 flex items-center justify-center",
         className
       )}
     >

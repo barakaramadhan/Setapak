@@ -115,7 +115,7 @@ function Navbar() {
   };
 
   return (
-    <header className="fixed top-3 inset-x-0 z-50 flex justify-center pointer-events-none">
+    <header className="fixed top-3 inset-x-0 z-50 flex justify-center pointer-events-none max-sm:hidden">
       <nav
         className={`pointer-events-auto rounded-full border px-6 py-2 transition-all duration-300 ${
           solid
