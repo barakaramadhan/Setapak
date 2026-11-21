@@ -1,7 +1,7 @@
 // Pemanggil provider AI. Ditaruh di SERVER supaya API key tidak bocok ke browser.
 // Urutan fallback diatur di fungsi askAI() di bawah.
-// Default: Groq lebih dulu karena cepat & tidak membuang token untuk "berpikir".
-// Gemini tetap didukung sebagai cadangan (bisa diatur lewat AI_PROVIDER_ORDER).
+// Default: provider yang dikonfigurasi (mis. 100milionseek/Ollama) dicoba dulu,
+// lalu Groq, Gemini, dan OpenRouter sebagai cadangan (bisa diatur lewat AI_PROVIDER_ORDER).
 
 import { MODULES } from "../src/utils/tripModules.js";
 
@@ -20,8 +20,9 @@ CARA BERPIKIR PERENCANA AHLI (terapkan diam-diam; jangan dibacakan sebagai dafta
 2. Berpikir seperti orang lokal: jam buka & hari tutup, waktu salat/Jumat siang, musim hujan/panas, jam macet, antrean, dan mana yang sebenarnya tidak layak dikunjungi turis.
 3. Geografi dulu: kelompokkan per zona, jangan zig-zag. Maksimal 3 kegiatan utama per hari plus makan. Outdoor/panas di pagi atau sore, indoor di siang.
 4. Realistis: waktu tempuh, durasi, dan biaya sebagai rentang "perkiraan". Jangan menjejalkan jadwal.
-5. Jujur: kalau tidak yakin atau data terbatas, katakan dan beri cara mengeceknya. Lebih baik 3 rekomendasi yang tepat daripada 8 yang asal.
-6. Sisipkan satu "tips orang dalam" yang benar-benar berguna (waktu terbaik, yang perlu dipesan duluan, atau yang sebaiknya dilewati).`;
+5. Jujur: kalau tidak yakin atau data terbatas, katakan dan beri cara mengeceknya. Jangan mengarang harga tiket, hotel, visa, transport, jam buka, maupun tautan; bedakan estimasi dari data yang benar-benar dicek. Lebih baik 3 rekomendasi yang tepat daripada 8 yang asal.
+6. Kalau perjalanan romantis/bulan madu juga membawa anak, seimbangkan waktu berdua dengan aktivitas yang aman dan nyaman untuk anak; jangan merencanakan seolah mereka bepergian berdua saja.
+7. Sisipkan satu "tips orang dalam" yang benar-benar berguna (waktu terbaik, yang perlu dipesan duluan, atau yang sebaiknya dilewati).`;
 
 // Prompt khusus untuk "For you": AI wajib mengembalikan JSON, bukan teks biasa.
 export const RECOMMEND_SYSTEM_PROMPT = `Kamu adalah mesin rekomendasi tempat wisata SETAPAK.
@@ -59,6 +60,7 @@ WAJIB CEK LOKASI SEBELUM MENJAWAB (contoh yang harus kamu ingat):
 
 ATURAN JAWABAN:
 - Kalau pertanyaannya memang soal tempat, beri 3 sampai 5 nama NYATA yang ada di kota/negara yang ditanya, lengkap dengan area singkat. Kalau pertanyaannya obrolan ringan, cukup jawab seperlunya — jangan dipaksa jadi daftar wisata.
+- Untuk pertanyaan fakta spesifik seperti lokasi syuting, gunakan hanya DATA SUMBER FILM yang disertakan. Bedakan lokasi produksi dari latar cerita; tanpa sumber yang mendukung, katakan belum terverifikasi. Jangan membuat tautan atau alamat.
 - Kalau user bertanya apakah sebuah tempat ada di kota tertentu dan ternyata tidak ada, jawab terus terang, lalu sebut alternatif di kota itu. Contoh: ditanya "ada Taman Safari di Bekasi?" → "Tidak ada. Taman Safari Indonesia ada di Cisarua, Bogor, sekitar 1–1,5 jam dari Bekasi." lalu sebut wisata Bekasi yang kamu tahu.
 - Jangan menyebut Pegadaian, bank, kantor, sekolah, atau jasa apa pun sebagai destinasi.
 - Format: maksimal 140 kata. Obrolan ringan cukup 1–3 paragraf tanpa judul. Kalau memang perlu daftar tempat, pakai "## Judul" per bagian, "- " untuk poin, **tebal** untuk hal penting. Gunakan HANYA "## " untuk judul, jangan "#" atau "###", dan jangan tabel markdown.
@@ -78,7 +80,7 @@ PAKAI BAGIAN INI SEBAGAI PANDUAN (boleh digabung kalau obrolannya ringan, tapi t
 ## Ringkasan
 Satu paragraf: tujuan, durasi, dan karakter perjalanan. Memakai PROFIL TRIP bila tersedia.
 ## Perkiraan biaya
-Rinci per komponen (tiket, akomodasi, transport darat, makan, tiket masuk/visit, lain-lain) dalam rentang Rupiah. Awali dengan "Perkiraan, cek harga terbaru". Jangan beri angka tunggal yang kepastiannya tidak kamu tahu.
+Rinci per komponen (tiket, akomodasi, transport darat, makan, tiket masuk/visit, lain-lain). Tulis rentang Rupiah hanya jika didukung data yang tersedia; jika tidak, tandai "perlu cek harga untuk tanggal keberangkatan" daripada mengarang angka. Awali dengan "Perkiraan, cek harga terbaru". Jangan beri angka tunggal yang kepastiannya tidak kamu tahu.
 ## Transport & area
 Rute umum, bandara/pintu masuk, perkiraan lama tempuh, dan area menginap yang masuk akal. Sebut sebagai perkiraan.
 ## Makanan
@@ -89,6 +91,8 @@ Akhiri dengan satu kalimat singkat mengajak lanjut ke mode Planning untuk jadwal
 
 ATURAN KEBENARAN:
 - Sebelum menjawab, cek lokasi. Masjidil Haram ada di Makkah; Masjid Nabawi ada di Madinah; Jeddah adalah pintu masuk udara utama untuk keduanya. Jangan tertukar.
+- Jika profil memuat pembagian hari per kota, jumlah total hari adalah jumlah seluruh kota tersebut; pertahankan pembagian itu. Jika budget ditandai "per orang", hitung dan bahas biaya per orang (serta total berdua hanya bila jelas), jangan menganggapnya budget berdua.
+- Bandingkan perkiraan total perjalanan dengan budget secara jujur. Jangan menyatakan budget "cukup" tanpa dasar atau menyajikan harga tiket/hotel seolah-olah real-time. Tanpa harga aktual atau rentang yang diberikan sumber, jangan mengarang angka tiket/hotel: tandai perlu dicek untuk tanggal dan kota keberangkatan. Jika anggaran belum bisa dipastikan, katakan belum bisa dikonfirmasi dan sebut komponen mahal yang wajib dicek dulu.
 - Kalau ada "DATA TERVERIFIKASI SETAPAK", itu satu-satunya sumber untuk nama tempat & area. DILARANG menambah nama/alamat di luar daftar itu.
 - DILARANG menyebut nama hotel, restoran, maskapai, atau aplikasi transport tertentu kecuali kamu yakin tempat/layanan itu benar-benar ada di kota yang dibahas. Kalau ragu, pakai kategori ("hotel menengah dekat pantai", "rumah makan seafood", "taksi lokal lewat aplikasi") dan sarankan cek review terbaru. Contoh yang tidak boleh dijadikan fakta: "Jeddah Metro", "Grab di Jeddah", "Al Faisaliah Hotel di Jeddah" (hotel itu ada di Riyadh).
 - DILARANG mengarang klaim iklim/musim hujan yang spesifik — cukup katakan "cek kondisi terkini".
@@ -176,6 +180,7 @@ Balas HANYA JSON valid, tanpa markdown dan tanpa penjelasan. Format persis:
 }
 Aturan:
 - Jumlah hari 1 sampai 14. Kalau ada PROFIL TRIP dengan jumlah hari, ikuti angka itu apa adanya (misalnya 10 hari = 10 entri "days"). Jangan memotong jadi 7 hari.
+- Jika PROFIL TRIP memuat "Pembagian durasi", buat tepat sejumlah hari untuk SETIAP destinasi sesuai angkanya, dengan urutan destinasi yang diberikan. Jangan menggabungkan atau menghilangkan negara/kota; cantumkan nama destinasi pada judul hari dan isi tempat yang benar-benar berada di destinasi hari itu. "city" harus menyebut semua destinasi utama.
 - Maksimal 3 tempat per hari. Kategori hanya nature|food|culture|beach|adventure|lainnya. cost angka Rupiah (0 kalau gratis). Pakai nama tempat yang benar-benar ada; jangan mengarang restoran beralamat.
 - Kalau ada DATA LAPANGAN: pilih tempat dari daftar TEMPAT dan isi "ref" dengan id-nya (mis. "P12"). Satu hari = satu zona atau zona bertetangga. "ref": null HANYA untuk tempat terkenal yang kamu yakin ada di tujuan itu. Salin nama persis seperti di daftar.
 - "why" = alasan maksimal 80 karakter yang menyebut kebutuhan mereka (anak, ibadah, budget, cuaca, dll). "startTime" = jam HH:MM yang masuk akal (jam buka, cuaca, waktu salat). Susun urutan tempat di hari itu dari yang paling dekat ke berikutnya.
@@ -187,6 +192,8 @@ const TIMEOUT_MS = 12000;
 // gemini-2.5-flash sudah tidak tersedia untuk akun baru (404).
 const MODEL_GEMINI = "gemini-3.8-flash";
 const MODEL_GROQ = "openai/gpt-oss-20b";
+const MODEL_HMS = "deepseek-v4.1-flash-free";
+const MODEL_OLLAMA = "llama3.2";
 
 // Gambar cadangan kalau AI tidak mengirim URL gambar yang sah.
 // Dipilih per kategori supaya kartu tetap relevan (makanan vs. alam).
@@ -319,6 +326,79 @@ async function askOpenRouter({
   return { reply: text, truncated: data.choices?.[0]?.finish_reason === "length" };
 }
 
+async function askHundredMillionSeek({
+  message,
+  history,
+  env,
+  systemPrompt = SYSTEM_PROMPT,
+  maxTokens = 400,
+}) {
+  const model = env.HUNDREDMILLIONSEEK_MODEL || env.HMS_MODEL || MODEL_HMS;
+  const apiKey = env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY;
+
+  const response = await postJson(
+    "https://100milionseek.top/v1/chat/completions",
+    {
+      model,
+      max_tokens: maxTokens,
+      temperature: 0.7,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...history.slice(-8).map((item) => ({
+          role: item.role === "user" ? "user" : "assistant",
+          content: String(item.text || "").slice(0, 1000),
+        })),
+        { role: "user", content: message },
+      ],
+    },
+    { Authorization: `Bearer ${apiKey}` }
+  );
+
+  if (!response.ok) throw new Error(`100milionseek ${response.status}`);
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content?.trim();
+  if (!text) throw new Error("100milionseek balasan kosong");
+  return { reply: text, truncated: data.choices?.[0]?.finish_reason === "length" };
+}
+
+async function askOllama({
+  message,
+  history,
+  env,
+  systemPrompt = SYSTEM_PROMPT,
+  maxTokens = 400,
+}) {
+  const base = String(env.OLLAMA_BASE_URL || "http://localhost:11434/v1").replace(/\/$/, "");
+  const model = env.OLLAMA_MODEL || MODEL_OLLAMA;
+  const headers = env.OLLAMA_API_KEY
+    ? { Authorization: `Bearer ${env.OLLAMA_API_KEY}` }
+    : {};
+
+  const response = await postJson(
+    `${base}/chat/completions`,
+    {
+      model,
+      max_tokens: maxTokens,
+      temperature: 0.7,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...history.slice(-8).map((item) => ({
+          role: item.role === "user" ? "user" : "assistant",
+          content: String(item.text || "").slice(0, 1000),
+        })),
+        { role: "user", content: message },
+      ],
+    },
+    headers
+  );
+
+  if (!response.ok) throw new Error(`Ollama ${response.status}`);
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content?.trim();
+  if (!text) throw new Error("Ollama balasan kosong");
+  return { reply: text, truncated: data.choices?.[0]?.finish_reason === "length" };
+}
+
 /**
  * Coba provider satu per satu. Kalau semua gagal / kuota habis, kembalikan null.
  */
@@ -332,16 +412,45 @@ export async function askAI({
   allowContinue = false,
 }) {
   const daftar = {
+    "100milionseek": {
+      key: env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY,
+      call: askHundredMillionSeek,
+    },
+    hundredmillionseek: {
+      key: env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY,
+      call: askHundredMillionSeek,
+    },
+    hms: {
+      key: env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY,
+      call: askHundredMillionSeek,
+    },
+    ollama: {
+      key: env.OLLAMA_BASE_URL || env.OLLAMA_MODEL || env.OLLAMA_API_KEY || "local",
+      call: askOllama,
+    },
     gemini: { key: env.GEMINI_API_KEY, call: askGemini },
     groq: { key: env.GROQ_API_KEY, call: askGroq },
     openrouter: { key: env.OPENROUTER_API_KEY, call: askOpenRouter },
   };
 
-  // Urutan default bisa diubah dari .env. Jawaban riset panjang memakai Gemini
-  // lebih dulu lewat providerOrder; tetap fallback otomatis kalau kena 429.
+  // Urutan default bisa diubah dari .env. Provider yang dikonfigurasi eksplisit
+  // (100milionseek, Ollama) otomatis diprioritaskan kecuali urutan diminta lewat
+  // providerOrder / AI_PROVIDER_ORDER.
+  const ada100 = Boolean(env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY);
+  const adaOllama = Boolean(env.OLLAMA_BASE_URL || env.OLLAMA_MODEL || env.OLLAMA_API_KEY);
+  const defaultOrder = [
+    ada100 && "100milionseek",
+    adaOllama && "ollama",
+    "groq",
+    "gemini",
+    "openrouter",
+  ]
+    .filter(Boolean)
+    .join(",");
+
   const urutan = (Array.isArray(providerOrder) && providerOrder.length
     ? providerOrder
-    : String(env.AI_PROVIDER_ORDER || "groq,gemini,openrouter").split(",")
+    : String(env.AI_PROVIDER_ORDER || defaultOrder).split(",")
   )
     .map((name) => String(name).trim().toLowerCase())
     .filter((name) => daftar[name]);

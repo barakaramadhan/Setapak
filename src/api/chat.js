@@ -6,6 +6,11 @@
 
 import { recommendPlaces, searchCityKey } from "./plannerEngine";
 import { parseTripDate, parseTripDateRange } from "../utils/tripDate";
+import {
+  extractBudgetScope,
+  extractTripDestinations,
+  extractTripDurations,
+} from "../utils/tripFacts.js";
 
 // Rencana terakhir masih disimpan lokal supaya halaman Schedule/Trip bisa
 // menampilkannya. Ini bukan cache jawaban AI.
@@ -33,20 +38,6 @@ function writeStorage(key, value) {
  * Setiap request AI membawa profil ini supaya kota, durasi, budget, dan
  * preferensi makanan tidak ditanyakan ulang oleh prompt Planning/planFields.
  */
-const LABEL_DESTINASI = {
-  makkah: "Makkah", mekah: "Makkah", mecca: "Makkah",
-  madinah: "Madinah", medina: "Madinah",
-  jeddah: "Jeddah", jedda: "Jeddah",
-  jepang: "Jepang", japan: "Jepang", singapura: "Singapura", singapore: "Singapura",
-  korea: "Korea", thailand: "Thailand", malaysia: "Malaysia", vietnam: "Vietnam",
-  turki: "Turki", mesir: "Mesir", palestina: "Palestina",
-  amerika: "Amerika", australia: "Australia",
-  bogor: "Bogor", yogyakarta: "Yogyakarta", jogja: "Yogyakarta", bandung: "Bandung",
-  jakarta: "Jakarta", malang: "Malang", surabaya: "Surabaya", semarang: "Semarang",
-  bekasi: "Bekasi", depok: "Depok", tangerang: "Tangerang", solo: "Solo",
-  makassar: "Makassar", bali: "Bali", lombok: "Lombok",
-};
-
 export function extractTripFacts(history = []) {
   const teks = (Array.isArray(history) ? history : [])
     .filter((item) => (item?.role || "user") === "user")
@@ -56,24 +47,16 @@ export function extractTripFacts(history = []) {
     .trim();
   const lower = teks.toLowerCase();
 
-  const destinations = [];
-  Object.entries(LABEL_DESTINASI).forEach(([kunci, label]) => {
-    const pola = new RegExp(`(^|[^a-z])${kunci}([^a-z]|$)`);
-    if (pola.test(lower) && !destinations.includes(label)) destinations.push(label);
-  });
+  const destinations = extractTripDestinations(teks);
 
-  const cocokDurasi =
-    lower.match(/\b(\d{1,2})\s*(hari|malam|days?|minggu)\b/) ||
-    lower.match(/\b(\d{1,2})\s*weeks?\b/);
-  let days = cocokDurasi ? Number(cocokDurasi[1]) : null;
-  if (days !== null && /minggu|week/.test(cocokDurasi[2] || "")) days *= 7;
-  if (days === null && /\b(seminggu|sepekan)\b/.test(lower)) days = 7;
+  const { days, daysByDestination } = extractTripDurations(teks);
 
   const rentang = parseTripDateRange(teks);
   const startDate = rentang?.start || parseTripDate(teks) || null;
 
   const angkaBudget = lower.match(/(?:rp\.?\s*)?([\d.,]+)\s*(juta|jt|rb|ribu)\b/);
   const budget = angkaBudget ? angkaBudget[0].replace(/\s+/g, " ").trim() : null;
+  const budgetScope = extractBudgetScope(lower);
 
   const food = /\b(makanan indonesia|masakan indonesia|kuliner indonesia|makan indonesia|resto indonesia|nasi goreng|rendang|sate|gado-?gado)\b/.test(lower)
     ? "makanan Indonesia"
@@ -126,8 +109,10 @@ export function extractTripFacts(history = []) {
     destinations: destinations.slice(0, 6),
     destinationLabel: destinations.slice(0, 6).join(" + "),
     days: days !== null ? Math.min(30, Math.max(1, days)) : null,
+    daysByDestination,
     startDate,
     budget,
+    budgetScope,
     food,
     purpose,
     tema,
@@ -232,10 +217,14 @@ export async function askCreatePlan(ringkasan, facts = null) {
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    return { plan: data.plan || null, source: data.source || "ai" };
+    return {
+      plan: data.plan || null,
+      source: data.source || "ai",
+      error: typeof data.error === "string" ? data.error : "",
+    };
   } catch (error) {
     console.warn("[setapak] buat plan gagal:", error.message);
-    return { plan: null, source: "offline" };
+    return { plan: null, source: "offline", error: "" };
   }
 }
 

@@ -8,7 +8,7 @@
 | `src/api/chat.js` | Gerbang AI + cache + `askRecommendations()`, `askPlanFields()`, `askCreatePlan()` |
 | `src/data/plannerData.js` | Data destinasi Bogor, Yogyakarta, Bali, Bandung |
 | `src/data/placeImages.js` | Foto asli tempat + cadangan |
-| `server/aiProviders.js` | Groq → Gemini → OpenRouter + system prompt |
+| `server/aiProviders.js` | 100milionseek → Ollama → Groq → Gemini → OpenRouter + system prompt |
 | `server/chatHandler.js` | Endpoint `/api/chat` (chat + rekomendasi) |
 | `server/worldKnowledge.js` | Pengetahuan dunia yang dikurasi (Bekasi, Depok, Jepang, Singapura, Malang, dll.) + fakta lokasi yang sering tertukar |
 | `server/plannerStore.js` | Planner data bersama (Supabase + memory) |
@@ -38,8 +38,8 @@
 | `src/pages/user/sections/HomeUser.jsx` | `For you`: form kota, rating, reload `excludeNames`, gambar `onError`. 3 kotak Travel Interests kirim prompt bertema ber-placeholder `[lokasi]` — tujuan ditentukan user |
 | `src/pages/user/sections/AiChat.jsx` | 2 mode (Searching/Planning) ada di samping tombol kirim, ketik `/` masuk Planning, format markdown rapi (`#`/`##`/`###` jadi judul bertingkat, bukan teks `###`), tombol plan muncul saat siap → AI minta field → user isi → plan tersimpan. Scroll mengikuti halaman (kolom input sticky). Toggle peta OSM gratis. Kartu hanya memakai foto terverifikasi |
 | `src/components/shared/Sidebar.jsx` | New Chat bikin chat baru; daftar chat (pilih, rename, pin, hapus, badge trip) tepat di bawah garis Explore |
-| `server/aiProviders.js` | Prompt AI trip (Searching/Planning/field/JSON plan). Prompt Searching memakai pengetahuan dunia, melarang jasa seperti Pegadaian, melarang salah lokasi, dan hanya memakai `## ` untuk judul |
-| `server/chatHandler.js` | Mode baru + geocode Nominatim/OpenStreetMap (gratis, tanpa API key). Kota dengan data lokal dijawab dari planner; kota/negara lain dijawab dari `worldKnowledge.js`; AI dipanggil hanya untuk pertanyaan travel umum. Peta selalu muncul saat toggle aktif, geocode dibatasi ±0.5° sekitar kota. Nama sampah (Pegadaian/bank/dll.) difilter, jumlah tempat mengikuti angka di prompt |
+| `server/aiProviders.js` | Integrasi provider **100milionseek** (OpenAI-compatible, `deepseek-v4.1-flash-free`, 100M token/akun/hari) dan **Ollama** (OpenAI-compatible `/v1/chat/completions`, lokal/self-host gratis) + fallback Groq/Gemini/OpenRouter. Urutan default otomatis memprioritaskan provider yang dikonfigurasi (`100milionseek,ollama,...`). Prompt AI trip (Searching/Planning/field/JSON plan) tetap dipertahankan. |
+| `server/chatHandler.js` | Mode baru + geocode Nominatim/OpenStreetMap (gratis, tanpa API key). `providerOrder` untuk riset detail & pembuatan rencana kini memprioritaskan 100milionseek/Ollama (bila dikonfigurasi) lalu Gemini/Groq/OpenRouter, dengan fallback & retry. Peta selalu muncul saat toggle aktif, geocode dibatasi ±0.5° sekitar kota. Nama sampah (Pegadaian/bank/dll.) difilter, jumlah tempat mengikuti angka di prompt. |
 | `server/placeMedia.js` | Pencarian foto Wikipedia/Commons kini menolak judul orang/kejadian (mis. Anies Baswedan) dan mengharuskan token nama tempat cocok; nama yang terlalu umum memakai gambar cadangan |
 | `src/main.jsx` | Pasang `ChatsProvider` |
 | `supabase/schema.sql` | Tabel `chats` + RLS (judul, pin, `trip_id`) |
@@ -47,7 +47,8 @@
 | `vite.config.js` | Middleware `/api/chat` untuk dev |
 | `package.json` | Script `reset:planner` |
 | `eslint.config.js` | `globals.node` untuk folder server |
-| `README.md` | Dokumentasi AI, env, kuota, reset, Auth, Trip |
+| `README.md` | Dokumentasi AI, env, kuota (termasuk 100milionseek), reset, Auth, Trip |
+| `.env.example` | Tambah variabel `HUNDREDMILLIONSEEK_API_KEY` / `HUNDREDMILLIONSEEK_MODEL`, `OLLAMA_BASE_URL` / `OLLAMA_MODEL` / `OLLAMA_API_KEY`, dan penjelasan urutan provider |
 | `src/index.css` | `@media print` untuk cetak workspace |
 | `src/pages/user/DashboardUser.jsx` | Hapus import tak terpakai |
 | `UserLayout.jsx`, `Footer.jsx`, `Sidebar.jsx`, `InputAll.jsx` | Hapus import React tak terpakai |
@@ -63,7 +64,7 @@
 ## AI jadi satu-satunya yang menjawab (update terbaru)
 
 - **Cache jawaban dihapus total** (browser & server). Setiap prompt di `Searching`/`Planning` selalu memanggil AI lewat `/api/chat`. Tidak ada lagi jawaban lama yang muncul kembali.
-- **Data kurasi tetap dipakai, tapi sebagai KONTEKS** (`GROUND_ATURAN` + `konteksTerverifikasi()` di `server/chatHandler.js`). AI yang merangkai kalimat; daftar tempat, area, dan fakta lokasi dari `plannerData`/`worldKnowledge` jadi sumber kebenaran supaya tidak halusinasi.
+- **Nama POI/lokasi perjalanan kini bersumber dari peta OpenStreetMap** (`DATA LAPANGAN` dari `server/liveKnowledge.js`). Data kurasi bukan pengganti bukti peta untuk nama tempat; nama rekomendasi dalam daftar diperiksa lagi terhadap hasil peta. Jika tidak ada hasil, jawaban menyebut belum terverifikasi, bukan menyimpulkan tempat pasti tidak ada. Fakta non-peta hanya boleh memakai sumber tepercaya yang disertakan atau diberi tanda belum terverifikasi.
 - Contoh: ditanya "Aku mau ke Bekasi, ada taman safari gak?" -> AI menjawab tidak ada, Taman Safari di Cisarua Bogor, lalu alternatif Bekasi. Semua dari AI, tanpa teks "kuota penuh".
 - `TripWorkspace` sekarang memakai `askCreatePlan()` (AI) untuk mengisi modul, bukan planner lokal.
 - **Form interaktif saat AI bertanya**: `WizardForm` di `AiChat.jsx` menampilkan progress (1/3, 2/3), pilihan cepat yang bisa diklik, dan input + tombol Kirim di dalam kartu yang sama. Mirip pengalaman bertanya di GPT/Gemini. Berlaku di dua tempat: (1) pertanyaan bebas AI di mode Planning — kartu ringkas "Jawab pertanyaan AI" memakai `msg.options` dari baris `PILIHAN:`; (2) form 15 modul setelah Create Planning — ada badge modul, alasan prioritas, chip ringkasan, dan progress per pertanyaan. Tidak ada lagi chip telanjang tanpa input.
@@ -91,4 +92,4 @@ Tidak ada file yang dihapus. Yang dibuang hanya **kode dummy/mock** di `AiChat.j
 
 ---
 
-Verifikasi: `npm run lint` ✅ · `npm run build` ✅
+Verifikasi (setelah penambahan 100milionseek & Ollama): `npm run lint` ✅ · `npm run build` ✅

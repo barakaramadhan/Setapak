@@ -58,6 +58,67 @@ function denganBatas(promise, ms, cadangan = null) {
   ]);
 }
 
+const KATA_TANYA_FILM = /\b(film|movie)\b.*\b(?:di mana|dimana|where)\b.*\b(?:syuting|difilmkan|dibuat|filmed|shot|produksi|negara|mau ke|pergi ke)\b|\b(?:lokasi|tempat)\s+(?:syuting|filming)\b/i;
+const KATA_JUDUL_FILM = /\b(?:itu|ini|dimana|di mana|syuting|difilmkan|dibuat|lokasi|negara|saya|aku|mau|ke|ya|nih|soalnya|where|was|were|filmed|shot|produced|location|in)\b/i;
+
+export function perluCekLokasiFilm(teks = "") {
+  return KATA_TANYA_FILM.test(String(teks || ""));
+}
+
+function judulFilmDariPesan(teks) {
+  const pesan = String(teks || "").trim();
+  const sesudahFilm = pesan.match(
+    /\b(?:film|movie)\s+(.+?)(?=\s+(?:itu|ini|di mana|dimana|lokasi|syuting|difilmkan|dibuat|where|was|were|filmed|shot|produced)\b|[?!]|$)/i
+  )?.[1];
+  if (sesudahFilm) return sesudahFilm.replace(/^["'“”]+|["'“”]+$/g, "").trim();
+  return pesan
+    .replace(KATA_TANYA_FILM, " ")
+    .split(/\s+/)
+    .filter((kata) => kata.length > 2 && !KATA_JUDUL_FILM.test(kata))
+    .slice(0, 8)
+    .join(" ");
+}
+
+export async function cariFaktaLokasiFilm(teks = "") {
+  if (!perluCekLokasiFilm(teks)) return null;
+  const judul = judulFilmDariPesan(teks);
+  if (!judul) return null;
+
+  return ingat(`film-fact:${normNama(judul)}`, 24 * JAM, async () => {
+    const api = "https://en.wikipedia.org/w/api.php";
+    const cari = await getJson(
+      `${api}?action=query&format=json&list=search&srnamespace=0&srlimit=3&srsearch=${encodeURIComponent(judul)}`,
+      5000
+    );
+    const tokensJudul = normNama(judul).split(" ").filter((kata) => kata.length > 2);
+    const halaman = (cari?.query?.search || []).find((item) => {
+      const nama = normNama(item.title);
+      return tokensJudul.some((kata) => nama.split(" ").includes(kata));
+    });
+    if (!halaman) return null;
+
+    const data = await getJson(
+      `${api}?action=query&format=json&prop=extracts%7Cinfo&explaintext=1&exchars=1200&inprop=url&titles=${encodeURIComponent(halaman.title)}`,
+      5000
+    );
+    const page = Object.values(data?.query?.pages || {})[0];
+    if (!page?.extract || !page.fullurl) return null;
+
+    const evidence = String(page.extract)
+      .split(/(?<=[.!?])\s+/)
+      .filter((sentence) => /\b(?:filming|filmed|production began|principal photography|shot in|shot at)\b/i.test(sentence))
+      .join(" ")
+      .slice(0, 900);
+    if (!evidence) return null;
+
+    return {
+      title: String(page.title),
+      url: String(page.fullurl),
+      evidence,
+    };
+  });
+}
+
 // ---------------------------------------------------------------- util umum
 
 const rad = (d) => (d * Math.PI) / 180;
@@ -296,7 +357,7 @@ function kandidatDariPesan(pesan = "") {
 export async function tentukanTujuan({ message = "", fakta = null, pakaiPesan = true }) {
   const kandidat = [
     ...(pakaiPesan ? kandidatDariPesan(message) : []),
-    ...[...(fakta?.destinations || [])].reverse(),
+    ...(fakta?.destinations || []),
   ];
   const ditemukan = [];
   for (const nama of [...new Set(kandidat)].slice(0, 5)) {
@@ -381,6 +442,14 @@ function tentukanJenis(t) {
   return null;
 }
 
+function subjenisHiburan(t) {
+  if (t.tourism === "theme_park") return "taman hiburan";
+  if (t.leisure === "water_park") return "taman air";
+  if (t.tourism === "zoo") return "kebun binatang";
+  if (t.tourism === "aquarium") return "akuarium";
+  return "";
+}
+
 function fotoDariTag(t) {
   if (t.image && /^https?:\/\/.+\.(jpe?g|png|webp)(\?.*)?$/i.test(t.image)) return t.image;
   const commons = t.wikimedia_commons;
@@ -421,6 +490,7 @@ function ubahElemen(el, pusat) {
   return {
     name,
     jenis,
+    subjenis: subjenisHiburan(t),
     lat,
     lon,
     skor,
@@ -685,6 +755,7 @@ function barisTempat(p, id) {
     id,
     p.name,
     p.jenis,
+    ...(p.subjenis ? [p.subjenis] : []),
     `zona ${p.zona}`,
     `${p.jarak.toFixed(1)} km dari pusat`,
   ];
@@ -696,11 +767,38 @@ function barisTempat(p, id) {
 }
 
 const ATURAN_PAKAI = `CARA PAKAI DATA LAPANGAN (WAJIB):
-1. Daftar TEMPAT berasal dari peta nyata (OpenStreetMap). Rekomendasikan tempat dari daftar itu. Tempat di luar daftar BOLEH hanya jika kamu yakin terkenal dan benar ada di tujuan tersebut — beri tanda "(cek di Maps)".
+1. Daftar TEMPAT berasal dari peta nyata (OpenStreetMap). Rekomendasikan nama hanya dari daftar itu. Jika kategori yang diminta tidak ada di daftar, katakan belum bisa memverifikasi dan jangan mengarang alternatif.
 2. DILARANG mengarang alamat, harga pasti, atau jam buka. Kalau jam buka tidak ada di data, tulis "cek jam buka terbaru".
 3. Satu hari sebaiknya satu ZONA (atau zona bertetangga) supaya tidak bolak-balik. Jarak "km dari pusat" membantu memperkirakan waktu tempuh.
 4. Sesuaikan dengan CUACA dan KEBUTUHAN yang terbaca. Kalau data terbatas / kota kecil, katakan terus terang — jangan dipaksakan.
 5. Panduan Wikivoyage hanya latar kontekstual; jangan menyalin nama atau klaim yang kamu ragukan.`;
+
+export function jawabanTempatRekreasi(teks, lapangan, fakta = null) {
+  if (!/\b(dufan|taman hiburan|theme park|amusement park|water[\s-]?park|wahana|roller[\s-]?coaster|water slide|seluncuran air)\b/i.test(String(teks || ""))) {
+    return null;
+  }
+
+  const tujuan =
+    lapangan?.dests?.[0]?.display ||
+    lapangan?.dests?.[0]?.name ||
+    fakta?.destinations?.[0] ||
+    "tujuan tersebut";
+  const kandidat = (lapangan?.places || [])
+    .filter((tempat) => ["taman hiburan", "taman air"].includes(tempat.subjenis))
+    .slice(0, 4);
+
+  if (!lapangan) {
+    return `Aku belum bisa memeriksa data peta untuk ${tujuan} saat ini, jadi aku belum bisa memastikan ada taman hiburan atau taman air seperti Dufan. Aku tidak mau menebak nama tempat.`;
+  }
+  if (!kandidat.length) {
+    return `Aku belum menemukan taman hiburan atau taman air yang bisa diverifikasi di data peta untuk ${tujuan}. Ini bukan bukti pasti bahwa tidak ada, tetapi aku tidak mau mengarang nama. Coba cek kata kunci “theme park” atau “water park” di Google Maps dan periksa situs resminya.`;
+  }
+
+  const daftar = kandidat
+    .map((tempat) => `- **${tempat.name}** (${tempat.subjenis})`)
+    .join("\n");
+  return `Di data peta yang diperiksa untuk ${tujuan}, tercatat:\n${daftar}\n\nData ini mengonfirmasi lokasi dan kategorinya, bukan wahana, jam buka, atau apakah skalanya setara Dufan. Cek informasi resmi sebelum berkunjung.`;
+}
 
 /**
  * Kumpulkan data lapangan untuk tujuan yang sedang dibahas.

@@ -30,3 +30,34 @@ export function ringkasPlan(plan) {
   }
   return bagian.join("\n\n");
 }
+
+export function mapMarkersFromPlan(plan) {
+  const markers = new Map();
+  if (!Array.isArray(plan?.days)) return [];
+
+  plan.days.forEach((day, index) => {
+    (day.places || []).forEach((place) => {
+      if (
+        place.verified === false ||
+        !place.name ||
+        !Number.isFinite(place.lat) ||
+        !Number.isFinite(place.lon)
+      ) {
+        return;
+      }
+
+      const key = `${place.lat},${place.lon}`;
+      if (!markers.has(key)) {
+        markers.set(key, {
+          name: String(place.name),
+          day: String(day.title || `Hari ${index + 1}`),
+          lat: place.lat,
+          lon: place.lon,
+          ...(place.mapsUrl ? { mapsUrl: place.mapsUrl } : {}),
+        });
+      }
+    });
+  });
+
+  return [...markers.values()];
+}

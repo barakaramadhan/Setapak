@@ -46,11 +46,24 @@ function MapPane({ places = [], center = null, className = "" }) {
     const titik = places.filter(
       (p) => Number.isFinite(p.lat) && Number.isFinite(p.lon)
     );
-    titik.forEach((p) =>
+    titik.forEach((p) => {
+      const nama = String(p.name || "Tempat");
+      const label = document.createElement("span");
+      label.textContent = p.day ? `${p.day} · ${nama}` : nama;
+      const tautanMaps = document.createElement("a");
+      tautanMaps.textContent = "Buka di Google Maps";
+      tautanMaps.href =
+        typeof p.mapsUrl === "string" && /^https:\/\/www\.google\.com\/maps\//.test(p.mapsUrl)
+          ? p.mapsUrl
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(nama)}`;
+      tautanMaps.target = "_blank";
+      tautanMaps.rel = "noopener noreferrer";
+
       L.marker([p.lat, p.lon], { icon: ikon })
-        .bindTooltip(p.name, { permanent: true, direction: "right", offset: [8, 0] })
-        .addTo(layer)
-    );
+        .bindTooltip(label, { permanent: true, direction: "right", offset: [8, 0] })
+        .bindPopup(tautanMaps)
+        .addTo(layer);
+    });
     if (titik.length > 1) {
       map.fitBounds(titik.map((p) => [p.lat, p.lon]), { padding: [60, 60], maxZoom: 14 });
     } else if (titik.length === 1) {

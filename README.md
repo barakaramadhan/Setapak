@@ -132,34 +132,48 @@ Catatan implementasi:
 
 ## Cara mengaktifkan AI
 
-Salin `.env.example` menjadi `.env`, lalu isi minimal:
+Salin `.env.example` menjadi `.env`, lalu isi minimal salah satu provider AI. SETAPAK mendukung **100milionseek** (gratis 100.000.000 token/akun/hari, reset 00:00 UTC) dan **Ollama** (lokal, gratis/open-source):
 
 ```env
+# Rekomendasi: 100milionseek (100 juta token/hari)
+HUNDREDMILLIONSEEK_API_KEY=hms-...
+
+# Opsional: Ollama (lokal, gratis & open-source; butuh Ollama + model terpasang)
+# OLLAMA_BASE_URL=http://localhost:11434/v1
+# OLLAMA_MODEL=llama3.2
+# OLLAMA_API_KEY=
+
+# Opsional: cadangan/fallback
 GEMINI_API_KEY=API_KEY_DARI_AI_STUDIO
 GEMINI_MODEL=gemini-3.8-flash
-# AI_PROVIDER_ORDER=groq,gemini,openrouter
+GROQ_API_KEY=
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=google/gemma-4-31b-it:free
+
+# AI_PROVIDER_ORDER=100milionseek,ollama,groq,gemini,openrouter
 ```
 
+> **100milionseek** (`https://100milionseek.top/`): endpoint OpenAI-compatible (`/v1/chat/completions`), model default `deepseek-v4.1-flash-free`, 100M token/akun/hari, maks 5 request paralel. Bila `HUNDREDMILLIONSEEK_API_KEY` diisi, SETAPAK otomatis mencobanya lebih dulu (kecuali `AI_PROVIDER_ORDER` diatur).
+>
+> **Ollama**: **gratis** kalau dipakai secara lokal/self-host karena open-source dan berjalan di komputer/server kamu sendiri (tanpa biaya token API), tapi tetap memakai resource perangkat (CPU/RAM/GPU) dan kualitas/kecepatan tergantung model & hardware. SETAPAK memanggil endpoint OpenAI-compatible Ollama (`/v1/chat/completions`, default `http://localhost:11434/v1`). Untuk Ollama Cloud/endpoint hosted lain, isi `OLLAMA_BASE_URL` (+ `OLLAMA_API_KEY` jika diminta); biaya/limit mengikuti layanan tersebut.
+>
 > `gemini-2.5-flash` sudah tidak tersedia untuk akun baru (HTTP 404). Kalau model
 > default berubah, cukup ganti `GEMINI_MODEL` di `.env` tanpa mengubah kode.
 >
-> **Kenapa Groq yang duluan?** Gemini 3.x menghitung token "berpikir" sebagai
-> bagian dari batas output, jadi jawaban pendek bisa terpotong jadi kosong.
-> Gemini sudah diatur `thinkingLevel: LOW`, tapi tetap lebih lambat dari Groq.
-> Urutan default `groq,gemini,openrouter` membuat jawaban cepat dan tidak boros
-> token. Di free tier **tidak ada tagihan** — kalau kuota habis cukup dapat `429`.
+> Urutan default (provider yang dikonfigurasi diprioritaskan): `100milionseek,ollama,groq,gemini,openrouter`. Gemini 3.x menghitung token "berpikir" sebagai bagian dari batas output, jadi jawaban pendek bisa terpotong jadi kosong. Gemini sudah diatur `thinkingLevel: LOW`. Di free tier **tidak ada tagihan** — kalau kuota habis cukup dapat `429`.
 
-Tanpa API key pun aplikasi tetap jalan — pertanyaan yang dikenal mesin lokal
+Tanpa API key/provider AI pun aplikasi tetap jalan — pertanyaan yang dikenal mesin lokal
 (misalnya `3 hari di Yogyakarta budget 300rb`) tetap dijawab instan.
 
-Urutan jawaban (`src/api/chat.js`):
+Urutan jawaban (`src/api/chat.js` + `server/aiProviders.js`):
 
-1. **Cache localStorage** — prompt yang sama tidak dihitung kuota.
-2. **Mesin lokal** (`src/api/plannerEngine.js`) — baca kota, durasi, budget, minat,
-   lalu susun itinerary dari `src/data/plannerData.js`. Instan & gratis.
-3. **Groq** lewat `/api/chat` — provider utama (cepat, gratis).
-4. **Gemini 3.8 Flash → OpenRouter `:free`** — fallback otomatis kalau kena `429` / timeout.
-5. **Jawaban template** — kalau semua kuota habis, user tetap dapat balasan.
+1. **Mesin lokal** (`src/api/plannerEngine.js`) — baca kota, durasi, budget, minat,
+   lalu susun itinerary dari `src/data/plannerData.js`. Instan & gratis (untuk pola yang dikenali).
+2. **100milionseek** (jika dikonfigurasi) — kuota besar 100 juta token/hari.
+3. **Ollama** (jika dikonfigurasi) — lokal/self-host gratis (pakai resource sendiri) atau endpoint hosted sesuai konfigurasi.
+4. **Groq** lewat `/api/chat` — cepat, gratis.
+5. **Gemini 3.8 Flash → OpenRouter `:free`** — fallback otomatis kalau kena `429` / timeout.
+6. **Jawaban template** — kalau semua kuota habis, user tetap dapat balasan.
 
 Untuk **For you** (input kota), jalurnya sedikit beda: server meminta AI mengembalikan
 JSON berisi kartu (`mode: "recommend"` + `minRating`). Server menyortir ulang hasil AI
@@ -181,13 +195,36 @@ kembali. Tombol **reload** melakukan hal yang sama untuk satu kota: melewati dat
 minta tempat lain ke AI (nama yang sedang tampil dilarang dipakai), lalu menimpaninya.
 
 Kuota dijaga dengan: batas token (500 untuk chat singkat, 2000 untuk riset rencana
-di mode Searching, 2600 untuk membuat rencana, 1600 untuk rekomendasi), riwayat
+di mode Searching, 3600 untuk membuat rencana, 1600 untuk rekomendasi), riwayat
 cukup 8 pesan, input maksimal 500 karakter, dan rate limit 10 request/menit per IP.
-**Jawaban riset panjang dan pembuatan rencana memakai Gemini lebih dulu** lewat
-`providerOrder`; kalau kena 429, otomatis jatuh ke Groq lalu OpenRouter. Kalau
-jawaban riset tetap terpotong (`MAX_TOKENS` / `finish_reason: length`), AI diminta
-melanjutkan sekali dari titik terakhir. Pertanyaan singkat tetap memakai urutan
-provider dari `.env` (default: Groq duluan).
+**Jawaban riset panjang dan pembuatan rencana** akan memprioritaskan provider yang
+dikonfigurasi (mis. 100milionseek/Ollama) lalu Gemini → Groq → OpenRouter lewat
+`providerOrder`; kalau kena 429/error, otomatis fallback ke provider berikutnya. Kalau
+jawaban tetap terpotong (`MAX_TOKENS` / `finish_reason: length`), AI diminta melanjutkan
+sekali dari titik terakhir. Pertanyaan singkat mengikuti urutan provider dari `.env`
+(default otomatis: `100milionseek,ollama,groq,gemini,openrouter` sesuai konfigurasi).
+
+### Catatan 100milionseek
+
+Layanan gratis dengan kuota **100.000.000 token per akun per hari** (reset 00:00 UTC).
+OpenAI-compatible (`https://100milionseek.top/v1/chat/completions`), model default
+`deepseek-v4.1-flash-free`. Tidak menyimpan prompt/response. Batas 5 request paralel
+per akun; status/limit dapat dilihat dari header quota dan dokumentasi resmi. Pendaftaran
+dapat dibatasi saat kapasitas penuh — lihat `https://100milionseek.top/`.
+
+### Catatan Ollama
+
+**Ollama lokal itu gratis** (open-source) untuk dipakai sebagai API di mesin sendiri: tidak ada biaya per-token seperti layanan hosted. Kamu perlu menginstal Ollama, menjalankannya, dan men-download model (`ollama pull <model>`). Performa/kapasitas bergantung pada hardware dan model yang dipilih. Endpoint OpenAI-compatible biasanya tersedia di `http://localhost:11434/v1`.
+
+Jika kamu memakai endpoint Ollama yang di-host (cloud/pihak ketiga), ketentuan biaya, kuota, dan autentikasi mengikuti layanan tersebut (isi `OLLAMA_BASE_URL` dan `OLLAMA_API_KEY` bila diperlukan).
+
+### Catatan 100milionseek
+
+Layanan gratis dengan kuota **100.000.000 token per akun per hari** (reset 00:00 UTC).
+OpenAI-compatible (`https://100milionseek.top/v1/chat/completions`), model default
+`deepseek-v4.1-flash-free`. Tidak menyimpan prompt/response. Batas 5 request paralel
+per akun; status/limit dapat dilihat dari header quota dan dokumentasi resmi. Pendaftaran
+dapat dibatasi saat kapasitas penuh — lihat `https://100milionseek.top/`.
 
 ### Catatan OpenRouter (cadangan ke-3)
 

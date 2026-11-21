@@ -49,11 +49,16 @@ import {
   cocokkanNama,
   tempatDalamTeks,
   keKartuPeta,
+  jawabanTempatRekreasi,
+  perluCekLokasiFilm,
+  cariFaktaLokasiFilm,
 } from "./liveKnowledge.js";
 
 // Pesan yang layak diberi data lapangan (peta nyata). Obrolan ringan tidak.
 const TOPIK_PERJALANAN =
-  /(wisata|tempat|jalan-jalan|liburan|trip|itinerar|rute|makan|kuliner|hotel|nginap|menginap|penginapan|cuaca|biaya|budget|rencana|rekomendasi|destinasi|kunjung|dekat|murah|gratis|umroh|umrah|ibadah|masjid|pantai|gunung|museum|taman|seru|worth|visit|things to do|where to|eat|stay|berapa hari|hari di|ada apa|mau ke|pergi ke|ke sana)/i;
+  /(wisata|tempat|places?\b|jalan-jalan|liburan|trip|itinerar|rute|makan|kuliner|restaurant|restoran|cafe|kafe|hotel|nginap|menginap|penginapan|cuaca|biaya|budget|rencana|rekomendasi|destinasi|kunjung|dekat|murah|gratis|umroh|umrah|ibadah|masjid|mosque|pantai|beach|waterfall|gunung|museum|taman|park|zoo|aquarium|mall|market|shopping|theme park|water ?park|amusement park|attraction|landmark|places to visit|things to see|things to do|where to|where is|where are|eat|stay|berapa hari|hari di|ada apa|mau ke|pergi ke|ke sana)/i;
+const PERTANYAAN_DAFTAR_TEMPAT =
+  /\b(tempat|place|wisata|restaurant|restoran|cafe|kafe|hotel|taman|park|zoo|aquarium|museum|pantai|beach|mosque|masjid|mall|market|shopping|rekomendasi|attraction|landmark|places to visit|things to see|things to do|di mana|dimana|where is|where are)\b/i;
 
 /** Teks yang HANYA ditulis user (bukan jawaban AI), dipakai membaca kebutuhan. */
 function teksUser(history = [], message = "") {
@@ -237,13 +242,27 @@ function bersihkanFakta(raw = {}) {
   const teks = (nilai, batas = 80) =>
     typeof nilai === "string" ? nilai.trim().slice(0, batas) : null;
   const angka = Number(raw.days);
+  const destinations = daftar(raw.destinations, 6);
+  const daysByDestination =
+    raw.daysByDestination && typeof raw.daysByDestination === "object"
+      ? Object.fromEntries(
+          Object.entries(raw.daysByDestination)
+            .filter(([nama]) => destinations.includes(nama))
+            .map(([nama, hari]) => [String(nama).slice(0, 40), Number(hari)])
+            .filter(([, hari]) => Number.isInteger(hari) && hari > 0 && hari <= 30)
+        )
+      : {};
 
   const hasil = {
-    destinations: daftar(raw.destinations, 6),
+    destinations,
     destinationLabel: teks(raw.destinationLabel, 80),
     days: Number.isFinite(angka) && angka > 0 ? Math.min(30, Math.round(angka)) : null,
+    daysByDestination,
     startDate: /^\d{4}-\d{2}-\d{2}$/.test(String(raw.startDate || "")) ? raw.startDate : null,
     budget: teks(raw.budget, 60),
+    budgetScope: ["per orang", "total perjalanan"].includes(raw.budgetScope)
+      ? raw.budgetScope
+      : null,
     food: teks(raw.food, 60),
     purpose: teks(raw.purpose, 40),
     tema: teks(raw.tema, 40),
@@ -267,8 +286,14 @@ function formatFakta(fakta) {
   const tujuan = fakta.destinationLabel || fakta.destinations.join(" + ");
   if (tujuan) baris.push(`- Tujuan: ${tujuan}`);
   if (fakta.days) baris.push(`- Durasi: ${fakta.days} hari`);
+  const durasiTujuan = Object.entries(fakta.daysByDestination || {})
+    .map(([nama, hari]) => `${nama} ${hari} hari`)
+    .join(", ");
+  if (durasiTujuan) baris.push(`- Pembagian durasi: ${durasiTujuan}`);
   if (fakta.startDate) baris.push(`- Mulai tanggal: ${fakta.startDate}`);
-  if (fakta.budget) baris.push(`- Budget: ${fakta.budget}`);
+  if (fakta.budget) {
+    baris.push(`- Budget: ${fakta.budget}${fakta.budgetScope ? ` (${fakta.budgetScope})` : ""}`);
+  }
   if (fakta.food) baris.push(`- Makanan: ${fakta.food}`);
   if (fakta.purpose) baris.push(`- Karakter perjalanan: ${fakta.purpose}`);
   if (fakta.companions) baris.push(`- Pendamping: ${fakta.companions}`);
@@ -331,16 +356,21 @@ const NEGERI_LUAR = [
   "china", "eropa", "australia", "turki", "mesir",
 ];
 
-function konteksTujuan(history = [], message = "") {
-  const gabung = [...history.map((h) => h.text || ""), String(message || "")]
+export function konteksTujuan(history = [], message = "", fakta = null) {
+  const gabung = [
+    ...history.filter((h) => h?.role === "user").map((h) => h.text || ""),
+    String(message || ""),
+  ]
     .join(" ")
     .toLowerCase();
+  const tujuanFakta = Array.isArray(fakta?.destinations) ? fakta.destinations.join(" ") : "";
+  const seluruhPesanUser = `${gabung} ${tujuanFakta}`.trim();
   // Kota luar negeri (kunci worldKnowledge) lebih dulu.
-  const luar = Object.keys(WORLD_CITIES).find((k) => gabung.includes(k));
+  const luar = Object.keys(WORLD_CITIES).find((k) => seluruhPesanUser.includes(k));
   if (luar) return { key: luar, luarNegeri: !KOTA_LOKAL.includes(luar) };
-  const negeri = NEGERI_LUAR.find((k) => gabung.includes(k));
+  const negeri = NEGERI_LUAR.find((k) => seluruhPesanUser.includes(k));
   if (negeri) return { key: negeri, luarNegeri: true };
-  const lokal = KOTA_LOKAL.find((k) => gabung.includes(k));
+  const lokal = KOTA_LOKAL.find((k) => seluruhPesanUser.includes(k));
   return lokal ? { key: lokal, luarNegeri: false } : { key: null, luarNegeri: false };
 }
 
@@ -460,7 +490,7 @@ function fieldsTanpaPengulangan(fields = [], history = [], fakta = null) {
 // Cadangan pintar: isi slot dengan modul yang MASIH kurang, bukan mengulang
 // tema/durasi/budget. Ikut menyesuaikan konteks (luar negeri -> dokumen).
 function fieldLanjutan(history = [], yangAda = [], fakta = null) {
-  const tujuan = konteksTujuan(history, "");
+  const tujuan = konteksTujuan(history, "", fakta);
   const sudah = infoSudahDijawab(history, fakta);
   const dipakai = new Set([
     ...yangAda.map((f) => f.module?.id),
@@ -471,11 +501,19 @@ function fieldLanjutan(history = [], yangAda = [], fakta = null) {
     {
       key: "akomodasi",
       module: infoModul("accommodation"),
-      label: tujuan.luarNegeri
-        ? `Mau menginap di area mana di ${tujuan.key}?`
-        : "Mau menginap di hotel, guesthouse, atau tempat lain?",
+      label:
+        fakta?.purpose === "ibadah" &&
+        fakta.destinations.includes("Makkah") &&
+        fakta.destinations.includes("Madinah")
+          ? "Untuk fokus ibadah, lebih memilih penginapan dekat masjid atau opsi hemat dengan shuttle?"
+          : tujuan.luarNegeri
+            ? `Untuk perjalanan ke ${tujuan.key}, area menginap seperti apa yang kamu prioritaskan?`
+            : "Mau menginap di hotel, guesthouse, atau tempat lain?",
       type: "select",
-      options: ["Dekat pusat kota", "Dekat tempat wisata", "Area tenang", "Belum tentu"],
+      options:
+        fakta?.purpose === "ibadah"
+          ? ["Dekat masjid", "Lebih hemat dengan shuttle", "Belum ada preferensi"]
+          : ["Dekat pusat kota", "Dekat tempat wisata", "Area tenang", "Belum tentu"],
       reason: "Menentukan base camp harian",
     },
     {
@@ -549,6 +587,61 @@ function parsePlanJson(text, fakta = null) {
   } catch {
     return null;
   }
+}
+
+export function rencanaSesuaiPembagian(plan, fakta, lapangan) {
+  const pembagian = Object.entries(fakta?.daysByDestination || {});
+  if (pembagian.length < 2) return true;
+
+  const totalHari = pembagian.reduce((sum, [, hari]) => sum + hari, 0);
+  if (!Array.isArray(plan?.days) || plan.days.length !== totalHari) return false;
+  if (!(lapangan?.byId instanceof Map)) return false;
+
+  let indeksHari = 0;
+  for (const [destinasi, jumlahHari] of pembagian) {
+    const tujuan = normalizeText(destinasi);
+    for (let i = 0; i < jumlahHari; i += 1) {
+      const tempat = plan.days[indeksHari]?.places || [];
+      const semuaSesuai =
+        tempat.length > 0 &&
+        tempat.every((item) => {
+          const rujukan = item.ref ? lapangan.byId.get(String(item.ref).toUpperCase()) : null;
+          return (
+            rujukan &&
+            [rujukan.kota, rujukan.indukNegara].some(
+              (nama) => normalizeText(nama || "") === tujuan
+            )
+          );
+        });
+      if (!semuaSesuai) return false;
+      indeksHari += 1;
+    }
+  }
+  return true;
+}
+
+function beriLabelPembagian(plan, fakta) {
+  const pembagian = Object.entries(fakta?.daysByDestination || {});
+  if (pembagian.length < 2) return plan;
+
+  let indeksHari = 0;
+  for (const [destinasi, jumlahHari] of pembagian) {
+    for (let i = 0; i < jumlahHari; i += 1) {
+      const hari = plan.days[indeksHari];
+      if (!normalizeText(hari.title).includes(normalizeText(destinasi))) {
+        hari.title = `${hari.title} · ${destinasi}`.slice(0, 60);
+      }
+      indeksHari += 1;
+    }
+  }
+
+  const hilang = pembagian
+    .map(([destinasi]) => destinasi)
+    .filter((destinasi) => !normalizeText(plan.city).includes(normalizeText(destinasi)));
+  if (hilang.length) {
+    plan.city = `${plan.city ? `${plan.city} (` : ""}${hilang.join(" & ")}${plan.city ? ")" : ""}`.slice(0, 80);
+  }
+  return plan;
 }
 
 /**
@@ -795,12 +888,10 @@ function balasanKotaTerverifikasi(kotaKey, normalized) {
 // Ditempel ke system prompt. AI tetap yang merangkai kalimat, tetapi tidak
 // boleh mengarang nama tempat/lokasi di luar data yang dikirim server.
 const GROUND_ATURAN = `
-Ketika pesan user memuat "DATA TERVERIFIKASI SETAPAK", perlakukan data itu sebagai satu-satunya sumber kebenaran untuk nama tempat, area, dan lokasi:
-- DILARANG menambah nama tempat, alamat, atau lokasi yang tidak ada di daftar itu.
-- DILARANG mengganti destinasi yang ditanya (user cari Kuta, jawab Kuta — jangan Bali secara umum).
-- Kalau user menyebut tempat yang tidak ada di daftar, jawab terus terang "tidak ada", lalu sebut alternatif dari daftar.
-- Kalau ada catatan FAKTA LOKASI, ikuti itu apa adanya.
-Ketika pesan memuat "DATA LAPANGAN" (peta nyata OpenStreetMap + panduan + cuaca), itu juga sumber kebenaran: nama yang ada di salah satu dari dua daftar boleh dipakai. Kalau keduanya bertentangan, DATA TERVERIFIKASI SETAPAK menang. Ikuti "CARA PAKAI DATA LAPANGAN" dan blok KEBUTUHAN bila ada.
+Untuk rekomendasi atau klaim tentang tempat wisata, restoran, hotel, atau POI lain, gunakan hanya nama dan lokasi yang tercantum di DATA LAPANGAN OpenStreetMap. Jangan mengambil nama tempat dari ingatan model atau daftar kurasi non-peta. Jika tempat tidak ditemukan di peta, katakan "belum terverifikasi di data peta"; jangan menyimpulkan bahwa tempat itu pasti tidak ada.
+DATA TERVERIFIKASI SETAPAK dan pengetahuan umum bukan sumber pengganti untuk nama POI. DATA SUMBER khusus (mis. sumber film) hanya boleh dipakai untuk fakta non-POI yang memang tertulis di sana.
+Untuk fakta yang tidak bisa diberikan peta (mis. harga, visa, atau jam operasional terkini), gunakan hanya sumber tepercaya yang disertakan. Jika tidak ada sumber, tandai sebagai perkiraan atau belum terverifikasi; jangan mengarang kepastian.
+Ikuti "CARA PAKAI DATA LAPANGAN" dan blok KEBUTUHAN bila ada.
 Tetap jawab ramah dan pakai format Markdown yang diminta system prompt. Ikuti panjang jawaban yang ditentukan system prompt (boleh panjang untuk riset rencana).`;
 
 function konteksTerverifikasi({ label, daftar = [], area = null, fakta = null, batas = 5 }) {
@@ -825,6 +916,39 @@ function konteksTerverifikasi({ label, daftar = [], area = null, fakta = null, b
     `Jangan pakai nama atau alamat di luar daftar ini.${catatanFakta}\n` +
     `=== AKHIR DATA ===`
   );
+}
+
+export function namaTempatTidakAdaDiPeta(reply, lapangan, fakta = null) {
+  const daftar = String(reply || "").matchAll(
+    /^\s*(?:[-*+]|\d+[.)])\s+\*\*([^*]{2,100})\*\*/gm
+  );
+  const tersedia = lapangan?.places || [];
+  const tujuan = [
+    ...(lapangan?.dests || []).flatMap((dest) => [dest.name, dest.display]),
+    ...(fakta?.destinations || []),
+  ].filter(Boolean);
+  const bukanNamaTempat = new Set([
+    "akomodasi",
+    "budget",
+    "biaya",
+    "lain-lain",
+    "makan",
+    "makanan",
+    "perkiraan total",
+    "tiket masuk",
+    "tiket pesawat",
+    "total",
+    "transport",
+    "transport darat",
+  ]);
+  return [...daftar]
+    .map((item) => item[1].trim())
+    .filter((nama) => {
+      const namaNormal = normalizeText(nama);
+      if (bukanNamaTempat.has(namaNormal)) return false;
+      if (tujuan.some((label) => normalizeText(label) === namaNormal)) return false;
+      return !cocokkanNama(nama, tersedia);
+    });
 }
 
 const GROUP_KEYS = ["Coffe And Snacks", "Outdoor parks & Trials"];
@@ -1269,7 +1393,7 @@ export async function handleChatRequest(req, res, env = process.env) {
         systemPrompt: PLAN_FIELDS_SYSTEM_PROMPT + profil,
         maxTokens: 500,
       });
-      const tujuan = konteksTujuan(history, message);
+      const tujuan = konteksTujuan(history, message, fakta);
       const fields = fieldsTanpaPengulangan(parsePlanFields(result?.reply), history, fakta).map(
         (field) => ({
           ...field,
@@ -1282,8 +1406,11 @@ export async function handleChatRequest(req, res, env = process.env) {
         source: result?.source || "template",
       };
     } else if (mode === "createPlan") {
-      // Rencana 10–14 hari + modul butuh output JSON panjang: Gemini duluan.
+      // Rencana 10–14 hari + modul butuh output JSON panjang.
       // Data nyata dulu (peta, panduan, cuaca), baru AI menyusun dari data itu.
+      const p100 = env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY ? ["100milionseek"] : [];
+      const pOllama = env.OLLAMA_BASE_URL || env.OLLAMA_MODEL || env.OLLAMA_API_KEY ? ["ollama"] : [];
+      const pAwal = [...p100, ...pOllama];
       const hariPlan = Math.min(14, Math.max(1, fakta?.days || 3));
       const lapangan = await kumpulkanLapangan({
         message,
@@ -1300,10 +1427,11 @@ export async function handleChatRequest(req, res, env = process.env) {
         env,
         systemPrompt: CREATE_PLAN_SYSTEM_PROMPT + profil,
         maxTokens: 3600,
-        providerOrder: ["gemini", "groq", "openrouter"],
+        providerOrder: [...pAwal, "gemini", "groq", "openrouter"],
       });
       let plan = parsePlanJson(result?.reply, fakta);
       let sumberPlan = result?.source;
+      let alasanPlanGagal = null;
       // JSON gagal/terpotong (rencana panjang): coba sekali lagi, lebih ringkas, provider lain dulu.
       if (!plan) {
         const ulang = await askAI({
@@ -1312,20 +1440,63 @@ export async function handleChatRequest(req, res, env = process.env) {
           env,
           systemPrompt: CREATE_PLAN_SYSTEM_PROMPT + profil,
           maxTokens: 3600,
-          providerOrder: ["groq", "gemini", "openrouter"],
+          providerOrder: [...pAwal, "groq", "gemini", "openrouter"],
         });
         plan = parsePlanJson(ulang?.reply, fakta);
         if (plan) sumberPlan = ulang?.source;
       }
+      if (plan && !rencanaSesuaiPembagian(plan, fakta, lapangan)) {
+        const ulang = await askAI({
+          message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}\n\nKOREKSI WAJIB: rencana sebelumnya tidak memenuhi pembagian hari per destinasi. Buat tepat ${fakta.days} hari; setiap hari wajib berisi tempat dari destinasi yang sesuai urutan dan jumlah pada PROFIL TRIP. Gunakan hanya ref dari DATA LAPANGAN, dan jangan menghilangkan destinasi mana pun.`,
+          history: [],
+          env,
+          systemPrompt: CREATE_PLAN_SYSTEM_PROMPT + profil,
+          maxTokens: 3600,
+          providerOrder: [...pAwal, "groq", "gemini", "openrouter"],
+        });
+        const rencanaUlang = parsePlanJson(ulang?.reply, fakta);
+        if (rencanaSesuaiPembagian(rencanaUlang, fakta, lapangan)) {
+          plan = rencanaUlang;
+          sumberPlan = ulang?.source;
+        } else {
+          plan = null;
+          alasanPlanGagal =
+            "AI belum bisa memastikan semua hari dan tempat terbagi benar untuk setiap destinasi. Coba buat rencana lagi sebentar.";
+        }
+      }
       // Tiap tempat dicocokkan ke peta nyata; yang tidak terbukti ada dibuang.
-      if (plan && lapangan) plan = await perkuatRencana(plan, lapangan);
+      if (plan && lapangan) {
+        plan = await perkuatRencana(plan, lapangan);
+        if (!rencanaSesuaiPembagian(plan, fakta, lapangan)) {
+          plan = null;
+          alasanPlanGagal =
+            "Sebagian tempat tidak berhasil diverifikasi untuk semua destinasi. Coba buat rencana lagi.";
+        } else {
+          plan = beriLabelPembagian(plan, fakta);
+        }
+      }
       payload = {
         plan,
+        ...(alasanPlanGagal ? { error: alasanPlanGagal } : {}),
         source: sumberPlan || "template",
       };
     } else if (mode === "search" || mode === "plan") {
       const normalized = normalizeText(message);
+      const pertanyaanLokasiFilm =
+        mode === "search" && perluCekLokasiFilm(message);
+      let faktaFilm = null;
+      if (pertanyaanLokasiFilm) {
+        try {
+          faktaFilm = await cariFaktaLokasiFilm(message);
+        } catch (error) {
+          console.warn("[setapak] verifikasi lokasi film gagal:", error.message);
+        }
+      }
       const butuhRisetDetail = mode === "search" && butuhRiset(normalized, fakta);
+      const tanyaDaftarTempat =
+        mode === "search" &&
+        !pertanyaanLokasiFilm &&
+        PERTANYAAN_DAFTAR_TEMPAT.test(normalized);
       const kotaKey = mode === "search" ? resolveCity(normalized) : null;
       const terverifikasi = kotaKey
         ? kandidatTerverifikasi(kotaKey, normalized)
@@ -1337,8 +1508,17 @@ export async function handleChatRequest(req, res, env = process.env) {
           ? jawabanDuniaDariPesan(normalized)
           : null;
 
+      const gerbangLapangan =
+        !pertanyaanLokasiFilm &&
+        (mode === "plan"
+          ? TOPIK_PERJALANAN.test(message)
+          : butuhRisetDetail || TOPIK_PERJALANAN.test(message));
+
       // Data kurasi -> KONTEKS. AI yang tetap menulis jawabannya.
-      const konteks = jawabanLokal
+      // Untuk pertanyaan perjalanan, tempat hanya boleh bersumber dari OSM.
+      const konteks = gerbangLapangan
+        ? ""
+        : jawabanLokal
         ? konteksTerverifikasi({
             label: cityLabels[kotaKey] || kotaKey,
             daftar: kandidat,
@@ -1360,10 +1540,6 @@ export async function handleChatRequest(req, res, env = process.env) {
 
       // Data lapangan nyata untuk tujuan yang sedang dibahas (gagal jaringan -> null,
       // alur lama tetap jalan). Obrolan ringan tidak memicu pengambilan data.
-      const gerbangLapangan =
-        mode === "plan"
-          ? TOPIK_PERJALANAN.test(message)
-          : butuhRisetDetail || TOPIK_PERJALANAN.test(message);
       let lapangan = null;
       if (gerbangLapangan) {
         lapangan = await kumpulkanLapangan({
@@ -1388,21 +1564,45 @@ export async function handleChatRequest(req, res, env = process.env) {
             ? SEARCH_DETAIL_SYSTEM_PROMPT
             : SEARCH_SYSTEM_PROMPT
           : PLAN_SYSTEM_PROMPT) +
+        (pertanyaanLokasiFilm
+          ? `\n\nPERTANYAAN LOKASI FILM: Pisahkan lokasi produksi/syuting dari lokasi latar cerita atau rumah yang menginspirasi film. Jika ada DATA SUMBER FILM, gunakan hanya klaim yang benar-benar tertulis di sana, sebutkan kota/negara secara tepat, dan jangan menyamakan lokasi cerita dengan lokasi produksi. Jangan mengarang alamat rumah, akses kunjungan, maupun tautan. Jika data sumber tidak memuat lokasi produksi, katakan bahwa lokasinya belum dapat diverifikasi.`
+          : "") +
         GROUND_ATURAN +
         profil +
         tambahanPeta;
 
-      const pesanAI = `${message}${konteks}${blokLapangan}${blokButuh}${catatanPlan}`;
+      const blokFaktaFilm = pertanyaanLokasiFilm
+        ? faktaFilm
+          ? `\n\n=== DATA SUMBER FILM (Wikipedia) ===\nJudul halaman: ${faktaFilm.title}\nPernyataan sumber: ${faktaFilm.evidence}\n=== AKHIR DATA SUMBER ===`
+          : "\n\n=== DATA SUMBER FILM ===\nTidak ditemukan sumber yang dapat mengonfirmasi lokasi produksi. Nyatakan bahwa lokasi belum terverifikasi; jangan menebak kota, negara, alamat, atau membuat tautan.\n=== AKHIR DATA SUMBER ==="
+        : "";
+      const pesanAI = `${message}${konteks}${blokLapangan}${blokButuh}${catatanPlan}${blokFaktaFilm}`;
       const opsiAI = {
         history,
         env,
         systemPrompt,
         maxTokens: butuhRisetDetail ? 2000 : mode === "search" ? 500 : 400,
-        providerOrder: butuhRisetDetail ? ["gemini", "groq", "openrouter"] : undefined,
+        providerOrder: butuhRisetDetail
+          ? [
+              ...(env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY
+                ? ["100milionseek"]
+                : []),
+              ...(env.OLLAMA_BASE_URL || env.OLLAMA_MODEL || env.OLLAMA_API_KEY
+                ? ["ollama"]
+                : []),
+              "gemini",
+              "groq",
+              "openrouter",
+            ]
+          : undefined,
         // Kalau provider melaporkan jawaban terpotong, lanjutkan sekali (semua mode).
         allowContinue: true,
       };
-      let result = await askAI({ message: pesanAI, ...opsiAI });
+      const jawabanRekreasi =
+        mode === "search" ? jawabanTempatRekreasi(message, lapangan, fakta) : null;
+      let result = jawabanRekreasi
+        ? { reply: jawabanRekreasi, source: "openstreetmap" }
+        : await askAI({ message: pesanAI, ...opsiAI });
 
       // Penjaga mutu: jangan menanyakan hal yang sudah diketahui / sudah pernah
       // ditanya, dan jangan menyerahkan jawaban yang berhenti di tengah kalimat.
@@ -1425,13 +1625,60 @@ export async function handleChatRequest(req, res, env = process.env) {
         // Masih menggantung? Rapikan ujungnya secara lokal.
         result = { ...result, reply: rapikanAkhir(result.reply) };
       }
+      if (tanyaDaftarTempat && result?.reply) {
+        const namaTidakTerverifikasi = namaTempatTidakAdaDiPeta(
+          result.reply,
+          lapangan,
+          fakta
+        );
+        if (namaTidakTerverifikasi.length) {
+          const ulang = await askAI({
+            message:
+              `${pesanAI}\n\nKOREKSI SUMBER: Nama tempat berikut tidak ditemukan di DATA LAPANGAN OpenStreetMap: ${namaTidakTerverifikasi.join(", ")}. Jangan sebut nama-nama itu. Gunakan hanya nama tempat yang tercantum di DATA LAPANGAN. Jika tidak ada tempat yang cocok, katakan belum bisa memverifikasinya di data peta; jangan menyimpulkan tempat itu pasti tidak ada.`,
+            ...opsiAI,
+            allowContinue: false,
+          });
+          if (
+            ulang?.reply &&
+            namaTempatTidakAdaDiPeta(ulang.reply, lapangan, fakta).length === 0
+          ) {
+            result = ulang;
+          } else {
+            const tujuan =
+              lapangan?.dests?.[0]?.display ||
+              fakta?.destinations?.[0] ||
+              "tujuan yang ditanyakan";
+            result = {
+              ...result,
+              reply: `Aku belum bisa memverifikasi nama tempat yang disebut dari OpenStreetMap untuk ${tujuan}. Data peta yang tersedia belum cukup untuk memastikan rekomendasinya, jadi aku tidak akan mengulang nama yang belum terverifikasi.`,
+              source: "openstreetmap",
+            };
+          }
+        }
+      }
       let reply =
         result?.reply ||
         // Jaring pengaman terakhir kalau semua provider AI sedang gagal.
-        (jawabanLokal
+        (gerbangLapangan
+          ? null
+          : jawabanLokal
           ? balasanKotaTerverifikasi(kotaKey, normalized)
           : jawabanDunia?.reply) ||
         fallbackReply();
+      if (pertanyaanLokasiFilm) {
+        if (!faktaFilm) {
+          reply =
+            "Aku belum menemukan sumber tepercaya yang mengonfirmasi lokasi produksi film itu, jadi aku tidak mau menebak kota atau alamat. Lokasi cerita dan lokasi syuting bisa berbeda; sebaiknya jangan berangkat berdasarkan alamat yang belum terverifikasi.";
+        } else {
+          const tautanSumber = faktaFilm.url;
+          reply = reply
+            .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, (tautan, label, url) =>
+              url === tautanSumber ? tautan : label
+            )
+            .replace(/https?:\/\/\S+/g, (url) => (url === tautanSumber ? url : ""));
+          reply += `\n\nSumber: [${faktaFilm.title}](${tautanSumber})`;
+        }
+      }
 
       const detail = { source: result?.source || "engine" };
       if (lapangan) {
@@ -1450,7 +1697,7 @@ export async function handleChatRequest(req, res, env = process.env) {
         reply = reply.replace(/^PILIHAN:\s*.+$/im, "").trim();
         detail.options = verifikasiOpsi(
           barisPilihan[1].split("|").map((item) => item.trim()).filter(Boolean),
-          konteksTujuan(history, message)
+          konteksTujuan(history, message, fakta)
         );
       }
 
@@ -1462,7 +1709,9 @@ export async function handleChatRequest(req, res, env = process.env) {
 
       if (showMap) {
         const livePlaces = lapangan?.places || [];
-        const namaKurasi = jawabanLokal
+        const namaKurasi = gerbangLapangan
+          ? []
+          : jawabanLokal
           ? kandidat.map((item) => item.name)
           : jawabanDunia?.places.map((item) => item.name) || [];
         const diperbolehkan = [...namaKurasi, ...livePlaces.map((item) => item.name)];

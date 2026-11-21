@@ -10,7 +10,7 @@ import {
 } from "../../../api/chat";
 import { planTrip, resolveCity, cityLabels } from "../../../api/plannerEngine";
 import MapPane from "../../../components/ui/MapPane";
-import { ringkasPlan } from "../../../utils/planSummary";
+import { mapMarkersFromPlan, ringkasPlan } from "../../../utils/planSummary";
 import { useAuth, displayName } from "../../../store/useAuth";
 import {
   addDaysToKey,
@@ -50,6 +50,16 @@ function kotaDariObrolan(pesan) {
     if (m) return m[1].replace(/\b\w/g, (c) => c.toUpperCase());
   }
   return "";
+}
+
+function tempatPetaTerbaru(messages) {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (!Array.isArray(messages[i].mapPlaces)) continue;
+    return messages[i].mapPlaces.filter(
+      (item) => Number.isFinite(item.lat) && Number.isFinite(item.lon)
+    );
+  }
+  return [];
 }
 
 const suggestions = [
@@ -353,15 +363,7 @@ function AiChatInner() {
   const inisial = (displayName(user) || "U").slice(0, 1).toUpperCase();
 
   // Tempat terakhir yang punya koordinat -> ditampilkan di peta kanan.
-  const titikPeta = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i -= 1) {
-      const dengan = (messages[i].mapPlaces || []).filter(
-        (item) => Number.isFinite(item.lat) && Number.isFinite(item.lon)
-      );
-      if (dengan.length) return dengan;
-    }
-    return [];
-  }, [messages]);
+  const titikPeta = useMemo(() => tempatPetaTerbaru(messages), [messages]);
 
   // Scroll mengikuti HALAMAN (window), tidak ada panel yang discroll sendiri.
   useEffect(() => {
@@ -593,14 +595,18 @@ function AiChatInner() {
       const lokal = planTrip(ringkasan);
       let plan = lokal.handled ? lokal.plan : null;
       let sumber = lokal.handled ? "engine" : null;
+      let pesanGagalPlan = "";
       if (!plan) {
         const hasilAI = await askCreatePlan(ringkasan, facts);
         plan = hasilAI.plan;
         sumber = hasilAI.source;
+        pesanGagalPlan = hasilAI.error;
       }
 
       if (!plan || !Array.isArray(plan.days) || !plan.days.length) {
-        await kirimAi({ text: "Aku belum bisa menyusun plan. Coba sebutkan kota dan durasinya lagi ya." });
+        await kirimAi({
+          text: pesanGagalPlan || "Aku belum bisa menyusun plan. Coba sebutkan kota dan durasinya lagi ya.",
+        });
         return;
       }
 
@@ -643,6 +649,7 @@ function AiChatInner() {
         source: sumber || "ai",
         text: `Planning selesai! Rencana ${hari} hari${kotaTrip ? ` ke ${kotaTrip}` : ""} sudah tersimpan. Plan-nya tersimpan di halaman Plan.\n\n${ringkasPlan(plan)}`.trim(),
         tripCreated: true,
+        mapPlaces: mapMarkersFromPlan(plan),
       });
     } finally {
       loadingRef.current = false;
@@ -885,10 +892,13 @@ function AiChatInner() {
               {isLoading && (
                 <div className="flex items-start gap-3">
                   <Avatar ai />
-                  <div className="flex gap-1 pt-3">
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-grey-label"></span>
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-grey-label [animation-delay:150ms]"></span>
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-grey-label [animation-delay:300ms]"></span>
+                  <div className="flex items-center gap-2 pt-2 text-sm text-grey-label">
+                    <span>{mode === "search" ? "Sedang mencari jawaban..." : "Sedang menyusun rencana..."}</span>
+                    <span className="flex gap-1" aria-hidden="true">
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-grey-label"></span>
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-grey-label [animation-delay:150ms]"></span>
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-grey-label [animation-delay:300ms]"></span>
+                    </span>
                   </div>
                 </div>
               )}
@@ -992,7 +1002,7 @@ function AiChatInner() {
             </div>
           </div>
           <p className="pt-1 text-center text-[11px] text-grey-label">
-            Setapak can make mistakes. Check important info.
+            Semua ini dari AI, harap diperiksa dan diperbaiki.
           </p>
         </div>
       </div>

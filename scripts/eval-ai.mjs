@@ -82,6 +82,40 @@ export const SKENARIO = [
     ],
   },
   {
+    id: "search-umroh-multi-city-per-person",
+    kategori: "search-detail",
+    pesan: "Saya mau ke Mekkah 4 hari, dan Madinah 3 hari bersama istri dengan budget 20jt/org, tapi fokus ibadah.",
+    facts: f({
+      destinations: ["Makkah", "Madinah"],
+      days: 7,
+      daysByDestination: { Makkah: 4, Madinah: 3 },
+      budget: "20jt/org",
+      budgetScope: "per orang",
+      purpose: "ibadah",
+      companions: "istri",
+      knownKeys: ["kota", "durasi", "budget", "tema"],
+    }),
+    batas: 3600,
+    cek: (r) => [
+      ["menjaga total 7 hari", /\b7 hari\b|tujuh hari/i.test(r.reply)],
+      ["menjaga pembagian Makkah 4 + Madinah 3", /makkah.{0,50}4 hari|4 hari.{0,50}makkah/i.test(r.reply) && /madinah.{0,50}3 hari|3 hari.{0,50}madinah/i.test(r.reply)],
+      ["budget dibahas per orang", /per orang/i.test(r.reply)],
+      ["tidak menjanjikan budget pasti cukup", /(belum bisa dipastikan|belum bisa dianggap cukup|perlu (dicek|cek harga)|sangat ketat|cek harga terbaru)/i.test(r.reply)],
+    ],
+  },
+  {
+    id: "search-conjuring-film-location",
+    kategori: "search-fact",
+    pesan: "Film The Conjuring itu dimana ya? Saya mau ke negaranya nih.",
+    facts: f({}),
+    batas: 1200,
+    cek: (r) => [
+      ["menyebut lokasi produksi yang terverifikasi", /wilmington.{0,40}north carolina/i.test(r.reply)],
+      ["menautkan sumber Wikipedia", /en\.wikipedia\.org\/wiki\/The_Conjuring/i.test(r.reply)],
+      ["tidak mengulang alamat rumah/tautan palsu", !/(1085|goo\.gl\/maps\/xyz)/i.test(r.reply)],
+    ],
+  },
+  {
     id: "search-kota-kecil",
     kategori: "search",
     pesan: "Weekend di Kuningan ada wisata apa ya?",
@@ -178,6 +212,24 @@ export const SKENARIO = [
     plan: { ringkasan: "10 hari umroh Makkah dan Madinah bareng istri, makanan Indonesia, budget 30 juta.", facts: f({ destinations: ["Makkah", "Madinah"], days: 10, budget: "30 juta", food: "makanan Indonesia", purpose: "ibadah", companions: "istri", knownKeys: ["kota", "durasi", "budget", "makanan", "tema"] }), hari: 10, minTerverifikasi: 0.4 },
   },
   {
+    id: "createplan-malaysia-thailand",
+    kategori: "createplan",
+    plan: {
+      ringkasan: "Bulan madu keluarga 5 hari di Malaysia lalu 2 hari di Thailand, bareng istri dan satu anak. Seimbangkan waktu romantis dengan aktivitas ramah anak.",
+      facts: f({
+        destinations: ["Malaysia", "Thailand"],
+        days: 7,
+        daysByDestination: { Malaysia: 5, Thailand: 2 },
+        companions: "istri dan satu anak",
+        tema: "romantis",
+        knownKeys: ["kota", "durasi", "tema"],
+      }),
+      hari: 7,
+      minTerverifikasi: 0.4,
+      destinationDays: { Malaysia: 5, Thailand: 2 },
+    },
+  },
+  {
     id: "foryou-makassar",
     kategori: "foryou",
     foryou: { city: "Makassar" },
@@ -233,6 +285,12 @@ function periksaPlan(skenario, data) {
     ["tanpa info kadaluarsa/sampah", !KADALUARSA.test(JSON.stringify(plan)) && !SAMPAH.test(JSON.stringify(plan))],
     ["jarak antar tempat wajar (<= 120 km/hari)", plan.days.every((d) => !Number.isFinite(d.jarakKm) || d.jarakKm <= 120)],
   );
+  Object.entries(skenario.plan.destinationDays || {}).forEach(([destination, days]) => {
+    hasil.push([
+      `durasi ${destination} sesuai (${days} hari)`,
+      plan.days.filter((day) => String(day.title || "").toLowerCase().includes(destination.toLowerCase())).length === days,
+    ]);
+  });
   return hasil;
 }
 
