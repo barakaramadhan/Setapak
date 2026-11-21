@@ -19,7 +19,7 @@ import {
   parseTripDateRange,
   toDateKey,
 } from "../../../utils/tripDate";
-import { normalizePlan } from "../../../utils/tripModules";
+import { normalizePlan, terapkanJawabanForm } from "../../../utils/tripModules";
 import { useTrips } from "../../../store/useTrips";
 import { useChats } from "../../../store/useChats";
 import { placeImages } from "../../../data/placeImages";
@@ -663,7 +663,7 @@ function AiChatInner() {
         city: kotaTrip,
         place: "",
         notes: "",
-        plan: normalizePlan(plan, prefill),
+        plan: terapkanJawabanForm(normalizePlan(plan, prefill), wiz.fields, wiz.values),
       });
       if (hasil.error) {
         await kirimAi({ text: hasil.error });
@@ -676,8 +676,9 @@ function AiChatInner() {
       setWiz(null);
       await kirimAi({
         source: sumber || "ai",
-        text: `Planning selesai! Rencana ${hari} hari${kotaTrip ? ` ke ${kotaTrip}` : ""} sudah tersimpan. Plan-nya tersimpan di halaman Plan.\n\n${ringkasPlan(plan)}`.trim(),
+        text: `Planning selesai! Rencana ${hari} hari${kotaTrip ? ` ke ${kotaTrip}` : ""} sudah tersimpan. Semua detailnya ada di Trip.\n\n${ringkasPlan(plan)}`.trim(),
         tripCreated: true,
+        tripId: hasil.data?.id || null,
         mapPlaces: mapMarkersFromPlan(plan),
       });
     } finally {
@@ -881,11 +882,11 @@ function AiChatInner() {
                       {msg.tripCreated && (
                         <button
                           type="button"
-                          onClick={() => navigate("/plan")}
+                          onClick={() => navigate(msg.tripId || activeChat?.tripId ? `/trip/${msg.tripId || activeChat.tripId}` : "/trip")}
                           className="mt-2 inline-flex items-center gap-2 rounded-full border border-[#83ADD0] px-3 py-1.5 text-xs font-semibold text-[#6f9abf] hover:bg-[#83ADD0]/10"
                         >
                           <i className="fi fi-rr-briefcase-blank text-sm leading-none"></i>
-                          Lihat planning
+                          Buka di Trip
                         </button>
                       )}
                     </div>

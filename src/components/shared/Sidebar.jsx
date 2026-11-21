@@ -8,7 +8,6 @@ import InputAll from "../ui/InputAll";
 const navigasiMenu = [
   { label: "Home", to: "/dashboard", icon: "fi fi-rr-house-blank" },
   { label: "Chats", to: "/chats", icon: "fi fi-rr-beacon" },
-  { label: "Plan", to: "/plan", icon: "fi fi-rr-list-check" },
   { label: "Trip", to: "/trip", icon: "fi fi-rr-briefcase-blank" },
   { label: "Explore", to: "/explore", icon: "fi fi-rr-search" },
 ];

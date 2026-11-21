@@ -350,3 +350,40 @@ test("does not repeat an unsupported film location when no source is found", asy
   }
 });
 
+
+test("place question with empty map data falls back to web search instead of refusing", async () => {
+  const fetchAsli = globalThis.fetch;
+  let pakaiWeb = false;
+  globalThis.fetch = async (url, init = {}) => {
+    const u = String(url);
+    if (u.includes("generativelanguage")) {
+      pakaiWeb = Boolean(JSON.parse(init.body).tools);
+      return new Response(
+        JSON.stringify({
+          candidates: [
+            { content: { parts: [{ text: "- **Hotel Contoh Satu** — Makkah; sekitar SAR 120 per malam\n- **Hotel Contoh Dua** — Jeddah; kelas bintang perlu dicek\n\nCek lagi di Google Maps." }] } },
+          ],
+        })
+      );
+    }
+    return new Response(JSON.stringify({ results: [], features: [], places: [], elements: [] }));
+  };
+  let payload;
+  try {
+    await handleChatRequest(
+      {
+        method: "POST",
+        body: { mode: "search", message: "berikan saya 5 hotel bintang 1 di arab saudi", history: [], facts: null },
+        headers: { "x-forwarded-for": "198.51.100.77" },
+        socket: {},
+      },
+      { setHeader() {}, end(text) { payload = JSON.parse(text); } },
+      { GEMINI_API_KEY: "test-key", GOOGLE_MAPS_API_KEY: "test-google" }
+    );
+    assert.ok(pakaiWeb);
+    assert.match(payload.reply, /Hotel Contoh Satu/);
+    assert.doesNotMatch(payload.reply, /tidak menampilkan|belum bisa memverifikasi/i);
+  } finally {
+    globalThis.fetch = fetchAsli;
+  }
+});

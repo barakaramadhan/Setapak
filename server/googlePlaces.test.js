@@ -221,15 +221,18 @@ test("kalau AI terus menyebut nama di luar Google, jawaban disusun langsung dari
   }
 });
 
-test("Google tidak menemukan apa pun: AI tidak dipanggil dan tidak ada nama karangan", async () => {
-  const f = pasangFetch({ places: [], balasanAI: ["Setahu saya ada Restoran Padang Karangan."] });
+test("Google tidak menemukan apa pun: jatuh ke pencarian web, bukan menolak", async () => {
+  const f = pasangFetch({
+    places: [],
+    balasanAI: ["- **Restoran Padang Nyata** — Kuala Lumpur; ditemukan di hasil web.\n- **Warung Contoh** — Cheras; cek lagi di Maps."],
+  });
   try {
     const hasil = await tanya("restoran padang di Malaysia yang super langka", "203.0.113.13");
-    assert.equal(f.catatan.ai.length, 0);
-    assert.equal(hasil.source, "google-maps");
-    assert.match(hasil.reply, /Google Maps tidak mengembalikan hasil/);
-    assert.doesNotMatch(hasil.reply, /Karangan/);
-    assert.equal(hasil.mapPlaces, undefined);
+    assert.ok(f.catatan.ai.length >= 1);
+    assert.match(hasil.source, /\+web$/);
+    assert.match(hasil.reply, /Restoran Padang Nyata/);
+    assert.match(hasil.reply, /Cari di Google Maps/);
+    assert.doesNotMatch(hasil.reply, /tidak mengembalikan hasil/);
   } finally {
     f.pulihkan();
   }

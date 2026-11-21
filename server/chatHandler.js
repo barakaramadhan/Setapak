@@ -919,6 +919,34 @@ Untuk fakta yang tidak bisa diberikan peta (mis. harga, visa, atau jam operasion
 Ikuti "CARA PAKAI DATA LAPANGAN" dan blok KEBUTUHAN bila ada.
 Tetap jawab ramah dan pakai format Markdown yang diminta system prompt. Ikuti panjang jawaban yang ditentukan system prompt (boleh panjang untuk riset rencana).`;
 
+// Cadangan saat data peta kosong: jangan menyerah, cari di web (Gemini/Groq punya search bawaan)
+// dan jawab dari hasil web yang benar-benar ada.
+const WEB_TEMPAT_PROMPT = `Kamu asisten perjalanan SETAPAK. Data peta untuk permintaan ini KOSONG, jadi CARI DI WEB sekarang dan jawab dari hasil pencarian.
+Beri sampai 5 tempat nyata (hotel/restoran/wisata sesuai permintaan) dengan format "- **Nama persis** — area/kota; info singkat dari sumber (kisaran harga bila ada)".
+ATURAN: nama harus benar-benar muncul di hasil web; jangan mengarang nama, alamat, harga, atau jam buka. Kelas bintang hotel hanya disebut jika sumber menyatakannya; kalau tidak, tulis "kelas bintang perlu dicek". Kalau yang terverifikasi kurang dari 5, tampilkan yang ada dan katakan jujur — jangan menolak mentah-mentah.
+Akhiri satu kalimat: harga & ketersediaan bisa berubah, cek lagi di Google Maps/situs resmi. Jangan menulis baris "LOKASI:". Bahasa sama dengan user, maksimal 200 kata, pakai "- " dan **tebal**, tanpa tabel dan tanpa "#".`;
+
+// Data peta dianggap KOSONG kalau tidak ada satu pun tempat yang sejenis dengan yang diminta
+// (mis. minta hotel tapi peta hanya mengembalikan masjid & jalan). Peta OSM tidak memuat hotel.
+const JENIS_DIMINTA = [
+  {
+    minta: /\b(hotel|penginapan|villa|hostel|losmen|homestay|guest ?house|resort|menginap|nginap)\b/i,
+    cocok: /(penginapan|hotel|hostel|villa|resort|\binn\b|lodg|guest|homestay|apartment|apartemen|suite|motel)/i,
+  },
+  {
+    minta: /\b(restoran|restaurant|resto|rumah makan|warung|kedai|cafe|kafe|kuliner|makan|makanan)\b/i,
+    cocok: /(kuliner|restoran|restaurant|resto|cafe|kafe|warung|rumah makan|kedai|food|coffee|kopi|bakery)/i,
+  },
+  { minta: /\b(masjid|mosque|musholla|mushola)\b/i, cocok: /(ibadah|masjid|mosque|mushola)/i },
+];
+export function lapanganRelevan(normalized, lapangan) {
+  const places = lapangan?.places || [];
+  if (!places.length) return false;
+  const aturan = JENIS_DIMINTA.find((a) => a.minta.test(normalized));
+  if (!aturan) return true;
+  return places.some((p) => aturan.cocok.test(`${p.jenis || ""} ${p.name || ""} ${p.masakan || ""}`));
+}
+
 const GROUND_ATURAN_GOOGLE = `
 Untuk rekomendasi atau klaim tentang tempat wisata, restoran, hotel, masjid, toko, atau POI lain, gunakan HANYA nama, alamat, rating, jumlah ulasan, dan status buka yang tercantum di DATA LAPANGAN Google Maps. Jangan mengambil nama tempat dari ingatan model atau daftar kurasi lain. Jika Google Maps tidak mengembalikan hasil yang cocok, katakan terus terang dan minta user memperjelas area/jenis tempat; jangan menebak dan jangan menyimpulkan bahwa tempat itu pasti tidak ada.
 Untuk fakta yang tidak ada di Google Maps (harga, visa, jam operasional lengkap, kepemilikan usaha), jangan mengarang kepastian: tandai sebagai perkiraan atau arahkan cek ke Google Maps/situs resmi.
@@ -1503,6 +1531,8 @@ export async function handleChatRequest(req, res, env = process.env) {
         env,
         systemPrompt: CREATE_PLAN_SYSTEM_PROMPT + profil,
         maxTokens: 3600,
+        // Gemini/Groq riset harga & kondisi terkini, AI penulis menyusun JSON-nya.
+        webSearch: "riset",
       });
       let plan = parsePlanJson(result?.reply, fakta);
       let sumberPlan = result?.source;
@@ -1683,6 +1713,9 @@ export async function handleChatRequest(req, res, env = process.env) {
         // Urutan provider mengikuti prioritas global (AI_PROVIDER_ORDER / default).
         // Kalau provider melaporkan jawaban terpotong, lanjutkan sekali (semua mode).
         allowContinue: true,
+        // Mode Searching boleh mengambil data online (cuaca, harga, jadwal, berita).
+        // Nama tempat spesifik tetap hanya dari DATA LAPANGAN (lihat prompt).
+        webSearch: mode === "search",
       };
       const jawabanRekreasi =
         mode === "search" && !googleOn
@@ -1695,8 +1728,60 @@ export async function handleChatRequest(req, res, env = process.env) {
         tanyaTempatGoogle &&
         mode === "search" &&
         (!lapangan || (lapangan.sumber === "google" && lapangan.places.length === 0));
-      let result;
-      if (googleTanpaData) {
+      // Data peta kosong untuk pertanyaan tempat -> cari di web, bukan menolak.
+      const tanyaTempatUmum =
+        mode === "search" &&
+        !pertanyaanLokasiFilm &&
+        (MINTA_TEMPAT.test(normalized) || PERTANYAAN_DAFTAR_TEMPAT.test(normalized));
+      const lapanganKosong = !lapanganRelevan(normalized, lapangan);
+      const jawabWeb = async () => {
+        try {
+          const tujuan = fakta?.destinationLabel || fakta?.destinations?.[0] || "";
+          const hasil = await askAI({
+            message: `${message}${tujuan ? `\n\n(Konteks tujuan: ${tujuan})` : ""}`,
+            history,
+            env,
+            systemPrompt: WEB_TEMPAT_PROMPT,
+            maxTokens: 1200,
+            allowContinue: true,
+            // AI dengan internet bawaan didahulukan; sisanya dibantu catatan riset.
+            providerOrder: ["gemini", "groq", "100milionseek", "openrouter", "ollama"],
+            webSearch: true,
+            wajibWeb: true,
+          });
+          const teks = String(hasil?.reply || "")
+            .replace(/^LOKASI:.*$/gim, "")
+            .trim();
+          console.log(`[setapak] jawab web: ${hasil ? hasil.source : "tidak ada provider"} (${teks.length} huruf)`);
+          if (teks.length < 40) return null;
+          const cari = kueriTempat || kueriGoogle(message, fakta) || message;
+          return {
+            reply: `${teks}\n\n[Cari di Google Maps](https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(String(cari).slice(0, 120))})`,
+            source: `${hasil.source}+web`,
+          };
+        } catch (error) {
+          console.warn("[setapak] jawab web gagal:", error.message);
+          return null;
+        }
+      };
+
+      let result = null;
+      let dariWeb = false;
+      if (tanyaTempatUmum && lapanganKosong && !jawabanRekreasi) {
+        result = await jawabWeb();
+        dariWeb = Boolean(result);
+      }
+      if (!result && tanyaTempatUmum && lapanganKosong && !jawabanRekreasi && !jawabanLokal && !jawabanDunia) {
+        // Web juga gagal: jujur soal penyebabnya, jangan pura-pura "tidak ada tempatnya".
+        result = {
+          reply:
+            "Aku belum berhasil mencari di internet untuk pertanyaan ini (pencarian web sedang gagal atau belum diaktifkan), jadi aku tidak mau menebak nama tempat. Coba kirim ulang sebentar lagi. Untuk pemilik aplikasi: isi GEMINI_API_KEY atau GROQ_API_KEY di .env, lalu restart server.",
+          source: "web-gagal",
+        };
+      }
+      if (result) {
+        // sudah dijawab (web / pesan jujur)
+      } else if (googleTanpaData) {
         result = {
           reply: lapangan
             ? balasanDariGoogle([], { kueri: kueriTempat })
@@ -1711,7 +1796,7 @@ export async function handleChatRequest(req, res, env = process.env) {
 
       // Penjaga mutu: jangan menanyakan hal yang sudah diketahui / sudah pernah
       // ditanya, dan jangan menyerahkan jawaban yang berhenti di tengah kalimat.
-      if (result?.reply) {
+      if (result?.reply && !dariWeb) {
         const dobel = pertanyaanDobel(result.reply, fakta, history);
         const potong = terpotong(result.reply);
         if (dobel.length || potong) {
@@ -1730,7 +1815,7 @@ export async function handleChatRequest(req, res, env = process.env) {
         // Masih menggantung? Rapikan ujungnya secara lokal.
         result = { ...result, reply: rapikanAkhir(result.reply) };
       }
-      if ((tanyaDaftarTempat || tanyaTempatGoogle) && result?.reply && !googleTanpaData) {
+      if ((tanyaDaftarTempat || tanyaTempatGoogle) && result?.reply && !googleTanpaData && !dariWeb) {
         const dariGoogle = lapangan?.sumber === "google";
         const namaTidakTerverifikasi = namaTempatTidakAdaDiPeta(
           result.reply,
@@ -1756,6 +1841,8 @@ export async function handleChatRequest(req, res, env = process.env) {
               reply: balasanDariGoogle(lapangan.places, { kueri: kueriTempat }),
               source: "google-maps",
             };
+          } else if (await jawabWeb().then((w) => (w ? ((result = w), true) : false))) {
+            // Nama dari AI tidak ada di data OSM -> dijawab ulang dari hasil web nyata.
           } else {
             const tujuan =
               lapangan?.dests?.[0]?.display ||

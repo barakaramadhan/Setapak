@@ -59,13 +59,13 @@ export default function TripPage() {
     <section className="mx-auto w-full max-w-4xl px-10 pb-16 pt-10 font-jakarta">
       <h1 className="font-clash text-4xl font-bold text-grey-light">My Trips</h1>
       <p className="mt-2 text-grey-light/70">
-        Semua perjalananmu dalam satu tempat. Satu kartu = satu perjalanan.
+        Semua perjalanan dan plan-mu dalam satu tempat. Satu kartu = satu perjalanan, lengkap dengan itinerary & peta.
       </p>
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
       {tanggal.length === 0 ? (
         <p className="mt-8 rounded-3xl border-2 border-dashed border-grey-label/60 p-8 text-center text-grey-light/60">
-          Belum ada perjalanan. Tambahkan lewat Schedule di dashboard.
+          Belum ada perjalanan. Tambahkan lewat Schedule di dashboard, atau buat plan lewat mode Planning di Chats — hasilnya langsung muncul di sini.
         </p>
       ) : (
         <div className="mt-8 flex flex-col gap-8">

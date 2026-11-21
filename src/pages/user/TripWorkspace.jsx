@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTrips } from "../../store/useTrips";
+import { useChats } from "../../store/useChats";
+import MapPane from "../../components/ui/MapPane";
+import { mapMarkersFromPlan } from "../../utils/planSummary";
 import { askCreatePlan } from "../../api/chat";
 import { formatRangeId } from "../../utils/tripDate";
 import {
@@ -27,6 +30,8 @@ const daftarAktivitas = (teks) =>
 // di seluruh aplikasi.
 export default function TripWorkspace({ trip }) {
   const { updateTrip } = useTrips();
+  const { chats, openChat } = useChats();
+  const [petaBuka, setPetaBuka] = useState(true);
   const [aktif, setAktif] = useState("overview");
   const [versi, setVersi] = useState(0);
   const [editTrip, setEditTrip] = useState(null);
@@ -38,6 +43,9 @@ export default function TripWorkspace({ trip }) {
   const progres = progresModul(trip);
   const persen = Math.round((progres / MODULES.length) * 100);
   const durasi = durasiHari(trip.date, trip.endDate) || 1;
+  // Peta yang sama dengan di chat: titik dari plan hasil Planning, per hari.
+  const titikPeta = useMemo(() => mapMarkersFromPlan(trip.plan), [trip.plan]);
+  const chatAsal = chats.find((c) => c.tripId === trip.id);
 
   const simpanModul = async (moduleId, draft) => {
     const modul = MODULES.find((item) => item.id === moduleId);
@@ -45,9 +53,20 @@ export default function TripWorkspace({ trip }) {
 
     // Jaga kompatibilitas dengan format lama hasil chat.
     if (moduleId === "itinerary") {
+      // Pertahankan koordinat/tautan Maps tempat yang namanya tidak berubah,
+      // supaya titik di peta tidak hilang setelah itinerary diedit.
+      const lama = new Map();
+      (trip.plan?.days || []).forEach((h) =>
+        (h.places || []).forEach((t) => {
+          if (t?.name) lama.set(String(t.name).trim().toLowerCase(), t);
+        })
+      );
       planBaru.days = (draft.days || []).map((hari) => ({
         title: hari.title || "Hari",
-        places: daftarAktivitas(hari.activities).map((name) => ({ name })),
+        places: daftarAktivitas(hari.activities).map((name) => ({
+          ...(lama.get(name.toLowerCase()) || {}),
+          name,
+        })),
       }));
     }
     if (moduleId === "destination" && draft.city) planBaru.city = draft.city;
@@ -150,6 +169,16 @@ export default function TripWorkspace({ trip }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {chatAsal && (
+            <Link
+              to="/chats"
+              onClick={() => openChat(chatAsal.id)}
+              className="inline-flex items-center gap-2 rounded-full border border-grey-label/60 px-4 py-2 text-sm font-semibold text-grey-light hover:bg-grey-label/20"
+            >
+              <i className="fi fi-rr-beacon text-sm leading-none"></i>
+              Chat asal
+            </Link>
+          )}
           <button
             type="button"
             onClick={isiDenganAi}
@@ -212,6 +241,49 @@ export default function TripWorkspace({ trip }) {
           </p>
         )}
       </div>
+
+      {Array.isArray(trip.plan?.answers) && trip.plan.answers.length > 0 && (
+        <div className="mt-6 rounded-3xl border-2 border-grey-label/50 bg-white p-5">
+          <h2 className="text-base font-bold text-grey-light">Jawaban dari form chat</h2>
+          <p className="mt-1 text-xs text-grey-light/60">
+            Yang kamu isi saat Create Planning. Yang cocok sudah masuk ke modul terkait.
+          </p>
+          <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+            {trip.plan.answers.map((a) => (
+              <div key={a.key} className="min-w-0">
+                <dt className="truncate text-[11px] font-semibold uppercase tracking-wide text-grey-light/50">
+                  {a.label}
+                </dt>
+                <dd className="text-sm text-grey-light">{a.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+
+      {titikPeta.length > 0 && (
+        <div className="mt-6 overflow-hidden rounded-3xl border-2 border-grey-label/50 bg-white">
+          <button
+            type="button"
+            onClick={() => setPetaBuka((v) => !v)}
+            aria-expanded={petaBuka}
+            className="flex w-full items-center justify-between px-5 py-3 text-left"
+          >
+            <span className="text-base font-bold text-grey-light">
+              Peta perjalanan
+              <span className="ml-2 text-xs font-medium text-grey-light/60">
+                {titikPeta.length} tempat dari rencana
+              </span>
+            </span>
+            <i
+              className={`fi fi-rr-angle-small-down text-lg leading-none text-grey-light/60 transition-transform ${
+                petaBuka ? "rotate-180" : ""
+              }`}
+            ></i>
+          </button>
+          {petaBuka && <MapPane places={titikPeta} className="h-80 w-full" />}
+        </div>
+      )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
         <nav

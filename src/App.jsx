@@ -10,7 +10,6 @@ import AiChat from "./pages/user/sections/AiChat";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 import TripPage from "./pages/user/TripPage";
-import PlanPage from "./pages/user/PlanPage";
 
 // MODE PENGEMBANGAN HALAMAN USER
 // true  -> npm run dev langsung menampilkan Dashboard User (alamat "/" diarahkan ke "/dashboard")
@@ -47,7 +46,8 @@ function App() {
           >
             <Route path="/dashboard" element={<DashboardUser />} />
             <Route path="/chats" element={<AiChat />} />
-            <Route path="/plan" element={<PlanPage />} />
+            {/* Halaman Plan sudah digabung ke Trip */}
+            <Route path="/plan" element={<Navigate to="/trip" replace />} />
             <Route path="/trip" element={<TripPage />} />
             <Route path="/trip/:id" element={<TripPage />} />
           </Route>

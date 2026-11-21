@@ -4,6 +4,7 @@
 // Bisa diubah lewat AI_PROVIDER_ORDER. Provider tanpa key/konfigurasi aktif akan dilewati.
 
 import { MODULES } from "../src/utils/tripModules.js";
+import { cariWeb } from "./webSearch.js";
 
 const SYSTEM_PROMPT = `Kamu adalah asisten perencana perjalanan SETAPAK.
 Jawab singkat, maksimal 120 kata, pakai bahasa yang sama dengan pertanyaan pengguna.
@@ -189,6 +190,8 @@ Aturan:
 - Jangan masukkan syarat pandemi (vaksin COVID-19, PCR, karantina) ke dokumen atau catatan apa pun. Pakai "cek syarat resmi terbaru" bila perlu.` + PRINSIP_AHLI;
 
 const TIMEOUT_MS = 12000;
+// Pencarian web membutuhkan waktu lebih lama daripada jawaban biasa.
+const TIMEOUT_WEB_MS = 25000;
 // gemini-2.5-flash sudah tidak tersedia untuk akun baru (404).
 const MODEL_GEMINI = "gemini-3.8-flash";
 const MODEL_GROQ = "openai/gpt-oss-20b";
@@ -240,11 +243,14 @@ async function askGemini({
   env,
   systemPrompt = SYSTEM_PROMPT,
   maxTokens = 400,
+  webSearch = false,
 }) {
   const model = env.GEMINI_MODEL || MODEL_GEMINI;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
 
-  const response = await postJson(url, {
+  const kirim = (denganWeb) => postJson(url, {
+    // Grounding bawaan Google: Gemini mencari di internet sendiri.
+    ...(denganWeb ? { tools: [{ google_search: {} }] } : {}),
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [
       ...toHistory(history),
@@ -257,7 +263,15 @@ async function askGemini({
       // LOW mencegah jawaban kosong/error MAX_TOKENS pada prompt pendek.
       thinkingConfig: { thinkingLevel: "LOW", includeThoughts: false },
     },
-  });
+  }, {}, denganWeb ? TIMEOUT_WEB_MS : TIMEOUT_MS);
+
+  let response = await kirim(webSearch);
+  // Model/akun tertentu menolak tool search (400/403). Ulangi tanpa web
+  // supaya user tetap mendapat jawaban.
+  if (!response.ok && webSearch && [400, 403, 404].includes(response.status)) {
+    console.warn(`[setapak] Gemini google_search ditolak (${response.status}), ulang tanpa web`);
+    response = await kirim(false);
+  }
 
   if (!response.ok) throw new Error(`Gemini ${response.status}`);
   const data = await response.json();
@@ -276,11 +290,14 @@ async function askGroq({
   env,
   systemPrompt = SYSTEM_PROMPT,
   maxTokens = 400,
+  webSearch = false,
 }) {
-  const response = await postJson(
+  const kirim = (denganWeb) => postJson(
     "https://api.groq.com/openai/v1/chat/completions",
     {
       model: MODEL_GROQ,
+      // Browser search bawaan Groq (khusus openai/gpt-oss-*), jalan di server Groq.
+      ...(denganWeb ? { tools: [{ type: "browser_search" }], tool_choice: "auto" } : {}),
       max_tokens: maxTokens,
       temperature: 0.7,
       // gpt-oss menyimpan sebagian besar token untuk "reasoning".
@@ -295,8 +312,15 @@ async function askGroq({
         { role: "user", content: message },
       ],
     },
-    { Authorization: `Bearer ${env.GROQ_API_KEY}` }
+    { Authorization: `Bearer ${env.GROQ_API_KEY}` },
+    denganWeb ? TIMEOUT_WEB_MS : TIMEOUT_MS
   );
+
+  let response = await kirim(webSearch);
+  if (!response.ok && webSearch && [400, 403, 404].includes(response.status)) {
+    console.warn(`[setapak] Groq browser_search ditolak (${response.status}), ulang tanpa web`);
+    response = await kirim(false);
+  }
 
   if (!response.ok) throw new Error(`Groq ${response.status}`);
   const data = await response.json();
@@ -439,6 +463,44 @@ async function askOllama({
   return { reply: text, truncated: data.choices?.[0]?.finish_reason === "length" };
 }
 
+// Tugas "peneliti": AI yang punya internet bawaan (Gemini/Groq) mencari fakta terkini,
+// lalu menyerahkan CATATAN RISET ke AI penulis (mis. 100milionseek) yang tidak punya internet.
+const RISET_PROMPT = `Kamu peneliti web untuk SETAPAK. Cari di internet fakta TERKINI yang relevan dengan permintaan (harga, tiket, jam buka, cuaca/musim, aturan, event, berita). Balas HANYA 3-8 poin singkat "- fakta (sumber: domain)". Jangan memberi rekomendasi, jangan membuat jadwal, jangan mengarang. Tulis bahasa Indonesia. Kalau tidak menemukan apa pun yang relevan, balas persis: TIDAK ADA.`;
+
+// Provider yang kena 429 (kuota/rate limit) diistirahatkan sebentar supaya tidak
+// dipanggil ulang dan memperlambat jawaban.
+const dingin = new Map();
+const DINGIN_MS = 60_000;
+const sedangDingin = (nama) => (dingin.get(nama) || 0) > Date.now();
+
+async function risetBersama({ message, env, history }) {
+  for (const [nama, fn, key] of [
+    ["gemini", askGemini, env.GEMINI_API_KEY],
+    ["groq", askGroq, env.GROQ_API_KEY],
+  ]) {
+    if (!key || sedangDingin(nama)) continue;
+    try {
+      const hasil = await fn({
+        message: `Permintaan user: ${String(message).slice(0, 1200)}`,
+        history: (history || []).slice(-4),
+        env,
+        systemPrompt: RISET_PROMPT,
+        maxTokens: 700,
+        webSearch: true,
+      });
+      const teks = String(hasil?.reply || "").trim();
+      if (teks && !/^TIDAK ADA\b/i.test(teks)) {
+        return `\n\n=== CATATAN RISET WEB (real-time, dari ${nama}) ===\n${teks.slice(0, 1800)}\n=== AKHIR CATATAN ===\nPakai catatan ini hanya untuk fakta terkini (harga, jadwal, cuaca, aturan). Jangan menyebut nama tempat spesifik dari catatan ini kecuali ada di DATA LAPANGAN.`;
+      }
+      return null;
+    } catch (error) {
+      console.warn(`[setapak] riset ${nama} gagal: ${error.message}`);
+      if (/429/.test(error.message)) dingin.set(nama, Date.now() + DINGIN_MS);
+    }
+  }
+  return null;
+}
+
 /**
  * Coba provider satu per satu. Kalau semua gagal / kuota habis, kembalikan null.
  */
@@ -450,7 +512,19 @@ export async function askAI({
   maxTokens,
   providerOrder,
   allowContinue = false,
+  // true = ambil data online real-time. Gemini & Groq memakai search bawaan;
+  // provider lain memakai Tavily (opsional, TAVILY_API_KEY). Kill switch: AI_WEB_SEARCH=off.
+  webSearch = false,
+  // true = jangan menjawab dari ingatan: provider tanpa internet dilewati bila tidak ada hasil web.
+  wajibWeb = false,
 }) {
+  // webSearch: true  = provider berinternet mencari langsung; provider tanpa internet dibantu catatan riset.
+  //            "riset" = SELALU riset dulu oleh Gemini/Groq, lalu penulis menjawab tanpa tool web
+  //                      (dipakai untuk output JSON agar format tidak rusak oleh sitasi).
+  const webAktif = Boolean(webSearch) && String(env.AI_WEB_SEARCH || "").toLowerCase() !== "off";
+  const paksaRiset = webSearch === "riset";
+  const NATIVE_WEB = new Set(["gemini", "groq"]);
+  let blokWebCache; // dicari sekali saja, dipakai ulang antar provider
   const daftar = {
     "100milionseek": {
       key: env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY,
@@ -489,19 +563,34 @@ export async function askAI({
   // Error sementara (429/5xx) sering hilang dalam hitungan detik. Coba ulang
   // sekali sebelum pindah provider, supaya user tidak melihat pesan "sibuk"
   // hanya karena jeda sesaat pada token bucket / overload.
-  const sementara = /(429|500|502|503|504|timeout|timed out|abort)/i;
+  const sementara = /(500|502|503|504|timeout|timed out|abort)/i;
 
   for (const provider of providers) {
-    if (!provider.key) continue;
+    if (!provider.key || sedangDingin(provider.name)) continue;
 
     for (let percobaan = 0; percobaan < 2; percobaan += 1) {
       try {
+        const native = webAktif && !paksaRiset && NATIVE_WEB.has(provider.name);
+        let pesan = message;
+        if (webAktif && !native) {
+          if (blokWebCache === undefined) {
+            // 1) Gemini/Groq riset, 2) cadangan Tavily. Dicari sekali, dipakai semua penulis.
+            blokWebCache =
+              (await risetBersama({ message, env, history })) || (await cariWeb(message, env));
+          }
+          if (blokWebCache) pesan = `${message}${blokWebCache}`;
+          else if (wajibWeb) {
+            console.warn(`[setapak] ${provider.name} dilewati: tidak ada hasil web & wajibWeb`);
+            break;
+          }
+        }
         const hasil = await provider.call({
-          message,
+          message: pesan,
           history,
           env,
           systemPrompt,
           maxTokens,
+          webSearch: native,
         });
         const reply = typeof hasil === "string" ? hasil : hasil?.reply;
         if (!reply) throw new Error(`${provider.name} balasan kosong`);
@@ -518,6 +607,7 @@ export async function askAI({
             env,
             systemPrompt,
             maxTokens: Math.min(maxTokens, 1200),
+            webSearch: native,
           });
           const sambungTeks = typeof sambung === "string" ? sambung : sambung?.reply;
           if (sambungTeks) {
@@ -530,6 +620,8 @@ export async function askAI({
         console.warn(
           `[setapak] ${provider.name} gagal (percobaan ${percobaan + 1}): ${error.message}`
         );
+        // 429 = kuota habis: langsung pindah provider & istirahatkan 1 menit.
+        if (/429/.test(error.message)) dingin.set(provider.name, Date.now() + DINGIN_MS);
         const bisaUlang = sementara.test(error.message) && percobaan === 0;
         if (!bisaUlang) break;
         await new Promise((resolve) => setTimeout(resolve, 500));

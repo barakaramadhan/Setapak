@@ -563,3 +563,39 @@ export function getItinerary(trip) {
     },
   ];
 }
+
+
+const norm = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+/**
+ * Masukkan jawaban form di chat (wizard) ke modul Trip yang sesuai.
+ * Jawaban yang cocok dengan kolom modul (kunci/label sama, pilihan valid) diisi langsung;
+ * semuanya juga disimpan di plan.answers supaya tetap terlihat di Trip.
+ */
+export function terapkanJawabanForm(plan, fields = [], values = {}) {
+  const hasil = { ...plan, answers: [] };
+  (fields || []).forEach((f) => {
+    const nilai = String(values?.[f.key] ?? "").trim();
+    if (!nilai) return;
+    hasil.answers.push({ key: f.key, label: f.label, value: nilai, module: f.module?.id || "" });
+
+    const modul = MODULES.find((m) => m.id === f.module?.id);
+    const kolom = (modul?.fields || []).find(
+      (k) => norm(k.key) === norm(f.key) || norm(k.label) === norm(f.key) || norm(k.label) === norm(f.label)
+    );
+    if (!modul || !kolom) return;
+    let isi = nilai;
+    if (kolom.type === "select") {
+      isi = (kolom.options || []).find((o) => norm(o) === norm(nilai));
+      if (!isi) return;
+    } else if (kolom.type === "number") {
+      const n = Number(nilai.replace(/[^0-9]/g, ""));
+      if (!n) return;
+      isi = n;
+    } else if (kolom.type === "date") {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(nilai)) return;
+    }
+    hasil[modul.id] = { ...(hasil[modul.id] || {}), [kolom.key]: isi };
+  });
+  return hasil;
+}
