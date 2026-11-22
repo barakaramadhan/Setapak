@@ -315,9 +315,12 @@ function WizardForm({ field, index, total, modules = [], onSubmit, ringkas = fal
           />
         </div>
       ) : null}
+      {!ringkas && field?.label ? (
+        <p className="mb-2 text-sm font-semibold text-grey-light">{field.label}</p>
+      ) : null}
       {!ringkas && field?.reason ? (
-        <p className="mb-2 text-[10px] italic text-grey-light/60">
-          Prioritas: {field.reason}
+        <p className="mb-2 text-[11px] text-grey-light/60">
+          <span className="font-medium text-[#6f9abf]">Kenapa ditanya:</span> {field.reason}
         </p>
       ) : null}
       {opsi.length ? (
@@ -378,7 +381,7 @@ function AiChatInner() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { trips, addTrip } = useTrips();
+  const { trips, addTrip, updateTrip } = useTrips();
   const { chats, activeChat, activeId, togglePin, setChatTrip, appendMessage, renameChat, deleteChat } =
     useChats();
   const [ctxIds, setCtxIds] = useState([]); // chat lain yang dipakai sebagai konteks plan
@@ -487,11 +490,45 @@ function AiChatInner() {
       }
 
       try {
+        const linkedTrip = activeChat?.tripId ? trips.find((t) => t.id === activeChat.tripId) : null;
+        const intentUpdate = /\b(tambah|tambahkan|tambahin|masukkan|masukin|ubah|ganti|hapus|pindah|update|edit|masuk ke itinerary|jadwalin|jadwalkan|mau ke|mau pergi|juga mau|kunjungi|singgah|sertakan)\b/i.test(clean)
+          && /\b(hari|day|itinerary|rencana|plan|jadwal|pagi|siang|sore|malam|jam|kraton|candi|museum|pantai|tempat|wisata|makan|hotel|transport|budget)\b/i.test(clean + " " + (linkedTrip?.city || ""));
+        if (linkedTrip && mode === "plan" && !wiz && intentUpdate) {
+          const currentPlan = normalizePlan(linkedTrip.plan || {}, linkedTrip);
+          const daysCount = Math.max(1, (currentPlan.itinerary?.days||[]).length || extractTripFacts(history).days || 1);
+          const ringkasanUpdate = [
+            `UPDATE rencana trip yang sudah ada.`,
+            `Tujuan: ${linkedTrip.city || linkedTrip.title || ""}. Durasi: ${daysCount} hari.`,
+            `Tanggal: ${linkedTrip.date || ""} sampai ${linkedTrip.endDate || linkedTrip.date || ""}.`,
+            `Permintaan perubahan user: ${clean}`,
+            `PLAN SAAT INI (JSON): ${JSON.stringify({ city: linkedTrip.city, days: (currentPlan.itinerary?.days||[]).map((d,i)=>({title:d.title||`Hari ${i+1}`, places:String(d.activities||"").split(",").map(s=>s.trim()).filter(Boolean).map(name=>({name}))})), totalCost: currentPlan.budget?.planned || 0, modules: { transportation: currentPlan.transportation, accommodation: currentPlan.accommodation, food: currentPlan.food, budget: currentPlan.budget, safety: currentPlan.safety } }).slice(0, 3500)}`,
+            `Instruksi: kembalikan JSON plan LENGKAP dengan jumlah hari yang sama, terapkan perubahan yang diminta, pertahankan item relevan, jangan hapus data penting lain tanpa alasan.`,
+          ].join("\n");
+          const hasilUpdate = await askCreatePlan(ringkasanUpdate, { ...extractTripFacts([...history, { role: "user", text: clean }]), days: daysCount });
+          if (hasilUpdate?.plan) {
+            let planBaru = normalizePlan(hasilUpdate.plan, linkedTrip);
+            planBaru = normalizePlan({
+              ...currentPlan, ...planBaru,
+              dates: { ...currentPlan.dates, ...planBaru.dates, startDate: linkedTrip.date, endDate: linkedTrip.endDate || linkedTrip.date },
+              budget: { ...currentPlan.budget, ...planBaru.budget, planned: currentPlan.budget?.planned || planBaru.budget?.planned || 0 },
+            }, linkedTrip);
+            const up = await updateTrip(linkedTrip.id, { plan: planBaru, city: planBaru.destination?.city || linkedTrip.city, endDate: linkedTrip.endDate || linkedTrip.date });
+            if (!up.error) {
+              await kirimAi({
+                source: hasilUpdate.source || "ai",
+                text: `Oke, rencana trip sudah aku perbarui sesuai permintaanmu: "${clean}".\n\n${ringkasPlan(planBaru)}\n\n> *Catatan: Ini hanyalah saran dari AI, periksa kembali kesalahan yang ada, benarkan trip bila perlu, dan selamat menikmati trip ini dengan penuh kebahagiaan!*`,
+                tripCreated: true,
+                tripId: linkedTrip.id,
+                mapPlaces: mapMarkersFromPlan(planBaru),
+              });
+              return undefined;
+            }
+          }
+        }
+
         const result = await askSetapak(clean, history, { mode, showMap });
         const prefill = mode === "plan" ? null : buildTripPrefill(clean, result.plan);
         if (prefill && result.plan) prefill.plan = normalizePlan(result.plan, prefill);
-        // Searching untuk permintaan rencana mengembalikan handoff: kartu
-        // Planning langsung muncul dengan profil yang sudah terisi.
         if (result.handoff || (mode === "plan" && result.ready)) setReadyForPlan(true);
 
         await appendMessage(chatId, {
@@ -499,7 +536,7 @@ function AiChatInner() {
           role: "ai",
           text: result.reply,
           source: result.source,
-          options: result.options, // pilihan cepat BUILT BY AI
+          options: result.options,
           prefill,
           mapPlaces: result.mapPlaces,
           grounding: result.grounding,
@@ -510,7 +547,7 @@ function AiChatInner() {
       }
       return undefined;
     },
-    [activeId, activeChat, messages.length, renameChat, appendMessage, mode, showMap, riwayatObrolan, wiz, jawabWizard, kirimAi]
+    [activeId, activeChat, messages.length, renameChat, appendMessage, mode, showMap, riwayatObrolan, wiz, jawabWizard, kirimAi, trips, updateTrip]
   );
 
   useEffect(() => {
@@ -649,13 +686,61 @@ function AiChatInner() {
       // Gunakan durasi dari profil trip: rencana 10 hari tidak boleh jadi 7 hari.
       const hari = Math.min(
         14,
-        Math.max(1, facts.days || hariDariRentang || Number(cocokHari?.[1]) || plan.days.length)
+        Math.max(1, facts.days || hariDariRentang || Number(cocokHari?.[1]) || (Array.isArray(plan?.days) ? plan.days.length : 1))
       );
-      const endDate = rentang?.end || addDaysToKey(tanggal, hari - 1);
+      let endDate = rentang?.end || addDaysToKey(tanggal, hari - 1);
+      if (plan && Array.isArray(plan.days)) {
+        if (plan.days.length > hari) plan = { ...plan, days: plan.days.slice(0, hari) };
+        while (plan.days.length < hari) {
+          const i = plan.days.length;
+          const base = plan.days[i % Math.max(1, plan.days.length)] || { places: [] };
+          const used = new Set(plan.days.flatMap(d => (d.places||[]).map(pl=>String(pl.name||"").toLowerCase())));
+          const pool = (base.places || []).filter(pl => !used.has(String(pl.name||"").toLowerCase()));
+          const picks = (pool.length ? pool : [{ name: "Waktu bebas / eksplorasi sekitar", why: "Nikmati suasana kota dengan santai", startTime: "10:00" }]).slice(0,2);
+          plan = { ...plan, days: [...plan.days, {
+            title: `Hari ${i + 1}`,
+            places: picks.map((pl, j) => ({
+              ...pl,
+              name: String(pl?.name || "Waktu bebas / eksplorasi sekitar").slice(0, 80),
+              why: String(pl?.why || (j===0?"Waktu fleksibel untuk menikmati suasana":"Eksplorasi santai")).slice(0, 100),
+              startTime: pl?.startTime || (j===0?"10:00":"14:00"),
+            })),
+          }] };
+        }
+      }
       const kotaTrip = plan.city || kota || "";
       const judul = `Trip ke ${kotaTrip || "perjalanan"} · ${hari} hari`;
       const prefill = { title: judul, date: tanggal, endDate, city: kotaTrip };
 
+            let planBaru = terapkanJawabanForm(normalizePlan(plan, prefill), wiz.fields, wiz.values);
+      const budgetRaw = String(wiz.values?.budget || wiz.values?.anggaran || facts.budget || "");
+      const jt = budgetRaw.match(/([\d.,]+)\s*(jt|juta)/i);
+      const rb = budgetRaw.match(/([\d.,]+)\s*(rb|ribu|k)/i);
+      let budgetNum = 0;
+      if (jt) budgetNum = Math.round(parseFloat(jt[1].replace(",", ".")) * 1000000);
+      else if (rb) budgetNum = Math.round(parseFloat(rb[1].replace(",", ".")) * 1000);
+      else budgetNum = Number(budgetRaw.replace(/[^0-9]/g, "")) || 0;
+      // Normalize dulu, lalu paksa override data penting dari jawaban user/facts.
+      planBaru = normalizePlan(planBaru, { date: tanggal, endDate, city: kotaTrip, title: judul });
+      if (budgetNum > 0) planBaru.budget = { ...(planBaru.budget || {}), planned: budgetNum, currency: "IDR" };
+      planBaru.dates = { ...(planBaru.dates || {}), startDate: tanggal, endDate, nights: Math.max(0, hari - 1) };
+      planBaru.overview = { ...(planBaru.overview || {}), name: judul, destination: kotaTrip || planBaru.overview?.destination || "" };
+      planBaru.destination = { ...(planBaru.destination || {}), city: kotaTrip || planBaru.destination?.city || "" };
+      const transportVal = String(wiz.values?.transport || wiz.values?.transportasi || wiz.values?.transportation || wiz.values?.moda || "").trim();
+      if (transportVal && !(planBaru.transportation?.items || []).length) {
+        planBaru.transportation = { ...(planBaru.transportation || {}), items: [{ type: "Pergi", mode: transportVal, from: "Kota asal", to: kotaTrip || "Tujuan", depart: "", arrive: "", cost: "", note: "Dari jawaban user" }] };
+      }
+      const accomVal = String(wiz.values?.akomodasi || wiz.values?.accommodation || wiz.values?.hotel || "").trim();
+      if (accomVal && !(planBaru.accommodation?.items || []).length) {
+        planBaru.accommodation = { ...(planBaru.accommodation || {}), items: [{ name: accomVal, type: /hotel|villa|guest|hostel|homestay/i.test(accomVal) ? accomVal : "Hotel", area: kotaTrip || "", checkIn: tanggal, checkOut: endDate, cost: "", note: "Preferensi dari user" }] };
+      }
+      const foodVal = String(wiz.values?.makanan || wiz.values?.food || wiz.values?.kuliner || facts.food || "").trim();
+      if (foodVal) {
+        const noPref = /tidak ada|tidak|no$/i.test(foodVal);
+        if (!(planBaru.food?.items || []).length) {
+          planBaru.food = { ...(planBaru.food || {}), items: [{ name: noPref ? "Kuliner lokal rekomendasi" : foodVal, place: kotaTrip || "", meal: "Makan siang", cost: "", note: noPref ? "Tidak ada alergi/preferensi khusus" : "Preferensi dari user" }] };
+        }
+      }
       const hasil = await addTrip({
         title: judul,
         date: tanggal,
@@ -663,8 +748,8 @@ function AiChatInner() {
         city: kotaTrip,
         place: "",
         notes: "",
-        plan: terapkanJawabanForm(normalizePlan(plan, prefill), wiz.fields, wiz.values),
-      });
+        plan: planBaru,
+      });;
       if (hasil.error) {
         await kirimAi({ text: hasil.error });
         return;
@@ -676,7 +761,7 @@ function AiChatInner() {
       setWiz(null);
       await kirimAi({
         source: sumber || "ai",
-        text: `Planning selesai! Rencana ${hari} hari${kotaTrip ? ` ke ${kotaTrip}` : ""} sudah tersimpan. Semua detailnya ada di Trip.\n\n${ringkasPlan(plan)}`.trim(),
+        text: `Planning selesai! Rencana ${hari} hari${kotaTrip ? ` ke ${kotaTrip}` : ""}${facts.occasion ? ` (${facts.occasion})` : ""} sudah tersimpan. Semua detailnya ada di Trip.\n\n${ringkasPlan(plan)}\n\n> *Catatan: Ini hanyalah saran dari AI, periksa kembali kesalahan yang ada, benarkan trip bila perlu, dan selamat menikmati trip ini dengan penuh kebahagiaan!*`.trim(),
         tripCreated: true,
         tripId: hasil.data?.id || null,
         mapPlaces: mapMarkersFromPlan(plan),

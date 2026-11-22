@@ -437,22 +437,99 @@ export function ensureUniversalPlan(trip) {
   MODULES.forEach((modul) => {
     if (!plan[modul.id] || typeof plan[modul.id] !== "object") {
       plan[modul.id] = bagianAwal(modul, trip);
+    } else {
+      // Pastikan field utama tetap ada walau modul sudah sebagian terisi.
+      plan[modul.id] = { ...bagianAwal(modul, trip), ...plan[modul.id] };
     }
   });
 
-  if (!(plan.itinerary.days || []).length && Array.isArray(asli.days) && asli.days.length) {
-    plan.itinerary.days = asli.days.map((hari, index) => ({
-      date: hari.date || addDaysToKey(trip.date, index),
-      title: hari.title || `Hari ${index + 1}`,
-      activities: listDariTeks(hari.places),
-    }));
+  // Prefill dari jawaban wizard/answers yang mungkin belum terpetakan ke field.
+  const answers = Array.isArray(asli.answers) ? asli.answers : [];
+  answers.forEach((a) => {
+    const moduleId = a?.module;
+    const key = String(a?.key || "").toLowerCase();
+    const val = String(a?.value || "").trim();
+    if (!val) return;
+    if (moduleId === "budget" && !plan.budget.planned) {
+      const raw = val.toLowerCase().replace(/\./g,"").replace(/,/g,".");
+      const jt = raw.match(/([\d.]+)\s*(jt|juta)/);
+      const rb = raw.match(/([\d.]+)\s*(rb|ribu|k)\b/);
+      const n = jt ? Math.round(parseFloat(jt[1]) * 1000000) : rb ? Math.round(parseFloat(rb[1]) * 1000) : Number(val.replace(/[^0-9]/g, ""));
+      if (n > 0) plan.budget.planned = n;
+    }
+    if (moduleId === "transportation" && !(plan.transportation.items || []).length) {
+      plan.transportation.items = [{ type: "Pergi", mode: val, from: trip.city || "", to: trip.city || "", cost: "" }];
+    }
+    if (moduleId === "accommodation" && !(plan.accommodation.items || []).length) {
+      plan.accommodation.items = [{ name: val, type: /hotel|villa|guest|hostel|homestay/i.test(val) ? val : "Hotel", area: trip.city || plan.destination.city || "", checkIn: trip.date || plan.dates.startDate || "", checkOut: trip.endDate || plan.dates.endDate || trip.date || "", cost: "", note: "Preferensi dari user" }];
+    }
+    if (moduleId === "safety") {
+      if (/alergi/.test(key) && !plan.safety.allergies) plan.safety.allergies = val;
+      else if (/darurat|kontak|phone|telepon/.test(key) && !plan.safety.emergencyPhone) plan.safety.emergencyPhone = val;
+      else if (!plan.safety.medicalNote && val.toLowerCase() !== "tidak ada") plan.safety.medicalNote = val;
+    }
+  });
+
+  const days = Array.isArray(asli.days) ? asli.days : [];
+  if (!(plan.itinerary.days || []).length && days.length) {
+    plan.itinerary.days = days.map((hari, index) => {
+      const places = Array.isArray(hari.places) ? hari.places : [];
+      const acts = listDariTeks(hari.activities || places);
+      return {
+        date: hari.date || addDaysToKey(trip.date, index),
+        title: hari.title || `Hari ${index + 1}`,
+        activities: acts.length ? acts.join(", ") : "",
+      };
+    });
   }
+
+  // Selaraskan dates & overview dari trip utama
   if (!plan.destination.city && trip.city) plan.destination.city = trip.city;
   if (!plan.overview.name && trip.title) plan.overview.name = trip.title;
-  if (!plan.overview.destination && trip.city) plan.overview.destination = trip.city;
-  if (!plan.dates.startDate && trip.date) plan.dates.startDate = trip.date;
-  if (!plan.dates.endDate && trip.endDate) plan.dates.endDate = trip.endDate;
+  if (!plan.overview.destination && (trip.city || plan.destination.city)) plan.overview.destination = trip.city || plan.destination.city;
+  if (trip.date) plan.dates.startDate = trip.date;
+  if (trip.endDate || trip.date) plan.dates.endDate = trip.endDate || trip.date;
+  const dur = durasiHari(plan.dates.startDate, plan.dates.endDate);
+  if (dur > 0 && !plan.dates.nights) plan.dates.nights = Math.max(0, dur - 1);
+
   if (!plan.budget.currency) plan.budget.currency = "IDR";
+  if (!plan.budget.planned && Number(asli.totalCost) > 0) plan.budget.planned = Number(asli.totalCost);
+
+  // Jika ada itinerary tapi food/accommodation kosong, isi draft minimal agar modul tidak kosong.
+  const hasItin = (plan.itinerary.days || []).some((d) => String(d.activities || "").trim());
+  if (hasItin && !(plan.food.items || []).length) {
+    plan.food.items = [
+      { name: "Kuliner lokal rekomendasi", place: trip.city || plan.destination.city || "", meal: "Makan siang", cost: "", note: "Sesuaikan dengan preferensi/alergi" },
+      { name: "Makan malam santai", place: trip.city || plan.destination.city || "", meal: "Makan malam", cost: "", note: "" },
+    ];
+  }
+  if (hasItin && !(plan.accommodation.items || []).length) {
+    plan.accommodation.items = [{
+      name: "Akomodasi (pilih sesuai preferensi)",
+      type: "Hotel",
+      area: trip.city || plan.destination.city || "",
+      checkIn: plan.dates.startDate || trip.date || "",
+      checkOut: plan.dates.endDate || trip.endDate || trip.date || "",
+      cost: "",
+      note: "Lengkapi nama hotel/penginapan pilihanmu",
+    }];
+  }
+  if ((plan.transportation.items || []).length === 0 && (trip.city || plan.destination.city)) {
+    plan.transportation.items = [{
+      type: "Pergi",
+      mode: "Transportasi",
+      from: "Kota asal",
+      to: trip.city || plan.destination.city,
+      cost: "",
+      note: "Lengkapi detail transportasi",
+    }];
+  }
+
+  // Budget planned dari facts/answers: jika budget items ada tapi planned kosong, jumlahkan.
+  if (!plan.budget.planned && (plan.budget.items || []).length) {
+    const sum = plan.budget.items.reduce((a, b) => a + (Number(b.amount) || 0), 0);
+    if (sum > 0) plan.budget.planned = sum;
+  }
 
   return plan;
 }
@@ -462,49 +539,43 @@ export function normalizePlan(aiPlan, trip) {
   const plan = ensureUniversalPlan(trip);
   if (!aiPlan || typeof aiPlan !== "object") return plan;
 
-  if (aiPlan.city) {
-    if (!plan.destination.city) plan.destination.city = aiPlan.city;
-    if (!plan.overview.destination) plan.overview.destination = aiPlan.city;
+  const city = aiPlan.city || trip.city || plan.destination.city || "";
+  if (city) {
+    plan.destination.city = plan.destination.city || city;
+    plan.overview.destination = plan.overview.destination || city;
   }
 
   const hari = Array.isArray(aiPlan.days) ? aiPlan.days : [];
-  if (hari.length && !(plan.itinerary.days || []).length) {
-    plan.itinerary.days = hari.map((item, index) => ({
-      date: item.date || addDaysToKey(trip.date, index),
-      title: item.title || `Hari ${index + 1}`,
-      activities: listDariTeks(item.places),
-    }));
+  // Selalu sinkronkan itinerary dari plan AI terbaru bila ada, supaya tidak terpotong.
+  if (hari.length) {
+    plan.itinerary.days = hari.map((item, index) => {
+      const places = Array.isArray(item.places) ? item.places : [];
+      const acts = listDariTeks(item.activities || places);
+      return {
+        date: item.date || addDaysToKey(trip.date, index),
+        title: item.title || `Hari ${index + 1}`,
+        activities: acts.join(", "),
+      };
+    });
+    // Simpan bentuk lama juga agar komponen lama/ekspor tetap kompatibel.
+    plan.days = hari;
   }
-  // Simpan juga bentuk lama supaya komponen lama tetap kompatibel.
-  if (hari.length && !Array.isArray(plan.days)) plan.days = hari;
 
-  if (aiPlan.totalCost && !plan.budget.planned) plan.budget.planned = aiPlan.totalCost;
+  if (Number(aiPlan.totalCost) > 0 && !Number(plan.budget.planned)) plan.budget.planned = Number(aiPlan.totalCost);
 
-  const semuaTempat = [
-    ...new Set(hari.flatMap((item) => listDariTeks(item.places))),
-  ];
+  const semuaTempat = [...new Set(hari.flatMap((item) => listDariTeks(item.places || item.activities)))];
   if (semuaTempat.length) {
-    if (!(plan.destination.places || []).length) {
-      plan.destination.places = semuaTempat.slice(0, 12).map((name) => ({
-        name,
-        type: "",
-        note: "",
-      }));
-    }
-    if (!(plan.activities.items || []).length) {
-      plan.activities.items = semuaTempat.slice(0, 12).map((name) => ({
-        name,
-        category: "Wisata",
-        day: "",
-        cost: "",
-        note: "",
-      }));
-    }
-    if (!(plan.budget.items || []).length) {
-      const biaya = hari
-        .flatMap((item) => (Array.isArray(item.places) ? item.places : []))
-        .filter((place) => Number(place.cost) > 0);
-      plan.budget.items = biaya.slice(0, 24).map((place) => ({
+    plan.destination.places = semuaTempat.slice(0, 20).map((name) => ({ name, type: "", note: "" }));
+    plan.activities.items = semuaTempat.slice(0, 20).map((name, idx) => ({
+      name,
+      category: "Wisata",
+      day: `Hari ${Math.floor(idx / 3) + 1}`,
+      cost: "",
+      note: "",
+    }));
+    const biaya = hari.flatMap((item) => (Array.isArray(item.places) ? item.places : [])).filter((p) => Number(p.cost) > 0);
+    if (biaya.length) {
+      plan.budget.items = biaya.slice(0, 30).map((place) => ({
         label: place.name,
         category: "Tiket",
         amount: Number(place.cost),
@@ -517,12 +588,34 @@ export function normalizePlan(aiPlan, trip) {
     MODULES.forEach((modul) => {
       const bagian = aiPlan.modules[modul.id];
       if (bagian && typeof bagian === "object") {
-        plan[modul.id] = { ...plan[modul.id], ...bagian };
+        // Gabungkan koleksi secara cerdas: kalau AI memberi items, pakai jika modul kosong/kurang.
+        const merged = { ...plan[modul.id], ...bagian };
+        (modul.collections || []).forEach((col) => {
+          const lama = plan[modul.id]?.[col.key] || [];
+          const baru = bagian[col.key];
+          if (Array.isArray(baru) && baru.length && (!lama.length || baru.length >= lama.length)) {
+            merged[col.key] = baru;
+          }
+        });
+        plan[modul.id] = merged;
       }
     });
   }
 
-  return plan;
+  // Pastikan Date & Duration konsisten dengan trip.
+  if (trip.date) plan.dates.startDate = trip.date;
+  if (trip.endDate || trip.date) plan.dates.endDate = trip.endDate || trip.date;
+  const dur = durasiHari(plan.dates.startDate, plan.dates.endDate);
+  if (dur > 0) plan.dates.nights = Math.max(0, dur - 1);
+
+  // Pastikan budget planned terisi.
+  if (!Number(plan.budget.planned)) {
+    const sum = (plan.budget.items || []).reduce((a, b) => a + (Number(b.amount) || 0), 0);
+    if (sum > 0) plan.budget.planned = sum;
+    else if (Number(aiPlan.totalCost) > 0) plan.budget.planned = Number(aiPlan.totalCost);
+  }
+
+  return ensureUniversalPlan({ ...trip, plan, city: city || trip.city });
 }
 
 /** Jadwal harian dari modul itinerary, dengan fallback ke format lama chat. */
@@ -580,16 +673,48 @@ export function terapkanJawabanForm(plan, fields = [], values = {}) {
     hasil.answers.push({ key: f.key, label: f.label, value: nilai, module: f.module?.id || "" });
 
     const modul = MODULES.find((m) => m.id === f.module?.id);
-    const kolom = (modul?.fields || []).find(
+    if (!modul) return;
+    let kolom = (modul?.fields || []).find(
       (k) => norm(k.key) === norm(f.key) || norm(k.label) === norm(f.key) || norm(k.label) === norm(f.label)
     );
-    if (!modul || !kolom) return;
+    // Pemetaan cerdas untuk pertanyaan umum yang tidak persis sama dengan nama kolom.
+    if (!kolom && modul.id === "safety") {
+      const nkey = norm(f.key + " " + f.label);
+      if (/alergi/.test(nkey)) kolom = modul.fields.find((k) => k.key === "allergies");
+      else if (/darurat|kontak/.test(nkey)) kolom = modul.fields.find((k) => k.key === "emergencyPhone");
+      else kolom = modul.fields.find((k) => k.key === "medicalNote" || k.key === "plan");
+    }
+    // Budget: "500 ribu"/"1jt" -> planned
+    if (!kolom && modul.id === "budget") {
+      const raw = String(nilai).toLowerCase().replace(/\./g, "").replace(/,/g, ".");
+      const jt = raw.match(/([\d.]+)\s*(jt|juta)/);
+      const rb = raw.match(/([\d.]+)\s*(rb|ribu|k)\b/);
+      let n = jt ? Math.round(parseFloat(jt[1]) * 1000000) : rb ? Math.round(parseFloat(rb[1]) * 1000) : Number(String(nilai).replace(/[^0-9]/g, ""));
+      if (n > 0) { hasil.budget = { ...(hasil.budget || {}), planned: n, currency: "IDR" }; return; }
+    }
+    // Transport/accommodation/food: jawaban user harus masuk sebagai item draft.
+    if (!kolom && ["transportation","accommodation","food"].includes(modul.id)) {
+      const planRef = hasil[modul.id] || {};
+      if (modul.id === "transportation" && !(planRef.items || []).length) {
+        hasil.transportation = { ...planRef, items: [{ type: "Pergi", mode: nilai, from: "Kota asal", to: hasil.destination?.city || hasil.overview?.destination || "", depart: "", arrive: "", cost: "", note: "" }] };
+      } else if (modul.id === "accommodation" && !(planRef.items || []).length) {
+        hasil.accommodation = { ...planRef, items: [{ name: nilai, type: /hotel|villa|guest|hostel|homestay/i.test(nilai) ? nilai : "Hotel", area: hasil.destination?.city || "", checkIn: hasil.dates?.startDate || "", checkOut: hasil.dates?.endDate || "", cost: "", note: "Preferensi dari user" }] };
+      } else if (modul.id === "food" && !(planRef.items || []).length) {
+        const noPref = /tidak ada|tidak|no/i.test(nilai);
+        hasil.food = { ...planRef, items: [{ name: noPref ? "Kuliner lokal rekomendasi" : nilai, place: hasil.destination?.city || "", meal: "Makan siang", cost: "", note: noPref ? "Tidak ada alergi/preferensi khusus" : "Preferensi dari user" }] };
+      }
+      return;
+    }
+    if (!kolom) return;
     let isi = nilai;
     if (kolom.type === "select") {
       isi = (kolom.options || []).find((o) => norm(o) === norm(nilai));
       if (!isi) return;
     } else if (kolom.type === "number") {
-      const n = Number(nilai.replace(/[^0-9]/g, ""));
+      const raw = String(nilai).toLowerCase().replace(/\./g, "").replace(/,/g, ".");
+      const jt = raw.match(/([\d.]+)\s*(jt|juta)/);
+      const rb = raw.match(/([\d.]+)\s*(rb|ribu|k)\b/);
+      const n = jt ? Math.round(parseFloat(jt[1]) * 1000000) : rb ? Math.round(parseFloat(rb[1]) * 1000) : Number(String(nilai).replace(/[^0-9]/g, ""));
       if (!n) return;
       isi = n;
     } else if (kolom.type === "date") {

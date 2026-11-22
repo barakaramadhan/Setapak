@@ -120,9 +120,9 @@ Contoh Bogor: PILIHAN: Alam | Kuliner | Budaya
 Contoh luar negeri: PILIHAN: Paspor masih proses | Visa sudah siap | Belum tahu
 DILARANG memakai contoh kota Indonesia (Bogor, Jogja, Bandung, Bali) kalau tujuannya luar negeri.
 
-Ketika kamu sudah punya: (1) tujuan, (2) durasi atau tanggal, dan (3) budget ATAU minat, akhiri jawaban dengan satu baris tepat:
+Ketika kamu sudah punya: (1) tujuan, (2) durasi atau tanggal/periode, dan (3) budget ATAU minat/gaya perjalanan, akhiri jawaban dengan satu baris tepat:
 <<SIAP>>
-Jangan pernah menulis <<SIAP>> sebelum ketiga hal itu jelas.` + PRINSIP_AHLI;
+Jangan pernah menulis <<SIAP>> sebelum ketiga hal itu jelas. Kalau user sudah memberi konteks implisit (mis. "bulan madu" = romantis/berdua, "akhir tahun" = periode akhir Desember-awal Januari, "3 hari" = durasi), anggap itu sudah diketahui dan jangan ditanya ulang; cukup konfirmasi singkat dalam jawabanmu.` + PRINSIP_AHLI;
 
 // Dipanggil setelah tombol "Create Planning": AI yang memutuskan modul mana
 // dari 15 modul universal yang paling dibutuhkan, lalu menyusun pertanyaannya.
@@ -153,7 +153,7 @@ Balas HANYA JSON array valid, tanpa markdown dan tanpa kalimat lain. Format tiap
 Aturan field:
 - "key" unik, snake_case, maksimal 24 karakter.
 - "module" WAJIB diisi dengan id, no, dan nama modul asal dari daftar di atas.
-- "label" = kalimat pertanyaan ramah, SPESIFIK untuk trip ini, maksimal 90 karakter. Jangan pertanyaan generik seperti "Kota atau wilayah tujuan?" kalau kota sudah jelas di obrolan.
+- "label" = kalimat pertanyaan ramah, SPESIFIK untuk trip ini, maksimal 90 karakter. Jangan pertanyaan generik seperti "Kota atau wilayah tujuan?" kalau kota sudah jelas di obrolan. Gunakan konteks yang sudah diketahui (bulan madu/romantis/keluarga/akhir tahun/budget/durasi) agar pertanyaan terasa personal.
 - "type" hanya boleh: text, number, date, select.
 - "options" WAJIB ada untuk SEMUA type (2-6 pilihan): untuk select = pilihan jawaban; untuk text/number/date = contoh jawaban cepat yang masuk akal untuk trip ini.
 - Contoh options yang BENAR untuk Jepang: ["Tokyo", "Kyoto", "Osaka"] atau ["5 hari", "1 minggu", "2 minggu"].
@@ -187,6 +187,8 @@ Aturan:
 - "why" = alasan maksimal 80 karakter yang menyebut kebutuhan mereka (anak, ibadah, budget, cuaca, dll). "startTime" = jam HH:MM yang masuk akal (jam buka, cuaca, waktu salat). Susun urutan tempat di hari itu dari yang paling dekat ke berikutnya.
 - Baca blok KEBUTUHAN bila ada, dan sesuaikan ritme serta pilihan tempat dengan itu.
 - Isi "modules" hanya dengan data yang benar-benar diketahui dari obrolan; boleh kosong/absen kalau tidak ada. Jangan mengulang pertanyaan yang sudah ada di PROFIL TRIP.
+- Jika PROFIL TRIP menyebut momen/periode (mis. akhir tahun, tahun baru) atau tema romantis/bulan madu, sesuaikan judul hari, ritme, dan pilihan tempat agar relevan (mis. suasana romantis, sunset, dinner, spot foto, hindari jadwal terlalu padat). Jangan mengarang event/tanggal festival spesifik jika tidak yakin; tulis sebagai saran umum periode tersebut.
+- Jika ada kebutuhan khusus/kondisi kesehatan/alergi, masukkan ke "modules.safety" (medicalNote/allergies/emergencyName/emergencyPhone/plan sesuai yang diketahui) dan sesuaikan aktivitas agar aman/nyaman.
 - Jangan masukkan syarat pandemi (vaksin COVID-19, PCR, karantina) ke dokumen atau catatan apa pun. Pakai "cek syarat resmi terbaru" bila perlu.` + PRINSIP_AHLI;
 
 const TIMEOUT_MS = 12000;

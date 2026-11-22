@@ -284,6 +284,7 @@ function bersihkanFakta(raw = {}) {
     days: Number.isFinite(angka) && angka > 0 ? Math.min(30, Math.round(angka)) : null,
     daysByDestination,
     startDate: /^\d{4}-\d{2}-\d{2}$/.test(String(raw.startDate || "")) ? raw.startDate : null,
+    occasion: teks(raw.occasion, 60),
     budget: teks(raw.budget, 60),
     budgetScope: ["per orang", "total perjalanan"].includes(raw.budgetScope)
       ? raw.budgetScope
@@ -292,6 +293,7 @@ function bersihkanFakta(raw = {}) {
     purpose: teks(raw.purpose, 40),
     tema: teks(raw.tema, 40),
     companions: teks(raw.companions, 40),
+    specialNeeds: teks(raw.specialNeeds, 120),
     knownKeys: daftar(raw.knownKeys),
     knownModules: daftar(raw.knownModules),
   };
@@ -301,6 +303,8 @@ function bersihkanFakta(raw = {}) {
     hasil.startDate ||
     hasil.budget ||
     hasil.food ||
+    hasil.occasion ||
+    hasil.specialNeeds ||
     hasil.knownKeys.length;
   return adaIsi ? hasil : null;
 }
@@ -316,12 +320,15 @@ function formatFakta(fakta) {
     .join(", ");
   if (durasiTujuan) baris.push(`- Pembagian durasi: ${durasiTujuan}`);
   if (fakta.startDate) baris.push(`- Mulai tanggal: ${fakta.startDate}`);
+  if (fakta.occasion) baris.push(`- Momen/waktu: ${fakta.occasion}`);
   if (fakta.budget) {
     baris.push(`- Budget: ${fakta.budget}${fakta.budgetScope ? ` (${fakta.budgetScope})` : ""}`);
   }
   if (fakta.food) baris.push(`- Makanan: ${fakta.food}`);
   if (fakta.purpose) baris.push(`- Karakter perjalanan: ${fakta.purpose}`);
+  if (fakta.tema) baris.push(`- Tema/gaya: ${fakta.tema}`);
   if (fakta.companions) baris.push(`- Pendamping: ${fakta.companions}`);
+  if (fakta.specialNeeds) baris.push(`- Kebutuhan khusus/kesehatan: ${fakta.specialNeeds}`);
   if (fakta.knownKeys.length) baris.push(`- Topik yang sudah diketahui: ${fakta.knownKeys.join(", ")}`);
   if (!baris.length) return "";
 
@@ -340,6 +347,7 @@ const KUNCI_TOPIK = {
   budget: /budget|biaya|anggaran|cost|uang/,
   tema: /tema|theme|skala|companion|nama/,
   makanan: /makan|food|kuliner|alergi/,
+  safety: /safety|darurat|kesehatan|medis|alergi|kebutuhan khusus|disabilitas/,
   dokumen: /dokumen|paspor|visa|document/,
   transport: /transport|moda|pesawat|kereta/,
   akomodasi: /hotel|akomodasi|menginap|accommodation/,
@@ -460,17 +468,19 @@ function infoSudahDijawab(history = [], fakta = null) {
     .toLowerCase();
   const dariTeks = {
     budget: /budget|anggaran|rp\.?\s*\d|\d+\s*(juta|rb|ribu)|biaya|uang/.test(teks),
-    waktu: new RegExp(`\\d+\\s*(hari|malam|minggu)|${BULAN}|tanggal|kapan|mulai|durasi`).test(teks),
-    tema: /santai|keluarga|petualangan|kuliner|budaya|romantis|berdua|istri|suami|pasangan|tema|menikmati/.test(teks),
+    waktu: new RegExp(`\\d+\\s*(hari|malam|minggu)|${BULAN}|tanggal|kapan|mulai|durasi|akhir tahun|tahun baru|natal|lebaran`).test(teks),
+    tema: /santai|keluarga|petualangan|kuliner|budaya|romantis|bulan madu|honeymoon|berdua|istri|suami|pasangan|tema|menikmati/.test(teks),
+    safety: /kebutuhan khusus|kondisi kesehatan|alergi|hamil|disabilitas|kursi roda|lansia|medis|darurat/.test(teks),
   };
   if (!fakta) return dariTeks;
 
   const known = new Set(fakta.knownKeys || []);
   return {
     budget: dariTeks.budget || known.has("budget"),
-    waktu: dariTeks.waktu || Boolean(fakta.days || fakta.startDate) || known.has("durasi"),
+    waktu: dariTeks.waktu || Boolean(fakta.days || fakta.startDate || fakta.occasion) || known.has("durasi"),
     tema: dariTeks.tema || known.has("tema"),
     makanan: known.has("makanan"),
+    safety: dariTeks.safety || known.has("safety") || Boolean(fakta.specialNeeds),
     dokumen: known.has("dokumen"),
     transport: known.has("transport"),
     akomodasi: known.has("akomodasi"),
@@ -486,6 +496,7 @@ function fieldsTanpaPengulangan(fields = [], history = [], fakta = null) {
     dates: sudah.waktu,
     budget: sudah.budget,
     food: Boolean(sudah.makanan),
+    safety: Boolean(sudah.safety),
     documents: Boolean(sudah.dokumen),
     transportation: Boolean(sudah.transport),
     accommodation: Boolean(sudah.akomodasi),
@@ -522,7 +533,16 @@ function fieldLanjutan(history = [], yangAda = [], fakta = null) {
     ...(fakta?.knownModules || []),
   ]);
   const knownKeys = fakta?.knownKeys || [];
+  const romantis = fakta?.tema === "romantis" || /romantis|honeymoon|bulan madu/.test(teksUser(history, ""));
   const calon = [
+    {
+      key: "safety",
+      module: infoModul("safety"),
+      label: "Apakah ada kebutuhan khusus atau kondisi kesehatan yang perlu kami perhatikan?",
+      type: "text",
+      options: ["Tidak ada", "Alergi makanan", "Butuh akses mudah", "Ada kondisi medis"],
+      reason: "Menjaga kenyamanan dan keamanan",
+    },
     {
       key: "akomodasi",
       module: infoModul("accommodation"),
@@ -531,14 +551,18 @@ function fieldLanjutan(history = [], yangAda = [], fakta = null) {
         fakta.destinations.includes("Makkah") &&
         fakta.destinations.includes("Madinah")
           ? "Untuk fokus ibadah, lebih memilih penginapan dekat masjid atau opsi hemat dengan shuttle?"
-          : tujuan.luarNegeri
-            ? `Untuk perjalanan ke ${tujuan.key}, area menginap seperti apa yang kamu prioritaskan?`
-            : "Mau menginap di hotel, guesthouse, atau tempat lain?",
+          : romantis
+            ? "Untuk momen romantis ini, suasana penginapan seperti apa yang kamu cari?"
+            : tujuan.luarNegeri
+              ? `Untuk perjalanan ke ${tujuan.key}, area menginap seperti apa yang kamu prioritaskan?`
+              : "Mau menginap di hotel, guesthouse, atau tempat lain?",
       type: "select",
       options:
         fakta?.purpose === "ibadah"
           ? ["Dekat masjid", "Lebih hemat dengan shuttle", "Belum ada preferensi"]
-          : ["Dekat pusat kota", "Dekat tempat wisata", "Area tenang", "Belum tentu"],
+          : romantis
+            ? ["Privat & tenang", "Dekat pusat kota", "View bagus", "Yang penting nyaman"]
+            : ["Dekat pusat kota", "Dekat tempat wisata", "Area tenang", "Belum tentu"],
       reason: "Menentukan base camp harian",
     },
     {
@@ -560,9 +584,11 @@ function fieldLanjutan(history = [], yangAda = [], fakta = null) {
     {
       key: "makanan",
       module: infoModul("food"),
-      label: "Ada makanan atau alergi yang harus dihindari?",
+      label: "Ada preferensi makanan atau alergi yang harus dihindari?",
       type: "text",
-      options: ["Tidak ada", "Alergi kacang", "Vegetarian", "Makanan ringan"],
+      options: romantis
+        ? ["Tidak ada", "Makanan lokal", "Dinner romantis", "Alergi tertentu"]
+        : ["Tidak ada", "Alergi kacang", "Vegetarian", "Makanan lokal"],
       reason: "Menyesuaikan pilihan kuliner",
     },
   ];
@@ -1534,20 +1560,45 @@ export async function handleChatRequest(req, res, env = process.env) {
         // Gemini/Groq riset harga & kondisi terkini, AI penulis menyusun JSON-nya.
         webSearch: "riset",
       });
-      let plan = parsePlanJson(result?.reply, fakta);
+      const normPlanDays = (p) => {
+        if (!p || !Array.isArray(p.days)) return p;
+        const target = Math.min(14, Math.max(1, Number(fakta?.days) || p.days.length || 1));
+        if (p.days.length === target) return p;
+        if (p.days.length > target) return { ...p, days: p.days.slice(0, target) };
+        // Kurang hari: isi hari tersisa dengan aktivitas ringan agar tidak mengurangi durasi user.
+        const days = [...p.days];
+        while (days.length < target) {
+          const i = days.length;
+          const used = new Set(days.flatMap(d => (d.places||[]).map(pl=>String(pl?.name||"").toLowerCase())));
+          const base = days[i % Math.max(1, days.length)] || { places: [] };
+          const pool = (base.places || []).filter(pl => !used.has(String(pl?.name||"").toLowerCase()));
+          const picks = (pool.length ? pool : [{ name: "Waktu bebas / eksplorasi sekitar", why: "Nikmati suasana kota dengan santai", startTime: "10:00" }]).slice(0,2);
+          days.push({
+            title: `Hari ${i + 1}`,
+            places: picks.map((pl, j) => ({
+              ...pl,
+              name: String(pl?.name || "Waktu bebas / eksplorasi sekitar").slice(0,80),
+              why: String(pl?.why || (j===0 ? "Waktu fleksibel untuk menikmati suasana" : "Eksplorasi santai")).slice(0,100),
+              startTime: pl?.startTime || (j===0 ? "10:00" : "14:00"),
+            })),
+          });
+        }
+        return { ...p, days };
+      };
+      let plan = normPlanDays(parsePlanJson(result?.reply, fakta));
       let sumberPlan = result?.source;
       let alasanPlanGagal = null;
-      // JSON gagal/terpotong (rencana panjang): coba sekali lagi, lebih ringkas.
-      if (!plan) {
+      // JSON gagal/terpotong atau jumlah hari tidak sesuai: coba sekali lagi.
+      if (!plan || (fakta?.days && plan.days.length !== Math.min(14, fakta.days))) {
         const ulang = await askAI({
-          message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}\n\nKOREKSI WAJIB: balasan sebelumnya bukan JSON yang utuh. Balas HANYA JSON valid dan LENGKAP. Boleh kosongkan "modules" dan singkatkan "why" supaya JSON pasti selesai.`,
+          message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}\n\nKOREKSI WAJIB: balasan sebelumnya tidak valid/lengkap atau jumlah hari tidak sesuai. Buat tepat ${Math.min(14, fakta?.days || 3)} hari. Balas HANYA JSON valid dan LENGKAP. Boleh kosongkan "modules" dan singkatkan "why" supaya JSON pasti selesai.`,
           history: [],
           env,
           systemPrompt: CREATE_PLAN_SYSTEM_PROMPT + profil,
           maxTokens: 3600,
         });
-        plan = parsePlanJson(ulang?.reply, fakta);
-        if (plan) sumberPlan = ulang?.source;
+        const parsedUlang = normPlanDays(parsePlanJson(ulang?.reply, fakta));
+        if (parsedUlang) { plan = parsedUlang; sumberPlan = ulang?.source; }
       }
       if (plan && !rencanaSesuaiPembagian(plan, fakta, lapangan)) {
         const ulang = await askAI({

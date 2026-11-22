@@ -8,7 +8,6 @@ import UserLayout from "./components/layouts/UserLayout";
 import DashboardUser from "./pages/user/DashboardUser";
 import AiChat from "./pages/user/sections/AiChat";
 import YourPlan from "./pages/user/sections/YourPlan";
-import TripDetail from "./pages/user/sections/TripDetail";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 import TripPage from "./pages/user/TripPage";
@@ -50,10 +49,9 @@ function App() {
             <Route path="/dashboard" element={<DashboardUser />} />
             <Route path="/chats" element={<AiChat />} />
             <Route path="/plan" element={<Navigate to="/trip" replace />} />
-            {/* Keep baraka trip UI routes, backed by main trip logic/components where available */}
+            {/* Trip: baraka UI for listing, main logic/workspace for detail */}
             <Route path="/trip" element={<YourPlan />} />
-            <Route path="/trip/:id" element={<TripDetail />} />
-            <Route path="/trip/workspace/:id" element={<TripPage />} />
+            <Route path="/trip/:id" element={<TripPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to={START_PAGE || "/"} replace />} />

@@ -64,8 +64,24 @@ export function extractTripFacts(history = []) {
   const purpose = /\b(umroh|haji|ibadah|ziarah|makkah|madinah|masjidil haram|masjid nabawi)\b/.test(lower)
     ? "ibadah"
     : null;
-  const tema = purpose || (lower.match(/\b(santai|keluarga|petualangan|kuliner|budaya|romantis)\b/) || [])[0] || null;
+  const honeymoon = /\b(bulan madu|honeymoon|anniversary|ulang tahun pernikahan)\b/.test(lower);
+  const tema = purpose || (honeymoon ? "romantis" : (lower.match(/\b(santai|keluarga|petualangan|kuliner|budaya|romantis)\b/) || [])[0] || null);
   const companions = (lower.match(/\b(istri|suami|pasangan|berdua|keluarga|anak-anak|anak|teman)\b/) || [])[0] || null;
+  const occasion =
+    (lower.match(/\b(akhir tahun|liburan akhir tahun|tahun baru|natal|lebaran|idul fitri|libur sekolah|weekend|akhir pekan)\b/) || [])[0] || null;
+  // Infer tanggal dari momen umum jika user belum beri tanggal spesifik.
+  let inferredStart = startDate;
+  if (!inferredStart && occasion) {
+    const y = new Date().getFullYear();
+    if (/akhir tahun|liburan akhir tahun/.test(occasion)) inferredStart = `${y}-12-28`;
+    else if (/tahun baru/.test(occasion)) inferredStart = `${y}-12-31`;
+    else if (/natal/.test(occasion)) inferredStart = `${y}-12-24`;
+  }
+  const specialNeeds = /\b(kebutuhan khusus|kondisi kesehatan|alergi|hamil|disabilitas|kursi roda|lansia|penyakit|medis|asthma|asma|diabetes)\b/.test(lower)
+    ? (lower.match(/[^.?!]*(kebutuhan khusus|kondisi kesehatan|alergi|hamil|disabilitas|kursi roda|lansia|penyakit|medis|asthma|asma|diabetes)[^.?!]*/i)?.[0] || "ada kebutuhan khusus/kesehatan")
+        .trim()
+        .slice(0, 120)
+    : null;
   const dokumen = /\b(paspor|visa|dokumen|izin)\b/.test(lower);
   const transport = /\b(pesawat|kereta|bus|transport|penerbangan|flight)\b/.test(lower);
   const akomodasi = /\b(hotel|villa|hostel|menginap|akomodasi|penginapan)\b/.test(lower);
@@ -76,7 +92,7 @@ export function extractTripFacts(history = []) {
     knownKeys.push("kota");
     knownModules.push("destination");
   }
-  if (days !== null || startDate) {
+  if (days !== null || startDate || occasion) {
     knownKeys.push("durasi");
     knownModules.push("dates");
   }
@@ -88,9 +104,13 @@ export function extractTripFacts(history = []) {
     knownKeys.push("makanan");
     knownModules.push("food");
   }
-  if (tema || companions) {
+  if (tema || companions || occasion) {
     knownKeys.push("tema");
     knownModules.push("overview");
+  }
+  if (specialNeeds) {
+    knownKeys.push("safety");
+    knownModules.push("safety");
   }
   if (dokumen) {
     knownKeys.push("dokumen");
@@ -110,13 +130,15 @@ export function extractTripFacts(history = []) {
     destinationLabel: destinations.slice(0, 6).join(" + "),
     days: days !== null ? Math.min(30, Math.max(1, days)) : null,
     daysByDestination,
-    startDate,
+    startDate: inferredStart,
+    occasion,
     budget,
     budgetScope,
     food,
     purpose,
     tema,
     companions,
+    specialNeeds,
     knownKeys,
     knownModules,
   };
