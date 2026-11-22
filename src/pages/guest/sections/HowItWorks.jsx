@@ -45,10 +45,10 @@ function HowItWorks() {
       </h2>
 
       {/* Container diubah: flex-col untuk mobile (menumpuk rapi di tengah), grid-cols-3 untuk layar md ke atas */}
-      <div className="flex-1 w-full max-w-7xl mx-auto flex flex-col md:grid md:grid-cols-3 items-center gap-10 md:gap-0">
+      <div className="flex-1 w-full max-w-7xl mx-auto flex flex-col lg:grid lg:grid-cols-3 items-center gap-10 lg:gap-0">
         
         {/* Gambar Kiri - Diberi class "hidden md:flex" agar hilang di mobile */}
-        <div className="hidden md:flex justify-start pl-10">
+        <div className="hidden lg:flex justify-start pl-10">
           <img
             src={currentData.imageLeft}
             alt="Step Left"
@@ -57,7 +57,7 @@ function HowItWorks() {
         </div>
 
         {/* Konten Teks - Tetap di tengah dan selalu tampil */}
-        <div className="flex flex-col gap-12 text-center items-center md:mt-11">
+        <div className="flex flex-col gap-12 text-center items-center lg:mt-11">
           {steps.map((step) => (
             <div
               key={step.id}
@@ -82,7 +82,7 @@ function HowItWorks() {
         </div>
 
         {/* Gambar Kanan - Diberi class "hidden md:flex" agar hilang di mobile */}
-        <div className="hidden md:flex justify-end pr-10">
+        <div className="hidden lg:flex justify-end pr-10">
           <img
             src={currentData.imageRight}
             alt="Step Right"

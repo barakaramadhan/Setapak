@@ -46,7 +46,9 @@ function Navbar() {
 
   // Background muncul setelah animasi garis selesai, lalu scroll dilanjutkan
   const lenis = useLenis((instance) => {
-    setSolid(instance.scroll > HOME_PIN_DISTANCE);
+    // Tablet (< 1024px) tidak ada animasi garis, jadi background muncul begitu di-scroll
+    const batasScroll = window.innerWidth < 1024 ? 20 : HOME_PIN_DISTANCE;
+    setSolid(instance.scroll > batasScroll);
     setMobileSolid(instance.scroll > 20);
   });
 

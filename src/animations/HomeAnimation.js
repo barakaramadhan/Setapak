@@ -7,16 +7,16 @@ gsap.registerPlugin(ScrollTrigger);
 export const HOME_PIN_DISTANCE = 1500;
 
 export const svgHomeAnimation = (container) => {
-  // 1. BYPASS KASAR: Jika layar adalah mobile (< 640px), jangan jalankan GSAP sama sekali
-  if (!container || window.innerWidth < 640) return () => {};
+  // 1. BYPASS KASAR: Jika layar adalah mobile/tablet (< 1024px), jangan jalankan GSAP sama sekali
+  if (!container || window.innerWidth < 1024) return () => {};
 
   const section = container.closest("section");
   
   // 2. Gunakan matchMedia sebagai pengganti context
   const mm = gsap.matchMedia();
 
-  // Animasi HANYA akan dibuat jika layar minimal 640px (Desktop/Tablet besar)
-  mm.add("(min-width: 640px)", () => {
+  // Animasi HANYA akan dibuat jika layar minimal 1024px (Desktop)
+  mm.add("(min-width: 1024px)", () => {
     const paths = gsap.utils.toArray(".garis");
     const ikon1 = container.querySelector("#ikon-1");
     const ikon2 = container.querySelector("#ikon-2");
