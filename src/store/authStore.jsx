@@ -61,7 +61,7 @@ export default function AuthProvider({ children }) {
     return { error: null };
   };
 
-  const signUp = async (email, password) => {
+  const signUp = async (email, password, fullName = "") => {
     setAuthError("");
     if (!supabase) {
       setUser(DEMO_USER);
@@ -70,6 +70,7 @@ export default function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
+      options: fullName.trim() ? { data: { full_name: fullName.trim() } } : undefined,
     });
     if (error) {
       setAuthError(error.message);

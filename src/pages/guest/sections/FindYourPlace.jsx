@@ -83,13 +83,13 @@ function FindYourPlace() {
   };
 
   return (
-    <section className="px-20 py-14 flex flex-col lg:flex-row items-center gap-12 bg-bright-white max-sm:px-5 max-sm:py-10">
+    <section className="px-20 py-14 flex flex-col lg:flex-row items-center gap-12 bg-bright-white max-lg:px-12 max-sm:px-5 max-sm:py-10">
       <div className="flex-1 w-full">
         <SectionMarker
           title="02 Popular Destination"
           className="mb-10 max-sm:mb-6 px-6 py-2 max-sm:px-3 max-sm:py-1 max-sm:mb-5"
         />
-        <h1 className="font-jakarta font-medium text-7xl text-grey-light max-sm:text-4xl max-sm:whitespace-nowrap">
+        <h1 className="font-jakarta font-medium text-7xl text-grey-light max-lg:text-6xl max-sm:text-4xl max-sm:whitespace-nowrap">
           Find Your
           <span className="font-clash font-semibold text-light-brown-new pl-3 max-sm:pl-2">
             Place
@@ -101,7 +101,7 @@ function FindYourPlace() {
         </p>
       </div>
 
-      <div className="w-full max-w-lg shrink-0 bg-white rounded-2xl shadow-xl max-sm:max-w-full">
+      <div className="w-full max-w-lg shrink-0 bg-white rounded-2xl shadow-xl max-lg:max-w-full max-sm:max-w-full">
         <img
           src={ImageCard}
           alt=""
@@ -256,8 +256,8 @@ function FindYourPlace() {
 
           <div className="mt-6 flex justify-start max-sm:justify-center w-full">
             <FillButton
-              className="max-sm:px-32 max-sm:py-3 max-sm:text-white flex justify-center items-center text-center"
-              baseClassName="max-sm:bg-dark-brown-new ring-1 ring-inset ring-dark-brown-new text-dark-brown-new"
+              className="max-lg:text-white max-sm:px-32 max-sm:py-3 max-sm:text-white flex justify-center items-center text-center"
+              baseClassName="max-lg:bg-dark-brown-new max-sm:bg-dark-brown-new ring-1 ring-inset ring-dark-brown-new text-dark-brown-new"
             >
               Plan Trip
             </FillButton>

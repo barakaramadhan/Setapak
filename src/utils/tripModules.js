@@ -16,7 +16,7 @@ const PILIHAN = {
   akomodasi: ["Hotel", "Villa", "Hostel", "Guesthouse", "Camping", "Lainnya"],
   kategoriBiaya: ["Transport", "Akomodasi", "Makan", "Aktivitas", "Tiket", "Lainnya"],
   waktuMakan: ["Sarapan", "Makan siang", "Makan malam", "Camilan"],
-  kategoriAktivitas: ["Wisata", "Hiburan", "Petualangan", "Budaya", "Belanja", "Lainnya"],
+  kategoriAktivitas: ["Wisata", "Kuliner", "Penginapan", "Hiburan", "Petualangan", "Budaya", "Belanja", "Lainnya"],
   jenisDokumen: ["KTP", "Paspor", "Visa", "Tiket", "Asuransi", "Lainnya"],
   kategoriBarang: ["Pakaian", "Toiletries", "Elektronik", "Dokumen", "Obat", "Lainnya"],
   statusBooking: ["Belum dipesan", "Terkonfirmasi", "Lunas", "Dibatalkan"],
@@ -185,6 +185,7 @@ export const MODULES = [
     collections: [
       daftar("items", "Daftar aktivitas", [
         teks("name", "Nama aktivitas"),
+        teks("place", "Tempat", { placeholder: "Mis. Menteng, Jakarta Pusat" }),
         pilih("category", "Kategori", PILIHAN.kategoriAktivitas),
         teks("day", "Hari / tanggal"),
         angka("cost", "Biaya (Rp)"),
@@ -723,4 +724,74 @@ export function terapkanJawabanForm(plan, fields = [], values = {}) {
     hasil[modul.id] = { ...(hasil[modul.id] || {}), [kolom.key]: isi };
   });
   return hasil;
+}
+
+// Tebak kategori modul 9 dari nama tempat / kategori bawaan AI.
+export function tebakKategori(kategori = "", nama = "") {
+  const t = `${kategori} ${nama}`;
+  if (/stay|hotel|penginapan|akomodasi|check-?in|hostel|villa/i.test(t)) return "Penginapan";
+  if (/makan|kuliner|restoran|cafe|kafe|dinner|lunch|warung|food|sarapan|resto/i.test(t)) return "Kuliner";
+  if (/museum|sejarah|budaya|culture|candi|keraton/i.test(t)) return "Budaya";
+  if (/hiburan|fun|wahana|bioskop/i.test(t)) return "Hiburan";
+  if (/petualangan|adventure|hiking|rafting|diving/i.test(t)) return "Petualangan";
+  if (/belanja|shopping|mall|pasar/i.test(t)) return "Belanja";
+  return "Wisata";
+}
+
+// Itinerary (modul 4) -> Activities (modul 9).
+// Setiap aktivitas di itinerary otomatis jadi baris di modul 9 (kategori, hari,
+// biaya, catatan bisa diisi di form). Baris yang diisi/ditambah manual tidak
+// pernah dihapus; baris otomatis yang sudah tidak ada di itinerary dan belum
+// punya biaya ikut dibersihkan.
+export function sinkronAktivitas(plan) {
+  const kunci = (teks) => String(teks || "").trim().toLowerCase();
+  const hari = Array.isArray(plan?.itinerary?.days) ? plan.itinerary.days : [];
+  const lama = Array.isArray(plan?.activities?.items) ? plan.activities.items : [];
+
+  const infoAi = new Map();
+  (plan?.days || []).forEach((h) =>
+    (h.places || []).forEach((p) => {
+      if (p?.name) infoAi.set(kunci(p.name), p);
+    })
+  );
+
+  const dariItinerary = new Map();
+  hari.forEach((h, i) =>
+    listDariTeks(h.activities).forEach((nama) => {
+      if (!dariItinerary.has(kunci(nama))) dariItinerary.set(kunci(nama), { name: nama, day: `Hari ${i + 1}` });
+    })
+  );
+
+  const dipertahankan = lama
+    .filter((it) => !(it.auto && !dariItinerary.has(kunci(it.name)) && !Number(it.cost)))
+    .map((it) => {
+      const cocok = dariItinerary.get(kunci(it.name));
+      let baris = cocok && !it.day ? { ...it, day: cocok.day } : it;
+      // Kategori bawaan otomatis ("Wisata") belum dipilih user: perbaiki dengan tebakan.
+      if (baris.auto && kunci(baris.category) === "wisata") {
+        baris = { ...baris, category: tebakKategori(infoAi.get(kunci(baris.name))?.category, baris.name) };
+      }
+      return baris;
+    });
+
+  const sudahAda = new Set(dipertahankan.map((it) => kunci(it.name)));
+  const baru = [...dariItinerary.values()]
+    .filter((x) => !sudahAda.has(kunci(x.name)))
+    .map((x) => {
+      const ai = infoAi.get(kunci(x.name));
+      return {
+        name: x.name,
+        place: ai?.address || "",
+        category: tebakKategori(ai?.category, x.name),
+        day: x.day,
+        cost: Number(ai?.cost) > 0 ? Number(ai.cost) : "",
+        note: "",
+        auto: true,
+      };
+    });
+
+  return {
+    ...plan,
+    activities: { ...(plan?.activities || {}), items: [...dipertahankan, ...baru] },
+  };
 }

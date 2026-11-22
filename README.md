@@ -77,6 +77,11 @@ npm run lint      # cek kode dengan ESLint
    Script itu membuat tabel `trips` (termasuk `end_date` untuk rentang
    tanggal) + RLS: hanya pemilik (`auth.uid()`) yang bisa membaca/mengubah
    trip-nya. Script aman dijalankan ulang.
+   Kalau muncul error `PGRST205 / Could not find the table 'public.trips'`,
+   berarti script ini belum dijalankan di project Supabase yang dipakai `.env`.
+   Kalau muncul `permission denied for table trips`, jalankan ulang script ini:
+   bagian `GRANT` di bawah memberi hak akses ke role `authenticated` (RLS saja
+   tidak cukup).
 2. Isi di `.env` (lihat `.env.example`):
 
    ```env
@@ -85,8 +90,10 @@ npm run lint      # cek kode dengan ESLint
    ```
 
    `VITE_*` sengaja dikirim ke browser — aman karena RLS yang membatasi data.
-   **Jangan** memakai service role key di sini. Service role tetap dipakai server
-   untuk log chat & planner data.
+   `VITE_SUPABASE_ANON_KEY` boleh anon key (JWT) maupun publishable key baru
+   (`sb_publishable_...`). **Jangan** memakai service/secret key (`sb_secret_...`)
+   di sini. Service role tetap dipakai server untuk log chat & planner data;
+   kalau kosong, keduanya otomatis pakai memory.
 3. Restart `npm run dev` setelah mengubah `.env`, lalu buka `/signup`.
 4. Kalau dua variabel `VITE_*` kosong, aplikasi otomatis pakai **mode lokal**
    (user demo + trip di `localStorage`) supaya tampilan tetap bisa dicoba.

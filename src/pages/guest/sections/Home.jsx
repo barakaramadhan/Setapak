@@ -17,13 +17,13 @@ function Home() {
       <img
         src={ImageLangit}
         alt="Langit Home"
-        className="block w-full h-[900px] [grid-area:1/1] object-cover object-center rounded-b-4xl max-sm:h-[500px] max-sm:rounded-b-2xl"
+        className="block w-full h-[900px] max-lg:h-[560px] [grid-area:1/1] object-cover object-center rounded-b-4xl max-sm:h-[500px] max-sm:rounded-b-2xl"
       />
 
       <div
         ref={animasiRef}
         id="animasi-container"
-        className="absolute top-64 -right-12 w-[1500px] z-[5] max-sm:hidden"
+        className="absolute top-64 -right-12 w-[1500px] z-[5] max-lg:hidden"
       >
         <svg
           className="garis-svg w-full h-auto overflow-visible"
@@ -141,14 +141,14 @@ function Home() {
       <img
         src={ImageSecond}
         alt="Second Image"
-        className="block w-full h-[900px] [grid-area:1/1] object-cover object-center z-10 rounded-4xl max-sm:h-[500px] max-sm:rounded-b-2xl max-sm:object-left"
+        className="block w-full h-[900px] max-lg:h-[560px] [grid-area:1/1] object-cover object-center z-10 rounded-4xl max-sm:h-[500px] max-sm:rounded-b-2xl max-sm:object-left"
       />
 
       <div className="hidden max-sm:block w-full h-[500px] [grid-area:1/1] z-[11] bg-gradient-to-t from-black/40 via-black/20 to-transparent rounded-b-2xl"></div>
 
       <div>
-        <div className="absolute top-48 right-[442px] z-10 leading-none max-sm:right-20 max-sm:z-[12] max-sm:top-56">
-          <h1 className="font-jakarta text-5xl font-medium text-white leading-none w-[330px] max-sm:text-3xl max-sm:w-[280px]">
+        <div className="absolute top-48 right-[442px] z-10 leading-none max-lg:top-40 max-lg:left-12 max-lg:right-auto max-sm:left-auto max-sm:right-20 max-sm:z-[12] max-sm:top-56">
+          <h1 className="font-jakarta text-5xl font-medium text-white leading-none w-[330px] max-lg:w-[420px] max-sm:text-3xl max-sm:w-[280px]">
             Plan Your Next Trip Across
             <span className="pl-1 font-clash font-semibold">
               Multiple Destinations.

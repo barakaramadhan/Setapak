@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import FillButton from "../../components/ui/FillButton";
 import InputAll from "../../components/ui/InputAll";
+import ImageSignIn from "../../assets/images/imageloginpage.png";
 import { useAuth } from "../../store/useAuth";
 
 export default function SignIn() {
@@ -28,72 +29,88 @@ export default function SignIn() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-white-new px-4 py-10 font-jakarta">
-      <form
-        onSubmit={kirim}
-        className="w-full max-w-md rounded-3xl border-2 border-grey-label/50 bg-white p-8 shadow-lg"
-      >
-        <span className="font-clash text-2xl font-bold text-dark-brown-new">
+    <div className="flex min-h-screen w-full bg-bright-white">
+      <div className="flex flex-1 flex-col justify-between p-5">
+        <Link to="/" className="font-clash text-3xl font-bold text-grey-light">
           SETAPAK
-        </span>
-        <h1 className="mt-5 text-3xl font-bold text-grey-light">Welcome back</h1>
-        <p className="mt-1 text-sm text-grey-light/70">
-          Masuk untuk menyimpan jadwal perjalananmu.
-        </p>
+        </Link>
 
-        <label className="mt-6 block text-sm font-semibold text-grey-light">
-          Email
-          <InputAll
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="nama@email.com"
-            className="mt-2 w-full rounded-xl border-grey-label/60 bg-grey-label/15 py-3"
-          />
-        </label>
-
-        <label className="mt-4 block text-sm font-semibold text-grey-light">
-          Password
-          <InputAll
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="••••••••"
-            className="mt-2 w-full rounded-xl border-grey-label/60 bg-grey-label/15 py-3"
-          />
-        </label>
-
-        {pesan && (
-          <p role="alert" className="mt-4 text-sm text-red-600">
-            {pesan}
+        <div className="flex w-full flex-col items-center py-8">
+          <h2 className="text-center font-jakarta text-3xl font-bold text-grey-light sm:text-4xl">
+            Welcome Back!
+          </h2>
+          <p className="mt-2 text-center font-jakarta text-base">
+            Let&apos;s get you signed in securely
           </p>
-        )}
-        {!isSupabaseReady && (
-          <p className="mt-4 text-xs text-grey-light/60">
-            Mode lokal: isi email/password bebas untuk mencoba aplikasi.
-          </p>
-        )}
 
-        <FillButton
-          type="submit"
-          disabled={busy}
-          className="mt-6 w-full !rounded-xl !py-3 text-base disabled:opacity-60"
-          fillClassName="bg-dark-brown-new text-bright-white rounded-xl"
-        >
-          {busy ? "Masuk..." : "Sign in"}
-        </FillButton>
+          <form onSubmit={kirim} className="mt-10 flex w-full max-w-[400px] flex-col gap-5">
+            <div>
+              <p className="mb-2 font-jakarta text-base text-grey-light">Email</p>
+              <InputAll
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter Your Email Address"
+                className="w-full rounded-2xl border-grey-label"
+              />
+            </div>
 
-        <p className="mt-5 text-center text-sm text-grey-light/70">
-          Belum punya akun?{" "}
-          <Link to="/signup" className="font-semibold text-[#6f9abf] hover:underline">
-            Sign up
-          </Link>
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="font-jakarta text-base text-grey-light">Password</p>
+              </div>
+              <InputAll
+                type="password"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your Password"
+                className="w-full rounded-2xl border-grey-label"
+              />
+            </div>
+
+            {pesan && (
+              <p role="alert" className="text-sm text-red-600">
+                {pesan}
+              </p>
+            )}
+            {!isSupabaseReady && (
+              <p className="text-xs text-grey-light/60">
+                Mode lokal: isi email/password bebas untuk mencoba aplikasi.
+              </p>
+            )}
+
+            <FillButton
+              type="submit"
+              disabled={busy}
+              fillClassName="bg-grey-light text-white"
+              className="disabled:opacity-60"
+            >
+              <span className="inline-flex w-full items-center justify-center gap-2">
+                <span>{busy ? "Signing in..." : "Log In"}</span>
+              </span>
+            </FillButton>
+          </form>
+
+          <h3 className="mt-6 text-center font-jakarta text-base text-grey-light">
+            Don&apos;t have an account yet?{" "}
+            <Link to="/sign-up" className="font-jakarta text-base font-bold text-arctic-blue">
+              Sign Up
+            </Link>
+          </h3>
+        </div>
+
+        <p className="font-jakarta text-sm text-grey-light">
+          © 2026 Setapak. Crafted by The Rijalz.
         </p>
-      </form>
-    </main>
+      </div>
+
+      <div className="hidden flex-1 lg:block">
+        <img src={ImageSignIn} alt="City view" className="h-full w-full object-cover" />
+      </div>
+    </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   normalizePlan,
   progresModul,
   ringkasanBagian,
+  sinkronAktivitas,
 } from "../../utils/tripModules";
 import ModuleEditor from "./sections/ModuleEditor";
 import TripModal from "./sections/TripModal";
@@ -39,7 +40,8 @@ export default function TripWorkspace({ trip }) {
   const [aiPesan, setAiPesan] = useState("");
 
   const modulAktif = MODULES.find((modul) => modul.id === aktif) || MODULES[0];
-  const plan = ensureUniversalPlan(trip);
+  // Aktivitas dari itinerary (no. 4) selalu tampil di Activities (no. 9), termasuk trip lama.
+  const plan = sinkronAktivitas(ensureUniversalPlan(trip));
   const progres = progresModul(trip);
   const persen = Math.round((progres / MODULES.length) * 100);
   const durasi = durasiHari(trip.date, trip.endDate) || 1;
@@ -69,12 +71,14 @@ export default function TripWorkspace({ trip }) {
         })),
       }));
     }
+    // Aktivitas di itinerary (modul 4) otomatis masuk ke Activities (modul 9).
+    const planFinal = moduleId === "itinerary" ? sinkronAktivitas(planBaru) : planBaru;
     if (moduleId === "destination" && draft.city) planBaru.city = draft.city;
     if (moduleId === "budget" && Number(draft.planned) > 0) {
       planBaru.totalCost = Number(draft.planned);
     }
 
-    const patch = { plan: planBaru };
+    const patch = { plan: planFinal };
     (modul?.fields || []).forEach((field) => {
       if (field.top === "title" && draft[field.key]) patch.title = draft[field.key];
       if (field.top === "city" && draft[field.key]) patch.city = draft[field.key];

@@ -4,6 +4,7 @@ import { useTrips } from "../../store/useTrips";
 import { formatDateId, formatRangeId } from "../../utils/tripDate";
 import { getItinerary } from "../../utils/tripModules";
 import TripModal from "./sections/TripModal";
+import TripDetail from "./sections/TripDetail";
 import TripWorkspace from "./TripWorkspace";
 
 // /trip = daftar perjalanan, /trip/:id = workspace 15 modul.
@@ -11,6 +12,7 @@ export default function TripPage() {
   const { id } = useParams();
   const { trips, loading, error, updateTrip } = useTrips();
   const [editTrip, setEditTrip] = useState(null);
+  const [lihatForm, setLihatForm] = useState(false);
 
   const simpanEdit = async (data) => {
     if (!editTrip) return { error: "Perjalanan tidak ditemukan." };
@@ -46,7 +48,22 @@ export default function TripPage() {
         </section>
       );
     }
-    return <TripWorkspace trip={trip} />;
+    if (lihatForm) {
+      return (
+        <div>
+          <button
+            type="button"
+            onClick={() => setLihatForm(false)}
+            className="ml-10 mt-6 inline-flex items-center gap-2 rounded-xl border border-grey-label/60 px-4 py-2 font-jakarta text-sm font-semibold text-grey-light hover:bg-grey-label/10 max-sm:ml-6"
+          >
+            <i className="fi fi-rr-angle-small-left text-lg leading-none"></i>
+            Kembali ke ringkasan trip
+          </button>
+          <TripWorkspace trip={trip} />
+        </div>
+      );
+    }
+    return <TripDetail trip={trip} onOpenDetail={() => setLihatForm(true)} />;
   }
 
   const grupPerjalanan = trips.reduce((acc, trip) => {

@@ -40,20 +40,24 @@ function HowItWorks() {
 
   return (
     <section className="bg-grey-light text-white min-h-[600px] py-12 px-10 mt-20 rounded-t-4xl relative z-10 overflow-hidden flex flex-col max-md:rounded-t-[50%/60px] max-sm:rounded-t-[50%/40px] max-sm:px-5">
-      <h2 className="text-center text-3xl font-bold font-clash text-white uppercase">
+      <h2 className="text-center text-3xl font-bold font-clash text-white uppercase max-sm:text-2xl mb-8">
         Setapak
       </h2>
 
-      <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-3 items-center max-md:grid-cols-1 max-md:gap-10 max-md:pt-10">
-        <div className="flex justify-start pl-10 max-md:justify-center max-md:pl-0">
+      {/* Container diubah: flex-col untuk mobile (menumpuk rapi di tengah), grid-cols-3 untuk layar md ke atas */}
+      <div className="flex-1 w-full max-w-7xl mx-auto flex flex-col lg:grid lg:grid-cols-3 items-center gap-10 lg:gap-0">
+        
+        {/* Gambar Kiri - Diberi class "hidden md:flex" agar hilang di mobile */}
+        <div className="hidden lg:flex justify-start pl-10">
           <img
             src={currentData.imageLeft}
             alt="Step Left"
-            className="w-64 h-[400px] object-cover rounded-3xl shadow-2xl -rotate-12 transition-all duration-500 max-md:w-48 max-md:h-60"
+            className="w-64 h-[400px] object-cover rounded-3xl shadow-2xl -rotate-12 transition-all duration-500"
           />
         </div>
 
-        <div className="flex flex-col gap-12 text-center items-center mt-11">
+        {/* Konten Teks - Tetap di tengah dan selalu tampil */}
+        <div className="flex flex-col gap-12 text-center items-center lg:mt-11">
           {steps.map((step) => (
             <div
               key={step.id}
@@ -67,21 +71,22 @@ function HowItWorks() {
               <h3 className="text-3xl text-light-brown-new font-clash font-bold mb-1">
                 {step.number}
               </h3>
-              <h4 className="text-4xl font-jakarta font-regular leading-none max-w-[250px] mx-auto mb-2 max-sm:text-3xl">
+              <h4 className="text-4xl font-jakarta font-regular leading-none max-w-[250px] mx-auto mb-2 max-sm:text-2xl">
                 {step.title}
               </h4>
-              <p className="text-base font-jakarta font-regular text-grey-new">
+              <p className="text-base font-jakarta font-regular text-grey-new max-sm:text-sm">
                 {step.description}
               </p>
             </div>
           ))}
         </div>
 
-        <div className="flex justify-end pr-10 max-md:justify-center max-md:pr-0">
+        {/* Gambar Kanan - Diberi class "hidden md:flex" agar hilang di mobile */}
+        <div className="hidden lg:flex justify-end pr-10">
           <img
             src={currentData.imageRight}
             alt="Step Right"
-            className="w-64 h-[400px] object-cover rounded-3xl shadow-2xl rotate-12 transition-all duration-500 max-md:w-48 max-md:h-60"
+            className="w-64 h-[400px] object-cover rounded-3xl shadow-2xl rotate-12 transition-all duration-500"
           />
         </div>
       </div>

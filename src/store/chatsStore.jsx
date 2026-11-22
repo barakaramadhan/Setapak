@@ -12,10 +12,12 @@ const TABLE = "chats";
 const localKey = (userId) => `setapak:chats:${userId || "anon"}`;
 
 function idBaru() {
-  return (
-    globalThis.crypto?.randomUUID?.() ||
-    `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`
-  );
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  // Fallback tetap berformat UUID agar cocok dengan kolom id di Supabase.
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
 }
 
 function buatChat(title = "Chat baru") {
@@ -63,6 +65,8 @@ function fromRow(row) {
 
 function toRow(chat, userId) {
   return {
+    // WAJIB: tanpa id, upsert(onConflict: "id") selalu membuat baris BARU.
+    id: chat.id,
     user_id: userId,
     title: String(chat.title || "Chat baru").slice(0, 120),
     messages: Array.isArray(chat.messages) ? chat.messages : [],
@@ -88,6 +92,7 @@ export default function ChatsProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const chatsRef = useRef([]);
+  const saveQueue = useRef(new Map());
 
   const pakaiCloud = Boolean(supabase && user && user.id !== LOCAL_DEMO_ID);
 
@@ -134,14 +139,17 @@ export default function ChatsProvider({ children }) {
       let daftar = (data || []).map(fromRow);
       if (!daftar.length) {
         const baru = buatChat();
-        const { error: insertError } = await supabase
+        const { data: inserted, error: insertError } = await supabase
           .from(TABLE)
-          .insert(toRow(baru, user.id));
+          .insert(toRow(baru, user.id))
+          .select()
+          .single();
         if (insertError) {
           setError(insertError.message);
           return;
         }
-        daftar = [baru];
+        // Pakai id dari database supaya state & baris Supabase identik.
+        daftar = [fromRow(inserted)];
       }
 
       const sorted = terapkan(daftar);
@@ -168,13 +176,16 @@ export default function ChatsProvider({ children }) {
     async (chat) => {
       if (!user) return chat;
       if (pakaiCloud) {
-        const { error: err } = await supabase
-          .from(TABLE)
-          .upsert(toRow(chat, user.id), { onConflict: "id" });
-        if (err) {
-          setError(err.message);
-          return chat;
-        }
+        // Antre per chat supaya pesan cepat berurutan tidak saling menimpa.
+        const sebelumnya = saveQueue.current.get(chat.id) || Promise.resolve();
+        const tugas = sebelumnya.catch(() => {}).then(async () => {
+          const { error: err } = await supabase
+            .from(TABLE)
+            .upsert(toRow(chat, user.id), { onConflict: "id" });
+          if (err) setError(err.message);
+        });
+        saveQueue.current.set(chat.id, tugas);
+        await tugas;
       } else {
         writeLocal(user.id, chatsRef.current);
       }
@@ -208,19 +219,23 @@ export default function ChatsProvider({ children }) {
       return kosong;
     }
     const baru = buatChat();
+    let tersimpan = baru;
     if (user && pakaiCloud) {
-      const { error: err } = await supabase
+      const { data, error: err } = await supabase
         .from(TABLE)
-        .insert(toRow(baru, user.id));
+        .insert(toRow(baru, user.id))
+        .select()
+        .single();
       if (err) {
         setError(err.message);
         return null;
       }
+      tersimpan = fromRow(data);
     }
-    terapkan([...chatsRef.current, baru]);
+    terapkan([...chatsRef.current, tersimpan]);
     if (user && !pakaiCloud) writeLocal(user.id, chatsRef.current);
-    setActiveId(baru.id);
-    return baru;
+    setActiveId(tersimpan.id);
+    return tersimpan;
   }, [pakaiCloud, terapkan, user]);
 
   const openChat = useCallback((id) => setActiveId(id), []);
