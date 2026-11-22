@@ -256,8 +256,8 @@ function FindYourPlace() {
 
           <div className="mt-6 flex justify-start max-sm:justify-center w-full">
             <FillButton
-              className="max-sm:px-32 max-sm:py-3 max-sm:text-white flex justify-center items-center text-center"
-              baseClassName="max-sm:bg-dark-brown-new ring-1 ring-inset ring-dark-brown-new text-dark-brown-new"
+              className="max-lg:text-white max-sm:px-32 max-sm:py-3 max-sm:text-white flex justify-center items-center text-center"
+              baseClassName="max-lg:bg-dark-brown-new max-sm:bg-dark-brown-new ring-1 ring-inset ring-dark-brown-new text-dark-brown-new"
             >
               Plan Trip
             </FillButton>

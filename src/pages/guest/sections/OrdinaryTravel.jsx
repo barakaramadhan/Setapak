@@ -60,13 +60,13 @@ function OrdinaryTravel() {
 
         <FillButton
           className="mt-10 max-sm:px-4 max-sm:py-3 max-sm:mt-6"
-          baseClassName="max-sm:bg-dark-brown-new"
+          baseClassName="ring-1 ring-inset ring-dark-brown-new max-lg:bg-dark-brown-new max-sm:bg-dark-brown-new"
         >
           <span className="inline-flex items-center justify-center gap-2">
-            <span className="max-sm:text-sm max-sm:text-white">
+            <span className="max-lg:text-white max-sm:text-sm max-sm:text-white">
               Start planning
             </span>
-            <i className="fi fi-rr-angle-small-right leading-none text-[20px] pt-2 max-sm:text-base max-sm:pt-1 max-sm:text-white"></i>
+            <i className="fi fi-rr-angle-small-right leading-none text-[20px] pt-2 max-lg:text-white max-sm:text-base max-sm:pt-1 max-sm:text-white"></i>
           </span>
         </FillButton>
       </div>
