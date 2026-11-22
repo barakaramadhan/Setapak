@@ -3,6 +3,7 @@ import { svgHomeAnimation } from "../../../animations/HomeAnimation";
 import FillButton from "../../../components/ui/FillButton";
 import ImageLangit from "../../../assets/images/home/langithome.webp";
 import ImageSecond from "../../../assets/images/home/imagehero2.webp";
+
 function Home() {
   const animasiRef = useRef(null);
 
@@ -109,7 +110,7 @@ function Home() {
 
               <g clipPath="url(#clip1_2790_4)">
                 <path
-                  d="M776.873 249.025C776.501 247.695 777.276 246.315 778.606 245.943C779.936 245.57 781.315 246.346 781.688 247.675C782.06 249.005 781.285 250.385 779.955 250.757C778.625 251.13 777.246 250.354 776.873 249.025ZM785.074 255.159L783.006 252.811C782.288 252.085 781.297 251.726 780.301 251.787C779.93 251.756 779.512 251.934 779.152 252.021C778.43 252.223 777.75 252.538 777.128 252.959L774.347 254.841C773.7 255.28 773.29 256.008 773.252 256.79L773.123 259.449C773.083 260.277 773.721 260.98 774.549 261.02C775.377 261.062 776.081 260.422 776.12 259.594L776.237 257.184L777.636 256.237L777.78 259.554C777.838 260.885 778.63 262.051 779.846 262.595L783.171 264.086L784.196 267.742C784.42 268.54 785.247 269.005 786.045 268.782C786.843 268.558 787.308 267.731 787.085 266.932L785.997 263.05C785.796 262.334 785.291 261.748 784.612 261.444L782.672 260.575L782.508 256.784L782.99 257.332C783.101 257.459 783.234 257.566 783.382 257.649L785.231 258.689C785.954 259.095 786.867 258.839 787.274 258.116C787.68 257.395 787.423 256.479 786.701 256.074L785.074 255.159ZM780.013 264.299C779.188 264.303 778.514 264.975 778.516 265.803L778.523 268.916C778.525 269.745 779.199 270.415 780.027 270.413C780.835 270.417 781.529 269.744 781.524 268.909L781.516 265.796C781.515 264.968 780.841 264.298 780.013 264.299ZM794.814 253.113L791.499 251.438C790.818 251.093 790.051 251.724 790.258 252.459L790.55 253.501L789.142 253.896C788.345 254.119 787.879 254.947 788.102 255.745C788.326 256.543 789.154 257.008 789.951 256.784L791.359 256.39L791.674 257.515C791.878 258.242 792.849 258.381 793.248 257.739L795.222 254.567C795.545 254.058 795.355 253.38 794.814 253.113Z"
+                  d="M776.873 249.025C776.501 247.695 777.276 246.315 778.606 245.943C779.936 245.57 781.315 246.346 781.688 247.675C782.06 249.005 781.285 250.385 779.955 250.757C778.625 251.13 777.246 250.354 777.873 249.025ZM785.074 255.159L783.006 252.811C782.288 252.085 781.297 251.726 780.301 251.787C779.93 251.756 779.512 251.934 779.152 252.021C778.43 252.223 777.75 252.538 777.128 252.959L774.347 254.841C773.7 255.28 773.29 256.008 773.252 256.79L773.123 259.449C773.083 260.277 773.721 260.98 774.549 261.02C775.377 261.062 776.081 260.422 776.12 259.594L776.237 257.184L777.636 256.237L777.78 259.554C777.838 260.885 778.63 262.051 779.846 262.595L783.171 264.086L784.196 267.742C784.42 268.54 785.247 269.005 786.045 268.782C786.843 268.558 787.308 267.731 787.085 266.932L785.997 263.05C785.796 262.334 785.291 261.748 784.612 261.444L782.672 260.575L782.508 256.784L782.99 257.332C783.101 257.459 783.234 257.566 783.382 257.649L785.231 258.689C785.954 259.095 786.867 258.839 787.274 258.116C787.68 257.395 787.423 256.479 786.701 256.074L785.074 255.159ZM780.013 264.299C779.188 264.303 778.514 264.975 778.516 265.803L778.523 268.916C778.525 269.745 779.199 270.415 780.027 270.413C780.835 270.417 781.529 269.744 781.524 268.909L781.516 265.796C781.515 264.968 780.841 264.298 780.013 264.299ZM794.814 253.113L791.499 251.438C790.818 251.093 790.051 251.724 790.258 252.459L790.55 253.501L789.142 253.896C788.345 254.119 787.879 254.947 788.102 255.745C788.326 256.543 789.154 257.008 789.951 256.784L791.359 256.39L791.674 257.515C791.878 258.242 792.849 258.381 793.248 257.739L795.222 254.567C795.545 254.058 795.355 253.38 794.814 253.113Z"
                   fill="black"
                 />
               </g>
@@ -144,12 +145,12 @@ function Home() {
         className="block w-full h-[900px] max-lg:h-[560px] [grid-area:1/1] object-cover object-center z-10 rounded-4xl max-sm:h-[500px] max-sm:rounded-b-2xl max-sm:object-left"
       />
 
-      <div className="hidden max-sm:block w-full h-[500px] [grid-area:1/1] z-[11] bg-gradient-to-t from-black/40 via-black/20 to-transparent rounded-b-2xl"></div>
+      <div className="hidden max-lg:block w-full max-lg:h-[560px] max-sm:h-[500px] [grid-area:1/1] z-[11] bg-gradient-to-t from-black/40 via-black/20 to-transparent max-lg:rounded-b-4xl max-sm:rounded-b-2xl"></div>
 
-      <div>
-        <div className="absolute top-48 right-[442px] z-10 leading-none max-lg:top-40 max-lg:left-12 max-lg:right-auto max-sm:left-auto max-sm:right-20 max-sm:z-[12] max-sm:top-56">
-          <h1 className="font-jakarta text-5xl font-medium text-white leading-none w-[330px] max-lg:w-[420px] max-sm:text-3xl max-sm:w-[280px]">
-            Plan Your Next Trip Across
+      <div className="relative z-[12] [grid-area:1/1]">
+        <div className="absolute top-48 right-[442px] leading-none max-lg:top-52 max-lg:left-12 max-lg:right-auto max-sm:left-auto max-sm:right-20 max-sm:top-56">
+          <h1 className="font-jakarta text-5xl font-medium text-white leading-none w-[330px] max-lg:w-[380px] max-sm:text-3xl max-sm:w-[280px]">
+            Plan Your Next Trip Across{" "}
             <span className="pl-1 font-clash font-semibold">
               Multiple Destinations.
             </span>
@@ -161,7 +162,7 @@ function Home() {
 
           <FillButton
             className="mt-7"
-            baseClassName="ring-1 ring-inset ring-dark-brown-new max-sm:text-white max-sm:ring-1 max-sm:ring-inset max-sm:ring-white"
+            baseClassName="ring-1 ring-inset ring-dark-brown-new max-sm:text-white max-sm:ring-1 max-sm:ring-inset max-sm:ring-white max-lg:ring-white max-lg:text-white"
           >
             <span className="inline-flex items-center justify-center gap-2 max-sm:gap-0">
               <span>Let's Go</span>
