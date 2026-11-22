@@ -17,7 +17,7 @@ function Home() {
       <img
         src={ImageLangit}
         alt="Langit Home"
-        className="block w-full h-[900px] [grid-area:1/1] object-cover object-center rounded-b-4xl max-sm:h-[500px] max-sm:rounded-b-2xl"
+        className="block w-full h-[900px] [grid-area:1/1] object-cover object-center rounded-b-4xl max-sm:h-[500px] max-sm:rounded-b-2xlz"
       />
 
       <div

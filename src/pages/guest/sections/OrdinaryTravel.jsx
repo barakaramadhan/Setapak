@@ -60,7 +60,7 @@ function OrdinaryTravel() {
 
         <FillButton
           className="mt-10 max-sm:px-4 max-sm:py-3 max-sm:mt-6"
-          baseClassName="max-sm:bg-dark-brown-new"
+          baseClassName="max-sm:bg-dark-brown-new ring-1 ring-inset ring-dark-brown-new"
         >
           <span className="inline-flex items-center justify-center gap-2">
             <span className="max-sm:text-sm max-sm:text-white">
