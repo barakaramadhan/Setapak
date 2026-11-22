@@ -4,38 +4,37 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 gsap.registerPlugin(ScrollTrigger);
 
 // Panjang scroll selama garis digambar (px).
-// Dipakai juga oleh Navbar untuk tahu kapan animasi selesai.
 export const HOME_PIN_DISTANCE = 1500;
 
 export const svgHomeAnimation = (container) => {
-  if (!container) return () => {};
+  // 1. BYPASS KASAR: Jika layar adalah mobile/tablet (< 1024px), jangan jalankan GSAP sama sekali
+  if (!container || window.innerWidth < 1024) return () => {};
 
-  // yang di-pin = seluruh section, bukan container garis
   const section = container.closest("section");
+  
+  // 2. Gunakan matchMedia sebagai pengganti context
+  const mm = gsap.matchMedia();
 
-  const ctx = gsap.context(() => {
+  // Animasi HANYA akan dibuat jika layar minimal 1024px (Desktop)
+  mm.add("(min-width: 1024px)", () => {
     const paths = gsap.utils.toArray(".garis");
     const ikon1 = container.querySelector("#ikon-1");
     const ikon2 = container.querySelector("#ikon-2");
     const melayang = gsap.utils.toArray(".melayang");
 
-    // Sembunyikan garis di awal
     paths.forEach((path) => {
       const length = path.getTotalLength();
-
       gsap.set(path, {
         strokeDasharray: `${length} ${length * 2}`,
         strokeDashoffset: length + 20,
       });
     });
 
-    // Ikon mulai dari scale 0, membesar dari titik tengahnya sendiri
     gsap.set([ikon1, ikon2], {
       scale: 0,
       transformOrigin: "50% 50%",
     });
 
-    // Efek melayang (jalan sendiri, tidak ikut scroll)
     gsap.to(melayang, {
       y: -8,
       duration: 1.5,
@@ -60,29 +59,16 @@ export const svgHomeAnimation = (container) => {
     const len2 = paths[1].getTotalLength();
     const len3 = paths[2].getTotalLength();
 
-    // 1) Garis awal
     timeline.to(paths[0], { strokeDashoffset: 0, duration: len1 });
-    // Ikon orang pop-in saat garis awal hampir selesai
-    timeline.to(
-      ikon2,
-      { scale: 1, duration: 120, ease: "back.out(1.7)" },
-      len1 * 0.9
-    );
-
-    // 2) Loop
+    timeline.to(ikon2, { scale: 1, duration: 120, ease: "back.out(1.7)" }, len1 * 0.9);
+    
     timeline.to(paths[1], { strokeDashoffset: 0, duration: len2 });
-    // Ikon pin pop-in saat loop berjalan
-    timeline.to(
-      ikon1,
-      { scale: 1, duration: 120, ease: "back.out(1.7)" },
-      len1 + len2 * 0.4
-    );
-
-    // 3) Ekor garis
+    timeline.to(ikon1, { scale: 1, duration: 120, ease: "back.out(1.7)" }, len1 + len2 * 0.4);
+    
     timeline.to(paths[2], { strokeDashoffset: 0, duration: len3 });
-  }, container);
+    
+  }, container); // <--- Scope tetap dikunci di container
 
-  // Hitung ulang posisi scroll setelah gambar selesai dimuat
   const refresh = () => ScrollTrigger.refresh();
   window.addEventListener("load", refresh);
   const imgs = Array.from(section.querySelectorAll("img"));
@@ -93,6 +79,7 @@ export const svgHomeAnimation = (container) => {
   return () => {
     window.removeEventListener("load", refresh);
     imgs.forEach((img) => img.removeEventListener("load", refresh));
-    ctx.revert();
+    // 3. Bersihkan memori matchMedia saat halaman berpindah
+    mm.revert();
   };
 };
