@@ -5,6 +5,9 @@ import {
   formatRupiah,
   getItinerary,
   tebakKategori,
+  tiketPesawat,
+  BUDGET_TANPA_TIKET,
+  BUDGET_DENGAN_TIKET,
 } from "./tripModules.js";
 
 // Label kategori = nilai yang dipilih di form Activities (modul 9).
@@ -115,6 +118,12 @@ export function buildTripSummary(trip) {
     ...hari.flatMap((h) => h.items.map((it) => ({ cat: it.category.label, cost: it.cost }))),
     ...belumDijadwalkan.map((it) => ({ cat: it.category.label, cost: it.cost })),
   ];
+  // Cakupan budget: tiket pesawat hanya dihitung bila budget "sudah termasuk tiket".
+  const lingkup = plan.budget?.scope || "";
+  const tiket = (plan.transportation?.items || [])
+    .filter(tiketPesawat)
+    .reduce((s, it) => s + (Number(it.cost) || 0), 0);
+  if (lingkup === BUDGET_DENGAN_TIKET && tiket > 0) semuaBiaya.push({ cat: "Tiket pesawat", cost: tiket });
   const used = semuaBiaya.reduce((s, x) => s + x.cost, 0);
   const planned = Number(plan.budget?.planned || trip.plan?.totalCost || 0);
 
@@ -155,6 +164,9 @@ export function buildTripSummary(trip) {
     jumlahTempat,
     budget: {
       planned,
+      scope: lingkup,
+      scopeLabel: lingkup ? `Budget: ${lingkup.toLowerCase()}` : "",
+      tiketTerpisah: lingkup === BUDGET_TANPA_TIKET ? tiket : 0,
       used: total,
       left: Math.max(planned - total, 0),
       percent: planned > 0 ? Math.min((total / planned) * 100, 100) : 0,

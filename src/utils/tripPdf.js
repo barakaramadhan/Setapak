@@ -136,7 +136,7 @@ export function buildTripHtml(model, tanggalCetak = new Date()) {
     }</div>
     <div class="bar"><i style="width:${b.percent.toFixed(1)}%"></i></div>
     ${rincian}
-    <div class="muted" style="margin-top:10px">Estimates only. Lodging is not included.</div>
+    <div class="muted" style="margin-top:10px">${b.scopeLabel ? `${esc(b.scopeLabel)}<br>` : ""}Estimates only. Lodging is not included.<br>Harap dicek di situs resmi. AI dapat melakukan kesalahan.</div>
   </section>
 
   <div class="foot">

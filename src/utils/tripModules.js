@@ -20,8 +20,19 @@ const PILIHAN = {
   jenisDokumen: ["KTP", "Paspor", "Visa", "Tiket", "Asuransi", "Lainnya"],
   kategoriBarang: ["Pakaian", "Toiletries", "Elektronik", "Dokumen", "Obat", "Lainnya"],
   statusBooking: ["Belum dipesan", "Terkonfirmasi", "Lunas", "Dibatalkan"],
+  lingkupBudget: ["Tanpa tiket pesawat", "Sudah termasuk tiket pesawat"],
   modaLogistik: ["Jalan kaki", "Angkot", "Ojek", "Taksi", "Sewa mobil", "Kapal", "Lainnya"],
 };
+
+export const BUDGET_TANPA_TIKET = "Tanpa tiket pesawat";
+export const BUDGET_DENGAN_TIKET = "Sudah termasuk tiket pesawat";
+
+/** Item transport yang berupa tiket pesawat (bukan transport lokal). */
+export function tiketPesawat(item) {
+  return /pesawat|flight|plane|penerbangan|udara/i.test(
+    `${item?.mode || ""} ${item?.type || ""}`
+  ) && !/lokal/i.test(String(item?.type || ""));
+}
 
 const teks = (key, label, extra = {}) => ({ key, label, type: "text", ...extra });
 const area = (key, label, extra = {}) => ({ key, label, type: "textarea", ...extra });
@@ -147,6 +158,7 @@ export const MODULES = [
     fields: [
       pilih("currency", "Mata uang", ["IDR", "USD"]),
       angka("planned", "Anggaran direncanakan"),
+      pilih("scope", "Cakupan anggaran", PILIHAN.lingkupBudget),
     ],
     collections: [
       daftar("items", "Rincian biaya", [
@@ -565,7 +577,9 @@ function selarasBudget(plan, hari, totalAi = 0) {
     if (biaya > 0 && !Number(aktivitas.cost)) aktivitas.cost = biaya;
   });
 
+  const tanpaTiket = plan.budget?.scope === BUDGET_TANPA_TIKET;
   (plan.transportation?.items || []).forEach((item) => {
+    if (tanpaTiket && tiketPesawat(item)) return; // budget user belum memuat tiket pesawat
     const rute = [item.from, item.to].filter(Boolean).join(" → ");
     tambah(`${item.mode || "Transport"}${item.type ? ` (${item.type})` : ""}${rute ? `: ${rute}` : ""}`, "Transport", item.cost);
   });
@@ -622,6 +636,7 @@ export function normalizePlan(aiPlan, trip) {
   }
 
   if (Number(aiPlan.totalCost) > 0 && !Number(plan.budget.planned)) plan.budget.planned = Number(aiPlan.totalCost);
+  if (!plan.budget.scope && [BUDGET_TANPA_TIKET, BUDGET_DENGAN_TIKET].includes(aiPlan.budget?.scope)) plan.budget.scope = aiPlan.budget.scope;
 
   const semuaTempat = [...new Set(hari.flatMap((item) => listDariTeks(item.places || item.activities)))];
   if (semuaTempat.length) {

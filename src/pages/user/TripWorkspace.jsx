@@ -1,3 +1,4 @@
+import TripDisclaimer from "../../components/ui/TripDisclaimer";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTrips } from "../../store/useTrips";
@@ -218,6 +219,8 @@ export default function TripWorkspace({ trip }) {
           </button>
         </div>
       </div>
+
+      <TripDisclaimer className="mt-5" />
 
       <div className="mt-6 rounded-3xl border-2 border-grey-label/50 bg-white p-5">
         <div className="flex flex-wrap items-end justify-between gap-2">

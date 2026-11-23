@@ -31,10 +31,10 @@ Balas HANYA dengan JSON valid, tanpa markdown, tanpa penjelasan.
 Format persis:
 {
   "Coffe And Snacks": [
-    { "name": "Nama tempat", "rating": 4.5, "address": "Alamat singkat", "image": "https://contoh.com/foto-tempat.jpg" }
+    { "name": "Nama tempat", "rating": 4.5, "address": "Alamat singkat", "image": "https://contoh.com/foto-tempat.jpg", "fact": "Satu fakta singkat" }
   ],
   "Outdoor parks & Trials": [
-    { "name": "Nama tempat", "rating": 4.6, "address": "Alamat singkat", "image": "https://contoh.com/foto-tempat.jpg" }
+    { "name": "Nama tempat", "rating": 4.6, "address": "Alamat singkat", "image": "https://contoh.com/foto-tempat.jpg", "fact": "Satu fakta singkat" }
   ]
 }
 Isi TEPAT 4 tempat di tiap kategori (jangan kurang). Urutkan dari rating TERTINGGI ke terendah.
@@ -42,6 +42,7 @@ Pakai NAMA TEMPAT yang benar-benar ada dan bisa dicari di Google Maps, bukan nam
 Kalau pesan user mencantumkan daftar nama, pilih HANYA dari daftar itu (jangan mengarang nama lain), salin alamatnya apa adanya, dan ikuti kategori yang tertera (food masuk "Coffe And Snacks", sisanya masuk "Outdoor parks & Trials"). Jangan ulang tempat yang sama di dua kategori.
 Sertakan alamat singkat yang sesuai lokasi. rating angka 0-5.
 ATURAN FOTO (WAJIB): setiap tempat HARUS punya "image" berupa URL LANGSUNG ke file gambar yang berakhir .jpg / .jpeg / .png / .webp (boleh diikuti ?parameter). Boleh pakai URL gambar dari situs wisata, situs resmi tempat, atau Wikimedia. DILARANG mengosongkan "image", dilarang memakai tautan halaman web/artikel (misalnya URL halaman Google Maps atau halaman blog), dan dilarang mengarang URL yang tidak ada. Kalau ragu, pakai URL gambar dari situs Wikimedia yang paling sesuai dengan tempat itu.
+FAKTA: \"fact\" = SATU kalimat fakta singkat (maks 110 karakter) yang benar-benar kamu yakini tentang tempat itu (sejarah, keunikan, menu andalan). Kalau tidak yakin, isi string kosong \"\" — jangan mengarang. Pilih tempat makan dan wisata dengan rating TERTINGGI dan paling populer di area itu.
 Patuhi batas rating minimal yang disebut di pesan user. Gunakan bahasa yang sama dengan nama kota.`;
 
 // Mode "Searching": AI untuk website trip. Boleh memakai pengetahuan dunia,
@@ -93,6 +94,7 @@ Akhiri dengan satu kalimat singkat mengajak lanjut ke mode Planning untuk jadwal
 ATURAN KEBENARAN:
 - Sebelum menjawab, cek lokasi. Masjidil Haram ada di Makkah; Masjid Nabawi ada di Madinah; Jeddah adalah pintu masuk udara utama untuk keduanya. Jangan tertukar.
 - Jika profil memuat pembagian hari per kota, jumlah total hari adalah jumlah seluruh kota tersebut; pertahankan pembagian itu. Jika budget ditandai "per orang", hitung dan bahas biaya per orang (serta total berdua hanya bila jelas), jangan menganggapnya budget berdua.
+- CAKUPAN BUDGET: ikuti profil. Jika \"TANPA tiket pesawat\", jangan masukkan tiket pesawat ke \"budget.items\" maupun total; tetap isi perkiraan tiket di modul transportation dan sebut terpisah. Jika \"SUDAH termasuk tiket\", hitung tiket pergi-pulang di dalam budget. Isi \"budget.scope\" sesuai profil; kalau user belum menyebut, tanyakan satu kali di Planning (pilihan: Tanpa tiket pesawat / Sudah termasuk tiket pesawat).
 - Bandingkan perkiraan total perjalanan dengan budget secara jujur. Jangan menyatakan budget "cukup" tanpa dasar atau menyajikan harga tiket/hotel seolah-olah real-time. Tanpa harga aktual atau rentang yang diberikan sumber, jangan mengarang angka tiket/hotel: tandai perlu dicek untuk tanggal dan kota keberangkatan. Jika anggaran belum bisa dipastikan, katakan belum bisa dikonfirmasi dan sebut komponen mahal yang wajib dicek dulu.
 - Kalau ada "DATA TERVERIFIKASI SETAPAK", itu satu-satunya sumber untuk nama tempat & area. DILARANG menambah nama/alamat di luar daftar itu.
 - DILARANG menyebut nama hotel, restoran, maskapai, atau aplikasi transport tertentu kecuali kamu yakin tempat/layanan itu benar-benar ada di kota yang dibahas. Kalau ragu, pakai kategori ("hotel menengah dekat pantai", "rumah makan seafood", "taksi lokal lewat aplikasi") dan sarankan cek review terbaru. Contoh yang tidak boleh dijadikan fakta: "Jeddah Metro", "Grab di Jeddah", "Al Faisaliah Hotel di Jeddah" (hotel itu ada di Riyadh).
@@ -180,7 +182,7 @@ Balas HANYA JSON valid, tanpa markdown dan tanpa penjelasan. Format persis:
     "accommodation": { "items": [{ "name": "Jenis/area hotel yang cocok (bukan nama karangan)", "type": "Hotel", "checkIn": "YYYY-MM-DD", "checkOut": "YYYY-MM-DD", "address": "Area menginap", "cost": 4800000, "note": "Perkiraan total untuk semua malam" }] },
     "food": { "items": [{ "name": "Nasi goreng", "place": "Cari resto Indonesia dekat masjid", "meal": "Makan siang", "cost": 60000 }] },
     "documents": { "items": [{ "name": "Paspor", "type": "Paspor", "note": "Cek masa berlaku" }] },
-    "budget": { "planned": 30000000, "items": [{ "label": "Tiket pesawat", "category": "Transport", "amount": 7000000 }] }
+    "budget": { "planned": 30000000, "scope": "Tanpa tiket pesawat ATAU Sudah termasuk tiket pesawat", "items": [{ "label": "Tiket pesawat", "category": "Transport", "amount": 7000000 }] }
   }
 }
 Aturan:

@@ -4,10 +4,10 @@
 // sebagai KONTEKS supaya AI tetap paham dunia tanpa mengarang lokasi.
 // API key tidak pernah masuk browser.
 
-import { recommendPlaces, searchCityKey } from "./plannerEngine";
 import { parseTripDate, parseTripDateRange } from "../utils/tripDate";
 import {
   extractBudgetScope,
+  extractBudgetTicket,
   extractTripDestinations,
   extractTripDurations,
 } from "../utils/tripFacts.js";
@@ -57,6 +57,7 @@ export function extractTripFacts(history = []) {
   const angkaBudget = lower.match(/(?:rp\.?\s*)?([\d.,]+)\s*(juta|jt|rb|ribu)\b/);
   const budget = angkaBudget ? angkaBudget[0].replace(/\s+/g, " ").trim() : null;
   const budgetScope = extractBudgetScope(lower);
+  const budgetTicket = extractBudgetTicket(lower);
 
   const food = /\b(makanan indonesia|masakan indonesia|kuliner indonesia|makan indonesia|resto indonesia|nasi goreng|rendang|sate|gado-?gado)\b/.test(lower)
     ? "makanan Indonesia"
@@ -134,6 +135,7 @@ export function extractTripFacts(history = []) {
     occasion,
     budget,
     budgetScope,
+    budgetTicket,
     food,
     purpose,
     tema,
@@ -271,11 +273,8 @@ export async function askRecommendations(
   if (!cleanCity) return { groups: {}, source: "engine" };
 
   const batas = Number(minRating) || 0;
-  const kunciKota = searchCityKey(cleanCity);
-  const pakaiDataLokal = () => ({
-    groups: recommendPlaces(mode, kunciKota, batas),
-    source: "engine",
-  });
+  // Tidak ada data lokal: kalau AI gagal, kartu dikosongkan (bukan diisi data bawaan).
+  const gagal = () => ({ groups: {}, source: "error" });
 
   try {
     const response = await fetch("/api/chat", {
@@ -295,10 +294,10 @@ export async function askRecommendations(
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const data = await response.json();
-    if (!data.groups) return pakaiDataLokal();
+    if (!data.groups || data.error) return gagal();
     return { groups: data.groups, source: data.source || "ai" };
   } catch (error) {
     console.warn("[setapak] rekomendasi AI gagal:", error.message);
-    return pakaiDataLokal();
+    return gagal();
   }
 }

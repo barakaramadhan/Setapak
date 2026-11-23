@@ -23,7 +23,6 @@ import {
   WORLD_CITIES,
 } from "./worldKnowledge.js";
 import {
-  recommendPlaces,
   getRecommendationCandidates,
   mapsLinkFor,
   searchCityKey,
@@ -35,10 +34,6 @@ import { fotoTempat, linkMaps } from "./placeMedia.js";
 import { googleAktif, fotoGoogle, balasanDariGoogle } from "./googlePlaces.js";
 import { geoapifyAktif } from "./geoapify.js";
 import { MODULES } from "../src/utils/tripModules.js";
-import {
-  getSavedRecommendations,
-  saveRecommendations,
-} from "./plannerStore.js";
 import {
   pertanyaanDobel,
   terpotong,
@@ -290,6 +285,9 @@ function bersihkanFakta(raw = {}) {
     budgetScope: ["per orang", "total perjalanan"].includes(raw.budgetScope)
       ? raw.budgetScope
       : null,
+    budgetTicket: ["tanpa tiket", "termasuk tiket"].includes(raw.budgetTicket)
+      ? raw.budgetTicket
+      : null,
     food: teks(raw.food, 60),
     purpose: teks(raw.purpose, 40),
     tema: teks(raw.tema, 40),
@@ -324,6 +322,9 @@ function formatFakta(fakta) {
   if (fakta.occasion) baris.push(`- Momen/waktu: ${fakta.occasion}`);
   if (fakta.budget) {
     baris.push(`- Budget: ${fakta.budget}${fakta.budgetScope ? ` (${fakta.budgetScope})` : ""}`);
+  }
+  if (fakta.budgetTicket) {
+    baris.push(`- Cakupan budget: ${fakta.budgetTicket === "tanpa tiket" ? "TANPA tiket pesawat (jangan masukkan tiket pesawat ke total budget; tampilkan perkiraannya terpisah)" : "SUDAH termasuk tiket pesawat (masukkan tiket pergi-pulang ke total budget)"}`);
   }
   if (fakta.food) baris.push(`- Makanan: ${fakta.food}`);
   if (fakta.purpose) baris.push(`- Karakter perjalanan: ${fakta.purpose}`);
@@ -1154,7 +1155,8 @@ function parseRecommendations(text, minRating = 0) {
           return {
             id: `${key}-${index}`,
             name: String(item?.name || "Tempat wisata").trim().slice(0, 80),
-            rating: Number(item?.rating) || 4.5,
+            rating: Number(item?.rating) || 0,
+            fact: String(item?.fact || "").replace(/\s+/g, " ").trim().slice(0, 140),
             address: String(item?.address || "").trim().slice(0, 140),
             // Setiap kartu pasti punya gambar, walaupun AI lupa mengirim URL.
             image: gambarValid(image) ? image.slice(0, 500) : cadangan,
@@ -1165,7 +1167,7 @@ function parseRecommendations(text, minRating = 0) {
           };
         })
         // Saring dulu sesuai bintang & nama sampah, baru urutkan, baru potong 4.
-        .filter((item) => item.rating >= minRating && !NAMA_SAMPAH.test(item.name))
+        .filter((item) => item.rating > 0 && item.rating >= minRating && !NAMA_SAMPAH.test(item.name) && item.name !== "Tempat wisata")
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 4);
     }
@@ -1176,11 +1178,6 @@ function parseRecommendations(text, minRating = 0) {
   } catch {
     return null;
   }
-}
-
-/** Fallback tanpa API: pakai data lokal SETAPAK untuk kunci kota ini. */
-function localRecommendations(cityKey, areaMode, minRating = 0) {
-  return recommendPlaces(areaMode, cityKey, minRating);
 }
 
 /**
@@ -1307,8 +1304,8 @@ export async function handleChatRequest(req, res, env = process.env) {
       // Mode ini dipakai tombol panah di "For you". AI balas JSON kartu.
       // Kota/area baru hasil AI disimpan di planner data bersama, supaya orang
       // lain yang mencari hal yang sama mendapat kartu yang identik.
-      const paramsPlanner = { cityKey, areaMode, minRating };
-      const tersimpan = await getSavedRecommendations(env, paramsPlanner);
+      // Tanpa data lokal & tanpa hasil simpanan: setiap request langsung ke AI.
+      const tersimpan = null;
 
       // Tombol reload sengaja melewati hasil lama dan minta yang berbeda.
       if (tersimpan && !refresh) {
@@ -1316,11 +1313,7 @@ export async function handleChatRequest(req, res, env = process.env) {
         // tetap identik untuk semua orang, sesuai permintaan SETAPAK.
         payload = { ...tersimpan, cached: true };
       } else {
-        const daftarLokal = getRecommendationCandidates(
-          areaMode,
-          cityKey,
-          minRating
-        );
+        const daftarLokal = []; // data lokal tidak dipakai untuk "For you"
 
         // Saat reload, nama yang sedang tampil berasal dari browser. Kalau browser
         // tidak mengirim (misal request lama), pakai nama dari planner data.
@@ -1358,7 +1351,7 @@ export async function handleChatRequest(req, res, env = process.env) {
         let kandidatLive = [];
         const googleOn = googleAktif(env);
         const geoOn = geoapifyAktif(env);
-        if (!daftarLokal.length && (areaMode === "in" || googleOn || geoOn)) {
+        if (!daftarLokal.length) {
           const lap = await kumpulkanLapangan({
             message: city,
             fakta: { destinations: [city] },
@@ -1394,7 +1387,7 @@ export async function handleChatRequest(req, res, env = process.env) {
           env,
           systemPrompt: RECOMMEND_SYSTEM_PROMPT,
           // 800 token sering terpotong karena URL gambar panjang -> JSON rusak.
-          maxTokens: 1600,
+          maxTokens: 2200,
         });
         let groups = result ? parseRecommendations(result.reply, minRating) : null;
 
@@ -1504,24 +1497,10 @@ export async function handleChatRequest(req, res, env = process.env) {
         }
 
         // Kalau AI gagal saat reload, jangan sampai kartunya hilang.
-        const fallback = tersimpan?.groups
-          ? tersimpan.groups
-          : localRecommendations(cityKey, areaMode, minRating);
-
         payload = groups
           ? { groups, source: result.source }
-          : { groups: fallback, source: tersimpan ? "planner" : "engine" };
+          : { groups: {}, source: "error", error: "AI belum memberi rekomendasi" };
 
-        // Simpan hasil baru. Kota dengan data lokal tidak perlu disimpan,
-        // kecuali memang tombol reload yang minta variasi baru.
-        if (groups && (!daftarLokal.length || refresh)) {
-          await saveRecommendations(env, {
-            ...paramsPlanner,
-            cityLabel: city,
-            groups,
-            source: result.source,
-          });
-        }
       }
     } else if (mode === "planFields") {
       // AI yang menentukan data apa saja yang masih kurang untuk membuat plan.

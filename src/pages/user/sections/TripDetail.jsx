@@ -1,3 +1,4 @@
+import TripDisclaimer from "../../../components/ui/TripDisclaimer";
 import { useMemo, useState } from "react";
 import OutlineButton from "../../../components/ui/OutlineButton";
 import FillButton from "../../../components/ui/FillButton";
@@ -263,6 +264,7 @@ export default function TripDetail({ trip, onOpenDetail }) {
           </div>
 
           <div className="flex w-full shrink-0 flex-col gap-6 lg:w-[360px]">
+            <TripDisclaimer />
             <div className="relative h-60 overflow-hidden rounded-2xl border border-grey-label/60 bg-gray-100">
               <MapPane places={titikHari.length ? titikHari : titikPeta} className="h-full w-full" />
             </div>
@@ -286,7 +288,17 @@ export default function TripDetail({ trip, onOpenDetail }) {
                   </div>
                 ))}
               </div>
-              <p className="mt-5 font-jakarta text-xs font-normal text-grey-label">
+              {b.scopeLabel && (
+                <p className="mt-3 inline-block rounded-full bg-[#83ADD0]/15 px-3 py-1 font-jakarta text-xs font-semibold text-[#6f9abf]">
+                  {b.scopeLabel}
+                </p>
+              )}
+              {b.tiketTerpisah > 0 && (
+                <p className="mt-2 font-jakarta text-xs font-normal text-grey-label">
+                  Perkiraan tiket pesawat (di luar budget): {formatRupiah(b.tiketTerpisah)}
+                </p>
+              )}
+              <p className="mt-3 font-jakarta text-xs font-normal text-grey-label">
                 Estimates only. Lodging is not included.
               </p>
             </div>

@@ -1,3 +1,4 @@
+import TripDisclaimer from "../../components/ui/TripDisclaimer";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTrips } from "../../store/useTrips";
@@ -137,6 +138,8 @@ export default function TripPage() {
           ))}
         </div>
       )}
+
+      <TripDisclaimer className="mt-8" />
 
       <TripModal
         key={editTrip?.id || "edit"}

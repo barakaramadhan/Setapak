@@ -12,7 +12,6 @@ import ImageTravelUser3 from "../../../assets/images/imagetraveluser3.png";
 import ImageFallbackFood from "../../../assets/images/recomendations/imagerecomendation2.webp";
 import ImageFallbackOutdoor from "../../../assets/images/recomendations/imagerecomendation.webp";
 import {
-  recommendPlaces,
   searchCityKey,
   cityLabels,
   mapsLinkFor,
@@ -71,7 +70,8 @@ function HomeUser() {
   const [cityInput, setCityInput] = useState("");
   const [loadingCity, setLoadingCity] = useState(false);
   const [aiGroups, setAiGroups] = useState(null); // hasil rekomendasi AI
-  const [aiSource, setAiSource] = useState(""); // "gemini" / "engine" / ...
+  const [aiSource, setAiSource] = useState(""); // sumber AI
+  const [aiError, setAiError] = useState(false);
 
   // Filter bintang dipakai untuk data lokal DAN hasil AI (aman kalau cache lama).
   const saringRating = (groups, batas) =>
@@ -96,10 +96,9 @@ function HomeUser() {
   // Selama belum ada hasil AI, kartu tetap memakai data lokal.
   // searchCityKey: "kuta" tetap kuta (bukan bali), "Jepang" tetap Jepang.
   const kunciKota = searchCityKey(city);
-  const places = saringRating(
-    aiGroups || recommendPlaces(mode, kunciKota, minRating),
-    minRating
-  );
+  // Semua kartu murni dari AI. Tidak ada data lokal sebagai pengganti.
+  const places = saringRating(aiGroups || {}, minRating);
+  const adaTempat = Object.values(places).some((items) => items.length > 0);
 
   // Minta rekomendasi ke AI lewat server (API key tidak masuk browser).
   const mintaRekomendasi = async (
@@ -115,8 +114,14 @@ function HomeUser() {
         refresh,
         excludeNames,
       });
-      setAiGroups(hasil.groups);
-      setAiSource(hasil.source);
+      const ada = Object.values(hasil.groups || {}).some((items) => items?.length);
+      if (hasil.source === "error" || !ada) {
+        setAiError(true); // hasil lama (kalau ada) tetap ditampilkan
+      } else {
+        setAiError(false);
+        setAiGroups(hasil.groups);
+        setAiSource(hasil.source);
+      }
     } finally {
       setLoadingCity(false);
     }
@@ -133,6 +138,12 @@ function HomeUser() {
       .filter(Boolean);
     mintaRekomendasi(city, mode, minRating, true, namaTampil);
   };
+
+  // Pertama kali halaman dibuka, langsung minta rekomendasi ke AI.
+  useEffect(() => {
+    mintaRekomendasi(city, mode, minRating);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const bukaInputKota = () => {
     setCityInput("");
@@ -154,14 +165,14 @@ function HomeUser() {
   const pilihMode = (nextMode) => {
     if (nextMode === mode) return;
     setMode(nextMode);
-    if (aiGroups) mintaRekomendasi(city, nextMode, minRating);
+    mintaRekomendasi(city, nextMode, minRating);
   };
 
   // Bintang bersifat opsional: klik lagi untuk membatalkan (kembali ke 0).
   const pilihRating = (nextRating) => {
     const nilai = minRating === nextRating ? 0 : nextRating;
     setMinRating(nilai);
-    if (aiGroups) mintaRekomendasi(city, mode, nilai);
+    mintaRekomendasi(city, mode, nilai);
   };
 
   // Klik kotak = langsung bantu susun prompt di halaman chat.
@@ -439,20 +450,36 @@ function HomeUser() {
           </FillButton>
         </div>
 
-        {aiGroups && (
+        {adaTempat && (
           <p className="mt-2 text-sm font-jakarta font-normal text-grey-light/60">
-            Rekomendasi{" "}
-            {aiSource === "engine"
-              ? "dari data lokal"
-              : aiSource === "planner"
-                ? "dari planner SETAPAK"
-                : "dari AI"}
+            Rekomendasi dari AI
             {loadingCity ? " · memperbarui..." : ""}
           </p>
         )}
 
+        {!adaTempat && loadingCity && (
+          <p className="mt-6 text-base font-jakarta text-grey-light/60">
+            AI sedang mencari tempat makan dan wisata terbaik...
+          </p>
+        )}
+
+        {!adaTempat && !loadingCity && (
+          <p className="mt-6 text-base font-jakarta text-grey-light/60">
+            AI belum bisa memberi rekomendasi untuk {cityLabels[kunciKota] || city}.
+            Coba tekan tombol muat ulang atau pilih kota lain.
+          </p>
+        )}
+
+        {adaTempat && aiError && (
+          <p className="mt-2 text-xs font-jakarta text-grey-light/60">
+            Pembaruan terakhir gagal, menampilkan hasil sebelumnya.
+          </p>
+        )}
+
         {/* kategori + card tempat */}
-        {Object.entries(places).map(([category, items]) => (
+        {Object.entries(places)
+          .filter(([, items]) => items.length > 0)
+          .map(([category, items]) => (
           <div key={category} className="mt-8">
             <h3 className="text-xl font-jakarta font-bold text-grey-light">
               {category}
@@ -472,14 +499,24 @@ function HomeUser() {
                     <h4 className="truncate text-base font-jakarta font-semibold text-grey-light">
                       {place.name}
                     </h4>
-                    <span className="shrink-0 text-sm font-jakarta font-medium text-grey-light">
-                      <i className="fi fi-sr-star text-xs"></i> {place.rating}
-                    </span>
+                    {Number(place.rating) > 0 && (
+                      <span className="shrink-0 text-sm font-jakarta font-medium text-grey-light">
+                        <i className="fi fi-sr-star text-xs"></i> {place.rating}
+                      </span>
+                    )}
                   </div>
 
-                  <p className="line-clamp-2 text-sm font-jakarta font-normal text-grey-light/80">
-                    {place.address}
-                  </p>
+                  {place.address && (
+                    <p className="line-clamp-2 text-sm font-jakarta font-normal text-grey-light/80">
+                      {place.address}
+                    </p>
+                  )}
+                  {place.fact && (
+                    <p className="mt-1 line-clamp-3 text-xs font-jakarta font-normal italic text-grey-light/70">
+                      <i className="fi fi-rr-bulb mr-1 text-[10px] leading-none"></i>
+                      {place.fact}
+                    </p>
+                  )}
 
                   <div className="mt-1 flex flex-wrap gap-x-3">
                     <a
