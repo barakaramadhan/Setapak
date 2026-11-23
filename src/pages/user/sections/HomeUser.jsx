@@ -206,9 +206,9 @@ function HomeUser() {
       {/* bagian atas: sapaan + lonceng + profil.
           Transparan di paling atas; begitu di-scroll, background + blur muncul (seperti navbar landing). */}
       <header
-        className={`sticky top-0 z-30 flex items-center justify-between rounded-b-2xl border-b px-10 py-6 transition-all duration-300 ${
+        className={`sticky top-0 z-30 flex items-start justify-between rounded-b-2xl border-b px-10 pb-3 pt-9 transition-all duration-300 ${
           scrolled
-            ? "border-grey-label/20 bg-bright-white/60 shadow-sm backdrop-blur-md"
+            ? "border-white/20 bg-grey-new/50 backdrop-blur-md"
             : "border-transparent bg-transparent"
         }`}
       >
@@ -235,7 +235,7 @@ function HomeUser() {
             type="button"
             title={displayName(user)}
             onClick={() => navigate("/trip")}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-grey-light text-sm font-bold text-white"
+            className="-mt-2 flex h-8 w-8 items-center justify-center rounded-full bg-grey-light text-sm font-bold text-white"
           >
             {(displayName(user) || "U").slice(0, 1).toUpperCase()}
           </button>
@@ -243,7 +243,7 @@ function HomeUser() {
       </header>
 
       {/* pembungkus bagian bawah, dibagi dua deretan */}
-      <div className="flex items-stretch gap-6 px-10 pt-8 pb-10 max-md:flex-col">
+      <div className="flex items-stretch gap-6 px-10 pt-9 pb-10 max-md:flex-col">
         {/* deretan pertama: hero + travel interests */}
         <div className="flex min-w-0 flex-1 flex-col gap-5 max-md:w-full">
           {/* bagian hero homeUser */}
