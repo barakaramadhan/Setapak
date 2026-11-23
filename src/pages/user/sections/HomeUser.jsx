@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useLenis } from "lenis/react";
 import FillButton from "../../../components/ui/FillButton";
 import CalendarCard from "./CalendarCard";
 import ScheduleCard from "./ScheduleCard";
@@ -36,6 +37,16 @@ function HomeUser() {
     loading: loadingTrips,
     error: errorTrips,
   } = useTrips();
+
+  // Header: background muncul begitu halaman di-scroll (Lenis menggerakkan scroll window)
+  const [scrolled, setScrolled] = useState(false);
+  useLenis((instance) => setScrolled(instance.scroll > 20));
+  useEffect(() => {
+    const cek = () => setScrolled(window.scrollY > 20);
+    cek(); // kalau halaman dibuka sudah dalam posisi ter-scroll
+    window.addEventListener("scroll", cek, { passive: true });
+    return () => window.removeEventListener("scroll", cek);
+  }, []);
 
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [prefillLokal, setPrefillLokal] = useState(null);
@@ -192,8 +203,15 @@ function HomeUser() {
   return (
     // [PERBAIKAN 1]: Ditambah max-w-7xl mx-auto w-full agar layout terpusat rapi
     <section className="font-jakarta max-w-7xl mx-auto w-full bg-bright-white">
-      {/* bagian atas: sapaan + lonceng + profil */}
-      <header className="flex items-start justify-between px-10 pt-9">
+      {/* bagian atas: sapaan + lonceng + profil.
+          Transparan di paling atas; begitu di-scroll, background + blur muncul (seperti navbar landing). */}
+      <header
+        className={`sticky top-0 z-30 flex items-center justify-between rounded-b-2xl border-b px-10 py-6 transition-all duration-300 ${
+          scrolled
+            ? "border-grey-label/20 bg-bright-white/60 shadow-sm backdrop-blur-md"
+            : "border-transparent bg-transparent"
+        }`}
+      >
         <div>
           <h1 className="text-4xl font-bold font-jakarta text-grey-light">
             Hello, {displayName(user)}!
@@ -217,7 +235,7 @@ function HomeUser() {
             type="button"
             title={displayName(user)}
             onClick={() => navigate("/trip")}
-            className="-mt-2 flex h-8 w-8 items-center justify-center rounded-full bg-grey-light text-sm font-bold text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-grey-light text-sm font-bold text-white"
           >
             {(displayName(user) || "U").slice(0, 1).toUpperCase()}
           </button>
@@ -225,7 +243,7 @@ function HomeUser() {
       </header>
 
       {/* pembungkus bagian bawah, dibagi dua deretan */}
-      <div className="flex items-stretch gap-6 px-10 pt-12 pb-10 max-md:flex-col">
+      <div className="flex items-stretch gap-6 px-10 pt-8 pb-10 max-md:flex-col">
         {/* deretan pertama: hero + travel interests */}
         <div className="flex min-w-0 flex-1 flex-col gap-5 max-md:w-full">
           {/* bagian hero homeUser */}
