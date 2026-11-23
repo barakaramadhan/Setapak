@@ -5,6 +5,7 @@ const navigasiMenu = [
   { label: "Home", to: "/dashboard", icon: "fi fi-rr-house-blank" },
   { label: "Chats", to: "/chats", icon: "fi fi-rr-beacon" },
   { label: "Trip", to: "/trip", icon: "fi fi-rr-briefcase-blank" },
+  { label: "Settings", to: "/settings", icon: "fi fi-rr-settings" } // <--- BENAR
 ];
 
 function Sidebar() {
