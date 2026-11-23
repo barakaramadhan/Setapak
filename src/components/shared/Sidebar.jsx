@@ -62,10 +62,12 @@ function Sidebar() {
           >
             {({ isActive }) => (
               <>
-                {/* aktif -> ikon solid (fi-sr-), tidak aktif -> ikon outline (fi-rr-) */}
+                {/* aktif -> ikon solid (fi-sr-) + hitam, tidak aktif -> ikon outline (fi-rr-) */}
                 <i
                   className={`${
-                    isActive ? m.icon.replace("fi-rr-", "fi-sr-") : m.icon
+                    isActive
+                      ? m.icon.replace("fi-rr-", "fi-sr-") + " text-black"
+                      : m.icon
                   } shrink-0 text-xl leading-none`}
                 />
                 <span

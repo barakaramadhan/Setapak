@@ -6,6 +6,7 @@ import UserLayout from "./components/layouts/UserLayout";
 import DashboardUser from "./pages/user/DashboardUser";
 import AiChat from "./pages/user/sections/AiChat";
 import YourPlan from "./pages/user/sections/YourPlan";
+import Settings from "./pages/user/sections/Settings";
 // 1. Import file dummy detail yang baru (pastikan Anda sudah membuat file ini nanti)
 import TripDetail from "./pages/user/sections/TripDetail"; 
 import AuthLayout from "./components/layouts/AuthLayout";
@@ -13,7 +14,7 @@ import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 
 // HALAMAN AWAL SAAT DEVELOPMENT
-const START_PAGE = "/dashboard"; // Saya ubah ke "/trip" agar Anda langsung melihat halaman YourPlan saat npm run dev
+const START_PAGE = "/settings"; // Saya ubah ke "/trip" agar Anda langsung melihat halaman YourPlan saat npm run dev
 
 function App() {
   return (
@@ -46,6 +47,8 @@ function App() {
             
             {/* 2. Tambahkan route baru ini untuk halaman detail yang ada map/timeline-nya */}
             <Route path="/trip/:id" element={<TripDetail />} /> 
+
+            <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>
       </SmoothScroll>
