@@ -6,6 +6,7 @@
 import { createHash } from "node:crypto";
 import {
   askAI,
+  askAIParalel,
   RECOMMEND_SYSTEM_PROMPT,
   SEARCH_SYSTEM_PROMPT,
   SEARCH_DETAIL_SYSTEM_PROMPT,
@@ -699,7 +700,13 @@ function beriLabelPembagian(plan, fakta) {
  * Cadangan kalau AI lupa mengirim penanda <<SIAP>>: obrolan dianggap cukup
  * ketika tujuan + durasi/tanggal + (budget atau minat) sudah disebut user.
  */
+// User secara eksplisit minta dibuatkan plan ("buatkan plan", "susun rencana",
+// "create planning", ...): kartu Create Planning harus langsung muncul.
+export const MINTA_BUAT_PLAN =
+  /\b(buat(?:kan|in)?|bikin(?:kan|in)?|susun(?:kan)?|rancang(?:kan)?|create|generate|make)\b[^.\n]{0,40}\b(plan(?:ning)?|rencana|itinerary|jadwal|trip)\b/i;
+
 function siapDariObrolan(history, message, fakta = null) {
+  if (MINTA_BUAT_PLAN.test(String(message || ""))) return true;
   if (fakta) {
     const adaTujuan = fakta.destinations.length > 0 || fakta.knownKeys.includes("kota");
     const adaWaktu = Boolean(fakta.days || fakta.startDate) || fakta.knownKeys.includes("durasi");
@@ -1551,7 +1558,12 @@ export async function handleChatRequest(req, res, env = process.env) {
         batasMs: 9000,
         env: googleAktif(env) ? env : null,
       });
-      const result = await askAI({
+      // Anggaran waktu: fungsi Vercel dibatasi 60 dtk. Ketiga AI (Gemini, Groq,
+      // 100milionseek) dipanggil BERSAMAAN; jawaban pertama yang JSON-nya valid dipakai.
+      const mulaiPlan = Date.now();
+      const sisaMs = () => 52000 - (Date.now() - mulaiPlan);
+      const planValid = (teks) => Boolean(parsePlanJson(teks, fakta));
+      const result = await askAIParalel({
         message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}`,
         history: [],
         env,
@@ -1559,6 +1571,8 @@ export async function handleChatRequest(req, res, env = process.env) {
         maxTokens: 3600,
         // Gemini/Groq riset harga & kondisi terkini, AI penulis menyusun JSON-nya.
         webSearch: "riset",
+        batasMs: Math.max(15000, Math.min(32000, sisaMs() - 8000)),
+        valid: planValid,
       });
       const normPlanDays = (p) => {
         if (!p || !Array.isArray(p.days)) return p;
@@ -1589,24 +1603,28 @@ export async function handleChatRequest(req, res, env = process.env) {
       let sumberPlan = result?.source;
       let alasanPlanGagal = null;
       // JSON gagal/terpotong atau jumlah hari tidak sesuai: coba sekali lagi.
-      if (!plan || (fakta?.days && plan.days.length !== Math.min(14, fakta.days))) {
-        const ulang = await askAI({
+      if ((!plan || (fakta?.days && plan.days.length !== Math.min(14, fakta.days))) && sisaMs() > 14000) {
+        const ulang = await askAIParalel({
           message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}\n\nKOREKSI WAJIB: balasan sebelumnya tidak valid/lengkap atau jumlah hari tidak sesuai. Buat tepat ${Math.min(14, fakta?.days || 3)} hari. Balas HANYA JSON valid dan LENGKAP. Boleh kosongkan "modules" dan singkatkan "why" supaya JSON pasti selesai.`,
           history: [],
           env,
           systemPrompt: CREATE_PLAN_SYSTEM_PROMPT + profil,
           maxTokens: 3600,
+          batasMs: Math.max(10000, sisaMs() - 8000),
+          valid: planValid,
         });
         const parsedUlang = normPlanDays(parsePlanJson(ulang?.reply, fakta));
         if (parsedUlang) { plan = parsedUlang; sumberPlan = ulang?.source; }
       }
-      if (plan && !rencanaSesuaiPembagian(plan, fakta, lapangan)) {
-        const ulang = await askAI({
+      if (plan && !rencanaSesuaiPembagian(plan, fakta, lapangan) && sisaMs() > 14000) {
+        const ulang = await askAIParalel({
           message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}\n\nKOREKSI WAJIB: rencana sebelumnya tidak memenuhi pembagian hari per destinasi. Buat tepat ${fakta.days} hari; setiap hari wajib berisi tempat dari destinasi yang sesuai urutan dan jumlah pada PROFIL TRIP. Gunakan hanya ref dari DATA LAPANGAN, dan jangan menghilangkan destinasi mana pun.`,
           history: [],
           env,
           systemPrompt: CREATE_PLAN_SYSTEM_PROMPT + profil,
           maxTokens: 3600,
+          batasMs: Math.max(10000, sisaMs() - 8000),
+          valid: planValid,
         });
         const rencanaUlang = parsePlanJson(ulang?.reply, fakta);
         if (rencanaSesuaiPembagian(rencanaUlang, fakta, lapangan)) {
@@ -1628,6 +1646,11 @@ export async function handleChatRequest(req, res, env = process.env) {
         } else {
           plan = beriLabelPembagian(plan, fakta);
         }
+      }
+      if (!plan && !alasanPlanGagal) {
+        alasanPlanGagal = result
+          ? "AI membalas, tapi rencananya belum utuh. Tekan Create Planning sekali lagi ya."
+          : "Gemini, Groq, dan 100milionseek belum merespons tepat waktu (kemungkinan kuota habis atau sedang sibuk). Coba lagi sebentar.";
       }
       payload = {
         plan,

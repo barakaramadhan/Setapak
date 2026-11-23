@@ -173,7 +173,11 @@ Balas HANYA JSON valid, tanpa markdown dan tanpa penjelasan. Format persis:
   ],
   "totalCost": 123000,
   "modules": {
-    "transportation": { "items": [{ "type": "Pergi", "mode": "Pesawat", "from": "Jakarta", "to": "Jeddah", "cost": 3500000 }] },
+    "transportation": { "items": [
+      { "type": "Pergi", "mode": "Pesawat", "from": "Jakarta", "to": "Jeddah", "provider": "", "cost": 3500000, "note": "Perkiraan, cek harga terbaru" },
+      { "type": "Pulang", "mode": "Pesawat", "from": "Jeddah", "to": "Jakarta", "provider": "", "cost": 3500000, "note": "Perkiraan, cek harga terbaru" }
+    ] },
+    "accommodation": { "items": [{ "name": "Jenis/area hotel yang cocok (bukan nama karangan)", "type": "Hotel", "checkIn": "YYYY-MM-DD", "checkOut": "YYYY-MM-DD", "address": "Area menginap", "cost": 4800000, "note": "Perkiraan total untuk semua malam" }] },
     "food": { "items": [{ "name": "Nasi goreng", "place": "Cari resto Indonesia dekat masjid", "meal": "Makan siang", "cost": 60000 }] },
     "documents": { "items": [{ "name": "Paspor", "type": "Paspor", "note": "Cek masa berlaku" }] },
     "budget": { "planned": 30000000, "items": [{ "label": "Tiket pesawat", "category": "Transport", "amount": 7000000 }] }
@@ -186,7 +190,8 @@ Aturan:
 - Kalau ada DATA LAPANGAN: pilih tempat dari daftar TEMPAT dan isi "ref" dengan id-nya (mis. "P12"). Satu hari = satu zona atau zona bertetangga. "ref": null HANYA untuk tempat terkenal yang kamu yakin ada di tujuan itu. Salin nama persis seperti di daftar.
 - "why" = alasan maksimal 80 karakter yang menyebut kebutuhan mereka (anak, ibadah, budget, cuaca, dll). "startTime" = jam HH:MM yang masuk akal (jam buka, cuaca, waktu salat). Susun urutan tempat di hari itu dari yang paling dekat ke berikutnya.
 - Baca blok KEBUTUHAN bila ada, dan sesuaikan ritme serta pilihan tempat dengan itu.
-- Isi "modules" hanya dengan data yang benar-benar diketahui dari obrolan; boleh kosong/absen kalau tidak ada. Jangan mengulang pertanyaan yang sudah ada di PROFIL TRIP.
+- BUDGET OTOMATIS: setiap tempat/aktivitas WAJIB punya "cost" berupa PERKIRAAN biaya per rombongan dalam Rupiah (tiket masuk, makan, transport lokal kecil; 0 hanya kalau benar-benar gratis). Untuk perjalanan antar kota/negara, "modules.transportation" WAJIB memuat tiket pergi DAN pulang beserta perkiraan "cost" masing-masing, dan "modules.accommodation" WAJIB memuat perkiraan total penginapan untuk seluruh malam (jumlah malam x tarif wajar sesuai gaya perjalanan: "privat & tenang" = menengah-atas). Semua angka ini perkiraan, bukan harga pasti: tulis "Perkiraan, cek harga terbaru" di "note". Pakai kategori/area penginapan, jangan mengarang nama hotel.
+- Isi "modules" hanya dengan data yang benar-benar diketahui dari obrolan, kecuali perkiraan biaya di atas; boleh kosong/absen untuk modul lain. Jangan mengulang pertanyaan yang sudah ada di PROFIL TRIP.
 - Jika PROFIL TRIP menyebut momen/periode (mis. akhir tahun, tahun baru) atau tema romantis/bulan madu, sesuaikan judul hari, ritme, dan pilihan tempat agar relevan (mis. suasana romantis, sunset, dinner, spot foto, hindari jadwal terlalu padat). Jangan mengarang event/tanggal festival spesifik jika tidak yakin; tulis sebagai saran umum periode tersebut.
 - Jika ada kebutuhan khusus/kondisi kesehatan/alergi, masukkan ke "modules.safety" (medicalNote/allergies/emergencyName/emergencyPhone/plan sesuai yang diketahui) dan sesuaikan aktivitas agar aman/nyaman.
 - Jangan masukkan syarat pandemi (vaksin COVID-19, PCR, karantina) ke dokumen atau catatan apa pun. Pakai "cek syarat resmi terbaru" bila perlu.` + PRINSIP_AHLI;
@@ -246,6 +251,7 @@ async function askGemini({
   systemPrompt = SYSTEM_PROMPT,
   maxTokens = 400,
   webSearch = false,
+  timeoutMs = TIMEOUT_MS,
 }) {
   const model = env.GEMINI_MODEL || MODEL_GEMINI;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
@@ -265,7 +271,7 @@ async function askGemini({
       // LOW mencegah jawaban kosong/error MAX_TOKENS pada prompt pendek.
       thinkingConfig: { thinkingLevel: "LOW", includeThoughts: false },
     },
-  }, {}, denganWeb ? TIMEOUT_WEB_MS : TIMEOUT_MS);
+  }, {}, denganWeb ? TIMEOUT_WEB_MS : timeoutMs);
 
   let response = await kirim(webSearch);
   // Model/akun tertentu menolak tool search (400/403). Ulangi tanpa web
@@ -293,6 +299,7 @@ async function askGroq({
   systemPrompt = SYSTEM_PROMPT,
   maxTokens = 400,
   webSearch = false,
+  timeoutMs = TIMEOUT_MS,
 }) {
   const kirim = (denganWeb) => postJson(
     "https://api.groq.com/openai/v1/chat/completions",
@@ -315,7 +322,7 @@ async function askGroq({
       ],
     },
     { Authorization: `Bearer ${env.GROQ_API_KEY}` },
-    denganWeb ? TIMEOUT_WEB_MS : TIMEOUT_MS
+    denganWeb ? TIMEOUT_WEB_MS : timeoutMs
   );
 
   let response = await kirim(webSearch);
@@ -337,6 +344,7 @@ async function askOpenRouter({
   env,
   systemPrompt = SYSTEM_PROMPT,
   maxTokens = 400,
+  timeoutMs = TIMEOUT_MS,
 }) {
   const model = env.OPENROUTER_MODEL || "google/gemma-4-31b-it:free";
 
@@ -355,7 +363,8 @@ async function askOpenRouter({
         { role: "user", content: message },
       ],
     },
-    { Authorization: `Bearer ${env.OPENROUTER_API_KEY}` }
+    { Authorization: `Bearer ${env.OPENROUTER_API_KEY}` },
+    timeoutMs
   );
 
   if (!response.ok) throw new Error(`OpenRouter ${response.status}`);
@@ -371,13 +380,16 @@ async function askHundredMillionSeek({
   env,
   systemPrompt = SYSTEM_PROMPT,
   maxTokens = 400,
+  timeoutMs: batasPanggilan,
 }) {
   const model = env.HUNDREDMILLIONSEEK_MODEL || env.HMS_MODEL || MODEL_HMS;
   const apiKey = env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY;
-  const timeoutMs = Math.min(
-    120000,
-    Math.max(15000, Number(env.HMS_TIMEOUT_MS || env.AI_TIMEOUT_MS) || 45000)
-  );
+  const timeoutMs =
+    Number(batasPanggilan) ||
+    Math.min(
+      120000,
+      Math.max(15000, Number(env.HMS_TIMEOUT_MS || env.AI_TIMEOUT_MS) || 45000)
+    );
   const messages = [
     { role: "system", content: systemPrompt },
     ...history.slice(-8).map((item) => ({
@@ -503,6 +515,32 @@ async function risetBersama({ message, env, history }) {
   return null;
 }
 
+function daftarProvider(env) {
+  return {
+    "100milionseek": {
+      key: env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY,
+      call: askHundredMillionSeek,
+    },
+    hundredmillionseek: {
+      key: env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY,
+      call: askHundredMillionSeek,
+    },
+    hms: {
+      key: env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY,
+      call: askHundredMillionSeek,
+    },
+    ollama: {
+      key: env.OLLAMA_BASE_URL || env.OLLAMA_MODEL || env.OLLAMA_API_KEY || "local",
+      call: askOllama,
+    },
+    gemini: { key: env.GEMINI_API_KEY, call: askGemini },
+    groq: { key: env.GROQ_API_KEY, call: askGroq },
+    openrouter: { key: env.OPENROUTER_API_KEY, call: askOpenRouter },
+  };
+}
+
+const URUTAN_DEFAULT = "groq,gemini,100milionseek,openrouter,ollama";
+
 /**
  * Coba provider satu per satu. Kalau semua gagal / kuota habis, kembalikan null.
  */
@@ -527,27 +565,7 @@ export async function askAI({
   const paksaRiset = webSearch === "riset";
   const NATIVE_WEB = new Set(["gemini", "groq"]);
   let blokWebCache; // dicari sekali saja, dipakai ulang antar provider
-  const daftar = {
-    "100milionseek": {
-      key: env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY,
-      call: askHundredMillionSeek,
-    },
-    hundredmillionseek: {
-      key: env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY,
-      call: askHundredMillionSeek,
-    },
-    hms: {
-      key: env.HUNDREDMILLIONSEEK_API_KEY || env.HMS_API_KEY,
-      call: askHundredMillionSeek,
-    },
-    ollama: {
-      key: env.OLLAMA_BASE_URL || env.OLLAMA_MODEL || env.OLLAMA_API_KEY || "local",
-      call: askOllama,
-    },
-    gemini: { key: env.GEMINI_API_KEY, call: askGemini },
-    groq: { key: env.GROQ_API_KEY, call: askGroq },
-    openrouter: { key: env.OPENROUTER_API_KEY, call: askOpenRouter },
-  };
+  const daftar = daftarProvider(env);
 
   // Urutan default (terbaik -> terjelek/cadangan) bisa diubah dari .env
   // lewat AI_PROVIDER_ORDER. Provider tanpa key/konfigurasi aktif akan dilewati.
@@ -632,4 +650,87 @@ export async function askAI({
   }
 
   return null;
+}
+
+/**
+ * Menggabungkan semua AI yang aktif (Gemini, Groq, 100milionseek, ...):
+ * semuanya dipanggil BERSAMAAN, dan jawaban pertama yang lolos `valid`
+ * dipakai. Cocok untuk output JSON panjang (rencana perjalanan): lebih cepat
+ * daripada mencoba satu per satu, dan satu provider yang lambat/gagal tidak
+ * menggagalkan semuanya.
+ *
+ * webSearch: "riset" -> Gemini/Groq riset fakta terkini sekali (maks risetMs),
+ * lalu semua penulis memakai catatan itu.
+ * @returns {Promise<{reply: string, source: string}|null>}
+ */
+export async function askAIParalel({
+  message,
+  history = [],
+  env,
+  systemPrompt,
+  maxTokens,
+  providerOrder,
+  webSearch = false,
+  batasMs = 30000,
+  risetMs = 10000,
+  valid = () => true,
+}) {
+  const mulai = Date.now();
+  const daftar = daftarProvider(env);
+  const urutan = (Array.isArray(providerOrder) && providerOrder.length
+    ? providerOrder
+    : String(env.AI_PROVIDER_ORDER || URUTAN_DEFAULT).split(",")
+  )
+    .map((name) => String(name).trim().toLowerCase())
+    .filter((name) => daftar[name]);
+
+  // Alias (hms, 100milionseek, ...) menunjuk fungsi yang sama: panggil sekali saja.
+  const dipakai = new Set();
+  const aktif = urutan
+    .map((name) => ({ name, ...daftar[name] }))
+    .filter((p) => {
+      if (!p.key || sedangDingin(p.name) || dipakai.has(p.call)) return false;
+      dipakai.add(p.call);
+      return true;
+    });
+  if (!aktif.length) return null;
+
+  let pesan = message;
+  const webAktif = Boolean(webSearch) && String(env.AI_WEB_SEARCH || "").toLowerCase() !== "off";
+  if (webAktif) {
+    const batas = new Promise((resolve) => setTimeout(() => resolve(null), risetMs));
+    const blok = await Promise.race([risetBersama({ message, env, history }), batas]).catch(
+      () => null
+    );
+    if (blok) pesan = `${message}${blok}`;
+  }
+
+  const sisa = Math.max(5000, batasMs - (Date.now() - mulai));
+  const tugas = aktif.map(async (provider) => {
+    try {
+      const hasil = await provider.call({
+        message: pesan,
+        history,
+        env,
+        systemPrompt,
+        maxTokens,
+        webSearch: false,
+        timeoutMs: sisa,
+      });
+      const reply = typeof hasil === "string" ? hasil : hasil?.reply;
+      if (!reply) throw new Error(`${provider.name} balasan kosong`);
+      if (!valid(reply)) throw new Error(`${provider.name} balasan tidak valid`);
+      return { reply, source: provider.name };
+    } catch (error) {
+      console.warn(`[setapak] ${provider.name} gagal (paralel): ${error.message}`);
+      if (/429/.test(error.message)) dingin.set(provider.name, Date.now() + DINGIN_MS);
+      throw error;
+    }
+  });
+
+  try {
+    return await Promise.any(tugas);
+  } catch {
+    return null;
+  }
 }

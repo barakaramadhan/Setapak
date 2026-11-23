@@ -36,7 +36,7 @@ function FillButton({
     Math.hypot(Math.max(x, w - x), Math.max(y, h - y));
 
   const handleEnter = (e) => {
-    if (isMobile()) return; // Hentikan eksekusi jika di mobile
+    if (isMobile() || props.disabled) return; // Hentikan eksekusi jika di mobile / tombol nonaktif
 
     const { x, y, w, h } = getPos(e);
     circle.current.x = x;
@@ -86,19 +86,23 @@ function FillButton({
     >
       <span className="relative z-0 block whitespace-nowrap">{children}</span>
 
-      <span
-        ref={fillRef}
-        aria-hidden="true"
-        style={{ clipPath: "circle(0px at 0px 0px)" }}
-        className={twMerge(
-          "pointer-events-none absolute inset-0 z-10 flex items-center justify-center whitespace-nowrap rounded-2xl font-jakarta font-extrabold",
-          // max-lg:hidden: layer fill tidak tampil di tablet dan mobile
-          "max-lg:hidden", 
-          fillClassName
-        )}
-      >
-        {children}
-      </span>
+      {/* Layer fill menggandakan isi tombol. Saat tombol nonaktif (mis. loading)
+          layer ini dilepas supaya ikon spinner tidak tampil dobel. */}
+      {!props.disabled && (
+        <span
+          ref={fillRef}
+          aria-hidden="true"
+          style={{ clipPath: "circle(0px at 0px 0px)" }}
+          className={twMerge(
+            "pointer-events-none absolute inset-0 z-10 flex items-center justify-center whitespace-nowrap rounded-2xl font-jakarta font-extrabold",
+            // max-lg:hidden: layer fill tidak tampil di tablet dan mobile
+            "max-lg:hidden",
+            fillClassName
+          )}
+        >
+          {children}
+        </span>
+      )}
     </button>
   );
 }

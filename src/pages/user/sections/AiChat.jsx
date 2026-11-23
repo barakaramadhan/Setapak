@@ -529,7 +529,10 @@ function AiChatInner() {
         const result = await askSetapak(clean, history, { mode, showMap });
         const prefill = mode === "plan" ? null : buildTripPrefill(clean, result.plan);
         if (prefill && result.plan) prefill.plan = normalizePlan(result.plan, prefill);
-        if (result.handoff || (mode === "plan" && result.ready)) setReadyForPlan(true);
+        // Minta dibuatkan plan secara eksplisit -> kartu Create Planning langsung muncul.
+        const mintaBuatPlan =
+          /\b(buat(?:kan|in)?|bikin(?:kan|in)?|susun(?:kan)?|rancang(?:kan)?|create|generate|make)\b[^.\n]{0,40}\b(plan(?:ning)?|rencana|itinerary|jadwal|trip)\b/i.test(clean);
+        if (result.handoff || (mode === "plan" && (result.ready || mintaBuatPlan))) setReadyForPlan(true);
 
         await appendMessage(chatId, {
           id: crypto.randomUUID(),

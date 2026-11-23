@@ -2,15 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import InputAll from "../../../components/ui/InputAll";
 import TripForm from "./TripForm";
-import {
-  formatDateId,
-  formatRangeId,
-  toDateKey,
-} from "../../../utils/tripDate";
-import { getItinerary } from "../../../utils/tripModules";
+import { formatRangeId, toDateKey } from "../../../utils/tripDate";
 
-// Satu kartu = satu perjalanan (bukan satu lokasi). Agenda per harinya tampil
-// di dalam kartu. Form tambah memakai TripForm yang sama dengan edit.
+// Satu kartu = satu perjalanan, ringkas: judul, tanggal, dan tempat saja.
+// Detail per hari ada di halaman Trip. Form tambah memakai TripForm yang sama dengan edit.
 export default function ScheduleCard({
   trips,
   prefill,
@@ -93,17 +88,6 @@ export default function ScheduleCard({
     : daftar;
   const indexAman = Math.min(halaman, Math.max(0, tersaring.length - 1));
   const tampil = tersaring[indexAman] || null;
-
-  // Agenda diambil dari modul Itinerary yang baru, dengan fallback ke format
-  // lama chat. Jadi edit di workspace langsung terlihat di sini.
-  const grupAgenda = tampil
-    ? getItinerary(tampil)
-        .map((hari) => ({
-          label: `${hari.title} · ${formatDateId(hari.date)}`,
-          items: hari.activities,
-        }))
-        .filter((grup) => grup.items.length > 0)
-    : [];
 
   return (
     <div className="mt-8">
@@ -272,25 +256,6 @@ export default function ScheduleCard({
                 </button>
               </div>
             </div>
-
-            {grupAgenda.length > 0 && (
-              <div className="mt-2 border-t border-grey-label/30 pt-2 pl-10">
-                {grupAgenda.map((grup, index) => (
-                  <div key={`${grup.label}-${index}`} className="mb-1 last:mb-0">
-                    <p className="text-[11px] font-semibold text-grey-light/50">
-                      {grup.label}
-                    </p>
-                    <ul className="ml-3 list-disc text-xs leading-snug text-grey-light/80">
-                      {grup.items.map((item, itemIndex) => (
-                        <li key={`${item}-${itemIndex}`} className="truncate">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>

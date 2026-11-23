@@ -246,7 +246,11 @@ export async function askCreatePlan(ringkasan, facts = null) {
     };
   } catch (error) {
     console.warn("[setapak] buat plan gagal:", error.message);
-    return { plan: null, source: "offline", error: "" };
+    return {
+      plan: null,
+      source: "offline",
+      error: "Server terlalu lama merespons atau sedang bermasalah. Tekan Create Planning sekali lagi ya.",
+    };
   }
 }
 

@@ -535,6 +535,65 @@ export function ensureUniversalPlan(trip) {
   return plan;
 }
 
+
+/**
+ * Rincian budget otomatis: biaya tiap aktivitas, tiket (pesawat dll.) dari modul
+ * Transportasi, dan hotel dari modul Akomodasi ikut masuk ke modul Budget. Item
+ * budget buatan user/AI di kategori lain (mis. visa) tetap dipertahankan.
+ */
+function selarasBudget(plan, hari, totalAi = 0) {
+  const angkaPositif = (nilai) => Math.max(0, Number(nilai) || 0);
+  const turunan = [];
+  const tambah = (label, category, amount) => {
+    const jumlah = angkaPositif(amount);
+    if (jumlah > 0) turunan.push({ label: String(label || category).slice(0, 80), category, amount: jumlah, paid: false });
+  };
+
+  const biayaTempat = new Map();
+  hari.forEach((item) => {
+    (Array.isArray(item?.places) ? item.places : []).forEach((tempat) => {
+      if (!tempat || typeof tempat !== "object") return;
+      const kategori = /food|kuliner|makan/i.test(String(tempat.category || "")) ? "Makan" : "Aktivitas";
+      biayaTempat.set(String(tempat.name || "").toLowerCase(), angkaPositif(tempat.cost));
+      tambah(tempat.name, kategori, tempat.cost);
+    });
+  });
+
+  // Biaya per aktivitas juga tampil di modul Activities.
+  (plan.activities?.items || []).forEach((aktivitas) => {
+    const biaya = biayaTempat.get(String(aktivitas.name || "").toLowerCase());
+    if (biaya > 0 && !Number(aktivitas.cost)) aktivitas.cost = biaya;
+  });
+
+  (plan.transportation?.items || []).forEach((item) => {
+    const rute = [item.from, item.to].filter(Boolean).join(" → ");
+    tambah(`${item.mode || "Transport"}${item.type ? ` (${item.type})` : ""}${rute ? `: ${rute}` : ""}`, "Transport", item.cost);
+  });
+  (plan.accommodation?.items || []).forEach((item) => {
+    tambah(item.name ? `Menginap: ${item.name}` : "Akomodasi", "Akomodasi", item.cost);
+  });
+
+  // Makan dari modul Food hanya ditambahkan bila belum terhitung dari aktivitas.
+  const adaMakanDariTempat = turunan.some((item) => item.category === "Makan");
+  if (!adaMakanDariTempat) {
+    (plan.food?.items || []).forEach((item) => tambah(item.name || item.place || "Makan", "Makan", item.cost));
+  }
+
+  if (!turunan.length) return;
+  const kategoriTerisi = new Set(turunan.map((item) => item.category));
+  const sisaLama = (plan.budget.items || []).filter(
+    (item) => !kategoriTerisi.has(item.category) && Number(item.amount) > 0
+  );
+  plan.budget.items = [...turunan, ...sisaLama].slice(0, 60);
+
+  // Target anggaran yang hanya berasal dari total AI (belum termasuk tiket & hotel)
+  // dinaikkan ke total rincian. Anggaran yang diisi user tidak diubah.
+  const total = plan.budget.items.reduce((jumlah, item) => jumlah + (Number(item.amount) || 0), 0);
+  if (total > 0 && (!Number(plan.budget.planned) || (totalAi > 0 && Number(plan.budget.planned) === totalAi && total > totalAi))) {
+    plan.budget.planned = total;
+  }
+}
+
 /** Gabungkan rencana AI/chat ke 15 modul (dipakai tombol "Isi dari AI"). */
 export function normalizePlan(aiPlan, trip) {
   const plan = ensureUniversalPlan(trip);
@@ -574,15 +633,6 @@ export function normalizePlan(aiPlan, trip) {
       cost: "",
       note: "",
     }));
-    const biaya = hari.flatMap((item) => (Array.isArray(item.places) ? item.places : [])).filter((p) => Number(p.cost) > 0);
-    if (biaya.length) {
-      plan.budget.items = biaya.slice(0, 30).map((place) => ({
-        label: place.name,
-        category: "Tiket",
-        amount: Number(place.cost),
-        paid: false,
-      }));
-    }
   }
 
   if (aiPlan.modules && typeof aiPlan.modules === "object") {
@@ -608,6 +658,8 @@ export function normalizePlan(aiPlan, trip) {
   if (trip.endDate || trip.date) plan.dates.endDate = trip.endDate || trip.date;
   const dur = durasiHari(plan.dates.startDate, plan.dates.endDate);
   if (dur > 0) plan.dates.nights = Math.max(0, dur - 1);
+
+  selarasBudget(plan, hari, Number(aiPlan.totalCost) || 0);
 
   // Pastikan budget planned terisi.
   if (!Number(plan.budget.planned)) {
