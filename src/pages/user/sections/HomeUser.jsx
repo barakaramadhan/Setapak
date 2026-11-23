@@ -203,12 +203,12 @@ function HomeUser() {
   return (
     // [PERBAIKAN 1]: Ditambah max-w-7xl mx-auto w-full agar layout terpusat rapi
     <section className="font-jakarta max-w-7xl mx-auto w-full bg-bright-white">
-      {/* bagian atas: sapaan + lonceng + profil.
-          Transparan di paling atas; begitu di-scroll, background + blur muncul (seperti navbar landing). */}
+      {/* bagian atas: sapaan + lonceng + profil (tampilan asli).
+          Menempel di atas saat di-scroll; background putih polos (tanpa blur) muncul saat itu. */}
       <header
-        className={`sticky top-0 z-30 flex items-start justify-between rounded-b-2xl border-b px-10 pb-3 pt-9 transition-all duration-300 ${
+        className={`sticky top-0 z-30 flex items-start justify-between border-b px-10 pb-3 pt-9 transition-colors duration-300 ${
           scrolled
-            ? "border-white/20 bg-grey-new/50 backdrop-blur-md"
+            ? "border-grey-label/20 bg-bright-white"
             : "border-transparent bg-transparent"
         }`}
       >
