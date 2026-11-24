@@ -1,5 +1,3 @@
-// Ringkasan rencana untuk pesan chat. Menampilkan hal yang membuat plan terasa
-// "dipikirkan": jam mulai, alasan pilihan, jarak antar tempat, dan cuaca nyata.
 
 export function ringkasPlan(plan) {
   if (!plan || !Array.isArray(plan.days) || !plan.days.length) return "";

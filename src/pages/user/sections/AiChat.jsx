@@ -25,15 +25,12 @@ import { useTrips } from "../../../store/useTrips";
 import { useChats } from "../../../store/useChats";
 import { placeImages } from "../../../data/placeImages";
 
-// Hanya foto yang sudah terverifikasi SETAPAK yang boleh tampil di chat.
-// Foto hasil pencarian Wikipedia bisa salah (misalnya menampilkan wajah orang).
 const FOTO_TERVERIFIKASI = new Set(Object.values(placeImages));
 function gambarBolehTampil(url) {
   const s = String(url || "");
   return (
     FOTO_TERVERIFIKASI.has(s) ||
     s.startsWith("https://images.unsplash.com/") ||
-    // Foto resmi dari Google Maps (diambil server, tanpa API key di URL).
     /^https:\/\/[a-z0-9-]+\.(?:googleusercontent|ggpht)\.com\//i.test(s)
   );
 }
@@ -46,7 +43,6 @@ function salam() {
   return "Good night";
 }
 
-// Tebak kota tujuan dari obrolan (untuk kartu "Looks like you're headed to ...").
 function kotaDariObrolan(pesan) {
   const teksUser = pesan.filter((m) => m.role === "user").map((m) => m.text);
   for (const t of [...teksUser].reverse()) {
@@ -74,7 +70,6 @@ const suggestions = [
   "5 days in Japan",
 ];
 
-// Inline markdown: **tebal**, *miring*, `kode`, dan [teks](tautan).
 function teksInline(text) {
   return String(text || "")
     .split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g)

@@ -1,7 +1,6 @@
 export const DISCLAIMER_TEKS =
   "Harap dicek di situs resmi (jam buka, harga tiket, jadwal, dan ketersediaan) sebelum berangkat. AI dapat melakukan kesalahan.";
 
-// Peringatan standar untuk semua halaman Trip yang isinya dibuat/dibantu AI.
 export default function TripDisclaimer({ className = "" }) {
   return (
     <p

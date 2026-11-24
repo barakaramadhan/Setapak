@@ -13,7 +13,6 @@ function FillButton({
   const fillRef = useRef(null);
   const circle = useRef({ r: 0, x: 0, y: 0 });
 
-  // Fungsi untuk cek apakah layar saat ini mobile atau tablet (sesuai max-lg Tailwind)
   const isMobile = () => window.innerWidth < 1024;
 
   const renderFill = () => {
@@ -95,7 +94,6 @@ function FillButton({
           style={{ clipPath: "circle(0px at 0px 0px)" }}
           className={twMerge(
             "pointer-events-none absolute inset-0 z-10 flex items-center justify-center whitespace-nowrap rounded-2xl font-jakarta font-extrabold",
-            // max-lg:hidden: layer fill tidak tampil di tablet dan mobile
             "max-lg:hidden",
             fillClassName
           )}

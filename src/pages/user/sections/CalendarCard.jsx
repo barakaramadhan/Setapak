@@ -31,9 +31,6 @@ function agendaSingkat(trip) {
     .slice(0, 3);
 }
 
-// Kalender dashboard: hari ini diberi ring, tanggal bertanda jika punya trip.
-// Popover bertahan saat kursor pindah ke kartu, dan kartu perjalanan (bukan
-// baris agenda) yang diklik → /trip/:id. Edit bisa dari sini maupun detail.
 export default function CalendarCard({
   tripsByDate,
   selectedDate,
@@ -180,7 +177,6 @@ export default function CalendarCard({
 
               {hovered === key && items.length > 0 && (
                 <>
-                  {/* jembatan transparan menutup jarak 8px ke popover */}
                   <span
                     aria-hidden="true"
                     className="absolute bottom-full left-0 right-0 h-2"

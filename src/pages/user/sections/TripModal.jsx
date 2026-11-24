@@ -1,7 +1,6 @@
 import { useState } from "react";
 import TripForm from "./TripForm";
 
-// Modal edit perjalanan. Dipakai dari kalender, Schedule, dan halaman Trip.
 export default function TripModal({ trip, onClose, onSave }) {
   const [busy, setBusy] = useState(false);
 

@@ -60,8 +60,6 @@ const outdoorParks = [
   },
 ];
 
-// Dua mode toggle: "in" (di dalam kota) dan "near" (sekitar).
-// "in" sementara dibuat dengan membalik urutan, supaya kelihatan bedanya saat toggle diklik.
 export const dummyPlaces = {
   near: {
     "Coffe And Snacks": coffeeAndSnacks,

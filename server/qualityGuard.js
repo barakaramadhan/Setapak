@@ -1,13 +1,6 @@
-// Penjaga mutu jawaban AI. AI bisa saja tidak patuh prompt, jadi di sini ada
-// pemeriksaan DETERMINISTIK setelah AI menjawab:
-//   1. pertanyaan yang sudah dijawab user / sudah pernah ditanyakan (dobel)
-//   2. jawaban terpotong di tengah kalimat/daftar
-// Kalau ketahuan, handler meminta AI memperbaiki sekali; kalau masih gagal,
-// teksnya dirapikan secara lokal. Dipakai juga oleh scripts/eval-ai.mjs.
 
 const MARKER = /^(PILIHAN|LOKASI):.*$/gim;
 
-/** Buang baris penanda (PILIHAN/LOKASI/<<SIAP>>) agar tidak mengganggu pemeriksaan. */
 export function badanBalasan(reply = "") {
   return String(reply)
     .replace(MARKER, "")
@@ -17,14 +10,12 @@ export function badanBalasan(reply = "") {
 
 const KATA_GANTUNG = /\b(dan|yang|di|ke|untuk|dengan|atau|serta|dari|pada|karena|sekitar|seperti|agar|supaya|the|and|to|of|for)$/i;
 
-/** Apakah teks tampak berhenti di tengah kalimat / daftar / penanda markdown? */
 export function terpotong(reply = "") {
   const t = badanBalasan(reply);
   if (!t) return false;
   const kosongPendek = t.length < 40;
   if (kosongPendek) return false;
 
-  // tanda ** atau ` ganjil = penanda markdown terbuka
   if ((t.match(/\*\*/g) || []).length % 2 === 1) return true;
   if ((t.match(/`/g) || []).length % 2 === 1) return true;
 

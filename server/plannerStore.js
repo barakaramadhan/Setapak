@@ -1,9 +1,3 @@
-// "Planner data" bersama.
-// Rekomendasi hasil AI untuk kota/area baru disimpan di sini, supaya dua orang
-// yang mencari kota + mode + rating yang sama mendapat kartu yang identik.
-//
-// Supabase dipakai kalau env tersedia (shared untuk semua user & semua instance).
-// Kalau belum ada Supabase, pakai Map di memory server sebagai cadangan.
 
 const TABLE = "city_recommendations";
 const memory = new Map(); // kunci -> { groups, source }
@@ -24,7 +18,6 @@ function makeKey({ cityKey, areaMode, minRating }) {
   return `${cityKey}|${areaMode}|${Number(minRating) || 0}`;
 }
 
-/** Baca kartu yang pernah disimpan. Balik null kalau belum ada. */
 export async function getSavedRecommendations(env, params) {
   const key = makeKey(params);
   const lokal = memory.get(key);
@@ -37,7 +30,6 @@ export async function getSavedRecommendations(env, params) {
     const query = new URLSearchParams({
       city_key: `eq.${params.cityKey}`,
       area_mode: `eq.${params.areaMode}`,
-      // PostgREST cuma menerima "eq.0", bukan "0".
       min_rating: `eq.${Number(params.minRating) || 0}`,
       select: "groups,source",
       order: "updated_at.desc", // kalau ada duplikat lama, yang terbaru yang dipakai
@@ -63,7 +55,6 @@ export async function getSavedRecommendations(env, params) {
   }
 }
 
-/** Simpan kartu hasil AI supaya pemakaian berikutnya tidak perlu AI lagi. */
 export async function saveRecommendations(env, params) {
   const key = makeKey(params);
   memory.set(key, { groups: params.groups, source: "planner" });
@@ -72,8 +63,6 @@ export async function saveRecommendations(env, params) {
   if (!db) return;
 
   try {
-    // on_conflict WAJIB disebut. Tanpa ini PostgREST menganggap konflik pada
-    // primary key (id), jadi setiap reload jadi baris BARU, bukan menimpa.
     const upsertUrl = `${db.url}?on_conflict=city_key,area_mode,min_rating`;
     const res = await fetch(upsertUrl, {
       method: "POST",

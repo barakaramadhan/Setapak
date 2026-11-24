@@ -7,7 +7,6 @@ export function useAuth() {
   return value;
 }
 
-/** Nama yang ditampilkan di sapaan dashboard & sidebar. */
 export function displayName(user) {
   if (!user) return "Fulann";
   const meta = user.user_metadata || {};

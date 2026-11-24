@@ -1,17 +1,3 @@
-// "Mata & telinga" AI SETAPAK.
-//
-// Masalah lama: AI hanya menebak dari ingatannya + 4 kota kurasi, lalu ditambal
-// aturan prompt satu per satu. Di sini AI diberi DATA NYATA tentang tujuan yang
-// sedang dibahas — semuanya GRATIS dan TANPA API key:
-//   - Nominatim (OSM)      : kota/negara -> koordinat + batas wilayah
-//   - Overpass (OSM)       : tempat nyata (wisata, kuliner, ibadah) + koordinat + jam buka
-//   - Wikivoyage/Wikipedia : panduan lokal (lihat, lakukan, makan, transport, keamanan)
-//   - Open-Meteo           : prakiraan / pola cuaca sesuai tanggal trip
-//
-// Hasilnya: blok teks "DATA LAPANGAN" yang disuntik ke prompt, plus daftar tempat
-// berkoordinat untuk memverifikasi jawaban AI (nama yang tidak ada = dibuang/ditandai).
-// Semua kegagalan jaringan bersifat AMAN: fungsi mengembalikan null dan alur
-// lama (data kurasi + AI) tetap jalan.
 
 import { cariGoogle, gabungGoogle, googleAktif, teksUlasan } from "./googlePlaces.js";
 import { geocodeGeoapify, geoapifyAktif, cariTempatGeoapify } from "./geoapify.js";
@@ -28,7 +14,6 @@ const OVERPASS_URLS = [
 
 const JAM = 60 * 60 * 1000;
 
-// Cache DATA (bukan cache jawaban AI): tempat/koordinat/cuaca jarang berubah.
 const memo = new Map();
 function ingat(kunci, ttl, loader) {
   const hit = memo.get(kunci);
@@ -157,7 +142,6 @@ function tokenPenting(norm) {
     .filter((kata) => kata.length >= 3 && !KATA_LONGGAR.has(kata));
 }
 
-/** Cari tempat di daftar yang namanya "sama" dengan nama dari AI (toleran). */
 export function cocokkanNama(nama, places = []) {
   const n = normNama(nama);
   if (!n || !places.length) return null;
@@ -170,7 +154,6 @@ export function cocokkanNama(nama, places = []) {
   let skorTerbaik = 0;
   for (const p of places) {
     const m = normNama(p.name);
-    // salah satu nama memuat nama lain (mis. "Kebun Raya Bogor" vs "Kebun Raya")
     const pendek = n.length <= m.length ? n : m;
     const panjang = n.length <= m.length ? m : n;
     if (pendek.length >= 6 && panjang.includes(pendek)) {
@@ -196,7 +179,6 @@ export function cocokkanNama(nama, places = []) {
   return terbaik;
 }
 
-/** Tempat dari daftar yang namanya muncul di teks (urut kemunculan). */
 export function tempatDalamTeks(teks, places = [], maks = 4) {
   const t = ` ${normNama(teks)} `;
   const hasil = [];
@@ -212,11 +194,6 @@ export function tempatDalamTeks(teks, places = [], maks = 4) {
 
 // ------------------------------------------------- membaca KEBUTUHAN pengguna
 
-/**
- * Membaca apa yang sebenarnya dibutuhkan orang dari seluruh obrolan, lalu
- * menerjemahkannya jadi implikasi rencana. Ini yang bikin jawaban terasa
- * "mengerti aku", bukan sekadar daftar tempat.
- */
 export function bacaKebutuhan(teks = "") {
   const t = normNama(teks);
   if (!t) return [];
@@ -298,7 +275,6 @@ export function geocodeTujuan(query, env = process.env) {
         const g = await geocodeGeoapify(q, { env: runtimeEnv });
         if (g) return g;
       } catch {
-        // fallback ke Nominatim (OSM)
       }
     }
     const data = await getJson(
@@ -335,7 +311,6 @@ export function geocodeTujuan(query, env = process.env) {
       country: hit.address?.country || "",
       cc: String(hit.address?.country_code || "").toLowerCase(),
       spanKm,
-      // kota: query sekitar titik; wilayah: hanya yang notable; negara: tanpa peta tempat
       skala: !area ? "poi" : spanKm <= 120 ? "kota" : spanKm <= 600 ? "wilayah" : "negara",
     };
   });
@@ -352,7 +327,6 @@ const BUKAN_TUJUAN = new Set([
   "pagi", "siang", "sore", "malam", "kedua", "pertama", "ketiga", "tengah",
 ]);
 
-// Kata penunjuk jenis tempat: sendirian bukan nama tujuan ("gunung" bukan "Gunungkidul").
 const KATA_GENERIK = new Set([
   "gunung", "bukit", "pantai", "danau", "pulau", "kota", "kabupaten", "desa", "candi",
   "air", "curug", "taman", "hutan", "pegunungan", "lembah", "gua", "goa", "savana",
@@ -367,7 +341,6 @@ function kandidatDariPesan(pesan = "") {
   let m;
   while ((m = re.exec(String(pesan))) && hasil.length < 4) {
     const kata = m[1].trim().split(/\s+/);
-    // buang kata penutup yang bukan bagian nama tempat
     while (kata.length && BUKAN_TUJUAN.has(kata[kata.length - 1].toLowerCase())) kata.pop();
     while (kata.length && BUKAN_TUJUAN.has(kata[0].toLowerCase())) kata.shift();
     if (!kata.length) continue;
@@ -378,7 +351,6 @@ function kandidatDariPesan(pesan = "") {
   return hasil.slice(0, 3);
 }
 
-/** Tujuan yang sedang dibahas (maks 2): dari pesan terbaru lalu profil trip. */
 export async function tentukanTujuan({ message = "", fakta = null, pakaiPesan = true, env = process.env }) {
   const e = env || process.env;
   const kandidat = [
@@ -447,7 +419,6 @@ async function jalankanOverpass(kuer) {
       const data = await res.json();
       return Array.isArray(data?.elements) ? data.elements : [];
     });
-  // Dua mirror sekaligus: yang tercepat menang.
   return Promise.any(OVERPASS_URLS.map(panggil));
 }
 
@@ -532,7 +503,6 @@ function ubahElemen(el, pusat) {
 }
 
 function pilihTempat(daftar) {
-  // dedupe nama
   const unik = new Map();
   for (const p of daftar) {
     const kunci = normNama(p.name);
@@ -554,7 +524,6 @@ function pilihTempat(daftar) {
   return [...wisata, ...kuliner];
 }
 
-/** Zona = kelompok tempat yang saling berdekatan (k-means kecil). */
 function zonakan(places, k) {
   if (places.length < 4) return places.map(() => 0);
   const kk = Math.min(Math.max(2, k), 5, places.length);
@@ -595,7 +564,6 @@ function zonakan(places, k) {
       };
     });
   }
-  // zona terbesar = A
   const ukuran = pusatBaru.map((_, i) => tugas.filter((x) => x === i).length);
   const urut = ukuran.map((u, i) => ({ u, i })).sort((a, b) => b.u - a.u).map((x) => x.i);
   return tugas.map((t) => urut.indexOf(t));
@@ -608,13 +576,11 @@ async function ambilTempat(dest, hari) {
   return ingat(`osm:${dest.lat.toFixed(2)},${dest.lon.toFixed(2)}:${dest.skala}`, 12 * JAM, async () => {
     let elemen = await jalankanOverpass(kuerOverpass(dest, false));
     let daftar = elemen.map((el) => ubahElemen(el, dest)).filter(Boolean);
-    // Kota kecil / data OSM tipis: longgarkan syarat lalu coba lagi sekali.
     if (daftar.length < 10 && dest.skala !== "wilayah") {
       try {
         elemen = await jalankanOverpass(kuerOverpass(dest, true));
         daftar = elemen.map((el) => ubahElemen(el, dest)).filter(Boolean);
       } catch {
-        // pakai hasil pertama
       }
     }
     const terpilih = pilihTempat(daftar);
@@ -625,7 +591,6 @@ async function ambilTempat(dest, hari) {
 
 // ------------------------------------------- 2b. tempat nyata (GOOGLE MAPS)
 
-/** Tujuan "semu" untuk pertanyaan tempat yang tidak punya kota/negara terbaca. */
 function tujuanGoogle(label) {
   const nama = String(label || "").trim().slice(0, 80);
   return {
@@ -651,12 +616,6 @@ const KUERI_KATEGORI = [
   (n) => `museum dan tempat bersejarah di ${n}`,
 ];
 
-/**
- * Tempat dari Google Places. Dengan `kueri` (pertanyaan user) hanya satu pencarian
- * yang dijalankan persis seperti yang ditanyakan. Tanpa `kueri` (menyusun rencana)
- * dipakai beberapa pencarian kategori supaya ada variasi wisata + kuliner.
- * Melempar error kalau semua pencarian ditolak Google (pemanggil memakai cadangan).
- */
 export async function ambilTempatGoogle(dest, { env, kueri = "", hari, ringan = false, fetchFn } = {}) {
   const punyaTitik = dest.skala !== "google" && Number.isFinite(dest.lat);
   const bias = punyaTitik && (dest.skala === "kota" || dest.skala === "poi")
@@ -767,7 +726,6 @@ async function ambilWikipedia(dest) {
         const teks = await coba(host, judul);
         if (teks) return teks.slice(0, 480);
       } catch {
-        // coba sumber berikutnya
       }
     }
     return null;
@@ -789,7 +747,6 @@ function ringkasCuaca(tmax, tmin, hujanMm, label) {
 async function ambilCuaca(dest, fakta) {
   const hariIni = new Date();
   const mulai = fakta?.startDate ? new Date(`${fakta.startDate}T00:00:00Z`) : null;
-  // Tanpa tanggal mulai: tampilkan sepekan ke depan (bukan durasi trip).
   const lama = mulai ? Math.min(14, Math.max(1, fakta?.days || 7)) : 7;
   const selisih = mulai ? Math.round((mulai - hariIni) / 86400000) : 0;
   const lat = dest.lat.toFixed(2);
@@ -916,10 +873,6 @@ export function jawabanTempatRekreasi(teks, lapangan, fakta = null) {
   return `Di data peta yang diperiksa untuk ${tujuan}, tercatat:\n${daftar}\n\nData ini mengonfirmasi lokasi dan kategorinya, bukan wahana, jam buka, atau apakah skalanya setara Dufan. Cek informasi resmi sebelum berkunjung.`;
 }
 
-/**
- * Kumpulkan data lapangan untuk tujuan yang sedang dibahas.
- * @returns {Promise<null | {blok:string, places:Array, dests:Array, byId:Map, cuaca:string|null}>}
- */
 export async function kumpulkanLapangan({
   message = "",
   fakta = null,
@@ -938,14 +891,11 @@ export async function kumpulkanLapangan({
   const kerja = async () => {
     let dasar = await tentukanTujuan({ message, fakta, pakaiPesan, env: e });
     if (!dasar.length) {
-      // Google bisa mencari tanpa kota/negara yang terbaca ("warung padang terdekat").
       const label = kueri || fakta?.destinations?.[0] || "";
       if (!pakaiGoogle || !label) return null;
       dasar = [tujuanGoogle(label)];
     }
 
-    // "Jepang" saja tidak punya daftar tempat; kota yang disebut user (Tokyo, Kyoto)
-    // ditambahkan sebagai tujuan sendiri supaya tetap berbasis peta nyata.
     const dests = [];
     for (const d of dasar) {
       dests.push(d);
@@ -960,7 +910,6 @@ export async function kumpulkanLapangan({
         const semu = dest.skala === "google";
         const ambilDaftar = async () => {
           if (pakaiGoogle) {
-            // Pertanyaan spesifik: satu pencarian saja (untuk tujuan pertama).
             if (kueri && i > 0) return { daftar: [], sumber: "google" };
             try {
               const daftar = await ambilTempatGoogle(dest, {
@@ -1007,7 +956,6 @@ export async function kumpulkanLapangan({
         const nilai = (r) => (r.status === "fulfilled" ? r.value : null);
         const hasilTempat = nilai(tempat) || { daftar: [], sumber: "osm" };
         const semuaTempat = hasilTempat.daftar;
-        // Banyak kota dalam satu negara: bagi kapasitas supaya prompt tidak membengkak.
         const bagi = Math.max(1, dests.filter((x) => x.indukNegara).length);
         const [kapW, kapK] = kueri && hasilTempat.sumber === "google" ? [12, 12] : maksTempat;
         const batasW = dest.indukNegara ? Math.ceil(kapW / bagi) + 2 : kapW;
@@ -1154,7 +1102,6 @@ async function geocodeKotaDi(nama, dest) {
   });
 }
 
-/** Untuk tujuan setingkat negara/wilayah: ambil kota yang disebut user (maks 3). */
 async function kotaDalam(dest, teks) {
   const kota = [];
   for (const nama of kandidatKotaDariTeks(teks, dest)) {
@@ -1163,7 +1110,6 @@ async function kotaDalam(dest, teks) {
       const c = await geocodeKotaDi(nama, dest);
       if (c && !kota.some((k) => jarakKm(k, c) < 10)) kota.push({ ...c, label: nama });
     } catch {
-      // lewati
     }
   }
   return kota;
@@ -1186,7 +1132,6 @@ export async function geocodeDalam(nama, dests = []) {
       const hit = data?.[0];
       const lat = Number(hit?.lat);
       const lon = Number(hit?.lon);
-      // Nama hasil harus mirip nama yang dicari, kalau tidak itu tebakan asal Nominatim.
       const namaHasil = hit?.name || String(hit?.display_name || "").split(",")[0];
       if (
         Number.isFinite(lat) &&
@@ -1196,7 +1141,6 @@ export async function geocodeDalam(nama, dests = []) {
         return { lat, lon, dest };
       }
     } catch {
-      // tujuan berikutnya
     }
   }
   return null;
@@ -1227,11 +1171,6 @@ function urutkanDekat(tempat) {
   return [...urut, ...tanpa];
 }
 
-/**
- * Setelah AI menyusun plan: cocokkan tiap tempat ke data nyata (ref / nama / geocode),
- * buang yang tidak bisa dibuktikan ada, urutkan dekat-ke-dekat, hitung jarak per hari.
- */
-/** Cari satu tempat di Google Maps; hanya diterima kalau namanya benar-benar mirip. */
 async function cariTempatDiGoogle(nama, lapangan, env, fetchFn) {
   for (const dest of (lapangan.dests || []).slice(0, 2)) {
     const bias =
@@ -1247,7 +1186,6 @@ async function cariTempatDiGoogle(nama, lapangan, env, fetchFn) {
       const cocok = cocokkanNama(nama, hasil);
       if (cocok) return { ...cocok, kota: dest.name };
     } catch {
-      // coba tujuan berikutnya
     }
   }
   return null;
@@ -1269,7 +1207,6 @@ export async function perkuatRencana(plan, lapangan, { batasMs = 4500, env = nul
       if (hit && !cocokkanNama(t.name, [hit])) hit = null; // ref tidak cocok nama -> abaikan
       if (!hit) hit = cocokkanNama(t.name, lapangan.places);
 
-      // Google aktif: tempat di luar daftar harus dibuktikan lewat Google Maps, bukan OSM.
       if (!hit && pakaiGoogle && jatahGeocode > 0 && Date.now() - mulai < batasMs) {
         jatahGeocode -= 1;
         hit = await cariTempatDiGoogle(t.name, lapangan, env, fetchFn);
@@ -1318,8 +1255,6 @@ export async function perkuatRencana(plan, lapangan, { batasMs = 4500, env = nul
       }
     }
 
-    // Tempat yang tidak terbukti ada dibuang selama hari itu masih punya tempat valid.
-    // Tempat yang sama di hari lain juga dibuang (kecuali tempat ibadah: boleh dikunjungi lagi).
     const valid = hasil.filter((t) => t.verified);
     const tanpaUlang = (daftar) =>
       daftar.filter((t) => {
@@ -1333,7 +1268,6 @@ export async function perkuatRencana(plan, lapangan, { batasMs = 4500, env = nul
     pakai.forEach((t) => sudahDipakai.add(normNama(t.name)));
     dibuang += hasil.length - pakai.length;
 
-    // Kalau semua tempat punya jam mulai, ikuti jam itu (pagi dulu); kalau tidak, dekat-ke-dekat.
     const semuaPunyaJam = pakai.length > 1 && pakai.every((t) => t.startTime);
     const urut = semuaPunyaJam
       ? [...pakai].sort((a, b) => String(a.startTime).padStart(5, "0").localeCompare(String(b.startTime).padStart(5, "0")))
@@ -1364,7 +1298,6 @@ export async function perkuatRencana(plan, lapangan, { batasMs = 4500, env = nul
   return plan;
 }
 
-/** Satu tempat -> bentuk yang dipakai kartu peta di chat. */
 export function keKartuPeta(p, embed) {
   if (p.sumber === "google") {
     return {

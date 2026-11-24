@@ -54,8 +54,6 @@ function Ringkasan({ modul, draft }) {
   return null;
 }
 
-// Editor generik untuk satu modul. State lokal berupa draf, jadi perubahan
-// belum masuk ke store sampai tombol Simpan ditekan.
 export default function ModuleEditor({ modul, bagian, onSave }) {
   const [draft, setDraft] = useState(() => salin(bagian));
   const [pesan, setPesan] = useState("");

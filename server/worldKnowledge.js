@@ -1,10 +1,3 @@
-// Pengetahuan dunia SETAPAK yang dikurasi manual.
-//
-// Kenapa tidak cuma bergantung pada AI? Karena model bisa "berhalusinasi":
-// Pondok Indah Mall disebut di Bekasi, Kebun Raya Cibodas disebut di Depok,
-// Taman Safari disebut di Bekasi. Untuk kota-kota populer, jawaban diambil
-// dari daftar ini sehingga tetap konkret, tapi lokasinya pasti benar.
-// AI tetap dipakai untuk pertanyaan di luar daftar ini (harga, cuaca, dll).
 
 export const WORLD_CITIES = {
   bekasi: {
@@ -232,10 +225,6 @@ const ALIAS_KOTA = {
   banten: "tangerang",
 };
 
-/**
- * Fakta lokasi yang sering salah disebut AI. Dipakai untuk menjawab terus
- * terang kalau user menanyakan sebuah tempat di kota yang salah.
- */
 export const WORLD_FACTS = [
   {
     kata: "taman safari",
@@ -311,7 +300,6 @@ function temukanKota(normalized) {
   ) || null;
 }
 
-/** Hormati jumlah yang diminta, mis. "3 tempat alam". */
 export function batasJumlah(teks, maks = 5) {
   const cocok = String(teks || "").match(
     /\b([1-9]|10)\s+(tempat|wisata|rekomendasi|pilihan|tempatnya)\b/
@@ -344,11 +332,6 @@ function barisTempat(places) {
     .join("\n");
 }
 
-/**
- * Jawaban deterministik untuk kota/negara yang tidak ada di data planner lokal.
- * Mengembalikan null kalau pesan bukan soal destinasi yang dikenal, supaya
- * handler bisa memanggil AI untuk pertanyaan umum.
- */
 export function jawabanDuniaDariPesan(normalized) {
   const teks = String(normalized || "");
   const kotaKey = temukanKota(teks);

@@ -1,6 +1,3 @@
-// "Otak" rule-based SETAPAK.
-// Cara kerja: baca prompt -> tebak kota, durasi, budget, minat -> susun itinerary.
-// File ini murni JavaScript, jadi bisa dipakai di browser DAN di server tanpa ubahan.
 
 import {
   places,
@@ -13,8 +10,6 @@ import {
 
 const MAX_PLACES_PER_DAY = 2;
 
-// Ubah teks jadi huruf kecil, buang aksen & tanda baca.
-// Tujuannya supaya "Jogja!", "jogja", "JOGJA" dianggap sama.
 export function normalizeText(text) {
   return String(text || "")
     .toLowerCase()
@@ -32,23 +27,10 @@ function detectCity(normalized) {
   return null;
 }
 
-/**
- * Terima input bebas dari user -> id kota yang dikenal.
- * Contoh: "Jogja", "YOGYA!", "kuta" -> "yogyakarta" / "bali".
- * Dipakai input kota di dashboard supaya AI dan engine lokal sejalan.
- */
 export function resolveCity(input) {
   return detectCity(normalizeText(input));
 }
 
-/**
- * Kunci pencarian "For you". Beda dengan resolveCity():
- * - "Jogja" -> "yogyakarta" (sinonim, memang tempat yang sama)
- * - "Kuta"  -> "kuta" (bukan "bali"; user mencari area Kuta)
- * - "Jepang" -> "jepang" (kota/negara baru, disimpan apa adanya)
- * Dipakai untuk cache, data lokal, dan planner data bersama.
- */
-// Salah ketik yang umum -> nama benar.
 const TYPO_KOTA = { makasar: "makassar", ujung: "makassar", jakata: "jakarta", yogya: "yogyakarta", jogjakarta: "yogyakarta" };
 
 export function searchCityKey(input) {
@@ -65,7 +47,6 @@ function extractDays(text) {
 }
 
 function extractBudget(text) {
-  // Huruf sengaja dipertahankan supaya "300rb", "50 ribu", "1 juta" terbaca.
   const clean = String(text || "")
     .toLowerCase()
     .replace(/\./g, "")
@@ -116,8 +97,6 @@ function formatRupiah(value) {
   return "Rp" + new Intl.NumberFormat("id-ID").format(value);
 }
 
-// Ambil tempat sehemat mungkin, tapi tetap pilih yang ratingnya tinggi.
-// preserveOrder = true dipakai untuk "hidden gems" (urutan sudah diatur caller).
 function pickPlaces(candidates, budget, maxItems, preserveOrder = false) {
   const sorted = preserveOrder
     ? [...candidates]
@@ -132,8 +111,6 @@ function pickPlaces(candidates, budget, maxItems, preserveOrder = false) {
     total += place.cost;
   }
 
-  // Kalau budgetnya terlalu kecil sampai tidak ada tempat yang masuk,
-  // tetap beri rekomendasi tempat termurah (jangan dijawab "tidak ada").
   if (picked.length === 0) {
     const cheapest = [...sorted].sort((a, b) => a.cost - b.cost).slice(0, maxItems);
     return {
@@ -146,15 +123,10 @@ function pickPlaces(candidates, budget, maxItems, preserveOrder = false) {
   return { picked, total, overBudget: false };
 }
 
-/**
- * Coba jawab prompt dengan mesin lokal.
- * @returns {{ handled: boolean, reply?: string, plan?: object, reason?: string }}
- */
 export function planTrip(message) {
   const normalized = normalizeText(message);
   const city = detectCity(normalized);
 
-  // Kota tidak dikenal -> serahkan ke Gemini lewat /api/chat.
   if (!city) return { handled: false, reason: "Kota belum dikenal" };
 
   let candidates = places.filter((place) => place.city === city);
@@ -165,7 +137,6 @@ export function planTrip(message) {
     ? candidates.filter((place) => interests.includes(place.category))
     : [];
 
-  // Tempat sesuai minat didahulukan, sisanya tetap dipakai untuk mengisi hari.
   if (matched.length > 0) {
     const sortedMatched = [...matched].sort((a, b) => b.rating - a.rating);
     const others = candidates
@@ -174,7 +145,6 @@ export function planTrip(message) {
     candidates = [...sortedMatched, ...others];
   }
 
-  // "Hidden gems" diutamakan kalau diminta.
   const wantHidden = /hidden gems|hidden|tersembunyi/.test(normalized);
   if (wantHidden) {
     candidates = [...candidates].sort((a, b) => {
@@ -186,8 +156,6 @@ export function planTrip(message) {
 
   let days = extractDays(message);
 
-  // Kalau minat spesifik tapi tempatnya sedikit, jangan isi hari dengan tempat
-  // yang tidak relevan (misal "kuliner" tapi dapat gunung).
   if (matched.length > 0 && matched.length < days * MAX_PLACES_PER_DAY) {
     days = Math.max(1, Math.ceil(matched.length / MAX_PLACES_PER_DAY));
   }
@@ -203,7 +171,6 @@ export function planTrip(message) {
 
   if (picked.length === 0) return { handled: false, reason: "Tidak ada tempat cocok" };
 
-  // Susun rencana per hari.
   const dayPlan = [];
   for (let day = 0; day < days; day++) {
     const items = picked.slice(
@@ -225,7 +192,6 @@ export function planTrip(message) {
     });
   }
 
-  // Susun teks jawaban (sengaja pendek supaya kuota AI tidak boros).
   const lines = [
     `Rencana ${days} hari di ${cityLabels[city]}${budget ? ` · budget ${formatRupiah(budget)}` : ""}`,
     "",
@@ -261,13 +227,6 @@ export function planTrip(message) {
   };
 }
 
-/**
- * Rekomendasi "For you" di dashboard.
- * - mode "in"   = tempat di dalam kota
- * - mode "near" = tempat di sekitar kota
- * Hasilnya dibentuk sama seperti dummyPlaces lama supaya desain tidak berubah.
- */
-/** Tautan Google Maps (tanpa API key) supaya user bisa cek foto & lokasi aslinya. */
 export function mapsLinkFor(name, address = "") {
   const query = [name, address].filter(Boolean).join(", ");
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
@@ -283,7 +242,6 @@ const toPlaceCard = (place) => ({
   mapsUrl: mapsLinkFor(place.name, place.address),
 });
 
-/** Semua kandidat untuk satu kota/mode, sudah diurutkan dari rating tertinggi. */
 export function getRecommendationCandidates(
   mode = "near",
   city = "bogor",
@@ -303,7 +261,6 @@ export function getRecommendationCandidates(
 export function recommendPlaces(mode = "near", city = "bogor", minRating = 0) {
   const candidates = getRecommendationCandidates(mode, city, minRating);
 
-  // Rating tertinggi didahulukan, lalu dipotong jadi 4 kartu per bagian.
   return {
     "Coffe And Snacks": candidates
       .filter((place) => place.category === "food")
@@ -314,7 +271,6 @@ export function recommendPlaces(mode = "near", city = "bogor", minRating = 0) {
   };
 }
 
-/** Daftar kota yang bisa dipilih dari panah ">" di dashboard. */
 export function getAvailableCities() {
   return Object.keys(cityLabels);
 }

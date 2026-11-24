@@ -1,6 +1,3 @@
-// Riwayat chat SETAPAK: satu sumber kebenaran untuk daftar chat, judul, pin,
-// dan penanda trip. Supabase + RLS dipakai kalau env & login tersedia;
-// sisanya fallback localStorage supaya aplikasi tetap bisa didemo.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
@@ -13,7 +10,6 @@ const localKey = (userId) => `setapak:chats:${userId || "anon"}`;
 
 function idBaru() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
-  // Fallback tetap berformat UUID agar cocok dengan kolom id di Supabase.
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
@@ -47,7 +43,6 @@ function writeLocal(userId, chats) {
   try {
     localStorage.setItem(localKey(userId), JSON.stringify(chats));
   } catch {
-    // localStorage penuh / tidak tersedia — abaikan.
   }
 }
 
@@ -65,7 +60,6 @@ function fromRow(row) {
 
 function toRow(chat, userId) {
   return {
-    // WAJIB: tanpa id, upsert(onConflict: "id") selalu membuat baris BARU.
     id: chat.id,
     user_id: userId,
     title: String(chat.title || "Chat baru").slice(0, 120),
@@ -76,7 +70,6 @@ function toRow(chat, userId) {
   };
 }
 
-// Chat yang di-pin tampil di atas, sisanya urut berdasarkan terakhir dipakai.
 function urut(list) {
   return [...list].sort((a, b) => {
     const pin = Number(Boolean(b.pinned)) - Number(Boolean(a.pinned));
@@ -148,7 +141,6 @@ export default function ChatsProvider({ children }) {
           setError(insertError.message);
           return;
         }
-        // Pakai id dari database supaya state & baris Supabase identik.
         daftar = [fromRow(inserted)];
       }
 
@@ -171,12 +163,10 @@ export default function ChatsProvider({ children }) {
     };
   }, [refresh]);
 
-  /** Simpan perubahan satu chat (localStorage atau Supabase). */
   const simpanChat = useCallback(
     async (chat) => {
       if (!user) return chat;
       if (pakaiCloud) {
-        // Antre per chat supaya pesan cepat berurutan tidak saling menimpa.
         const sebelumnya = saveQueue.current.get(chat.id) || Promise.resolve();
         const tugas = sebelumnya.catch(() => {}).then(async () => {
           const { error: err } = await supabase
@@ -210,7 +200,6 @@ export default function ChatsProvider({ children }) {
   );
 
   const newChat = useCallback(async () => {
-    // Jangan menumpuk "Chat baru" kosong: pakai yang kosong kalau sudah ada.
     const kosong = chatsRef.current.find(
       (chat) => !chat.messages.length && chat.title === "Chat baru"
     );

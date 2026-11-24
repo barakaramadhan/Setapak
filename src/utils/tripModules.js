@@ -1,10 +1,3 @@
-// Struktur Universal Trip Planner — 15 modul untuk satu perjalanan.
-//
-// Semua modul disimpan di satu kolom `plan` (jsonb) pada tabel `trips`.
-// Alasannya: RLS tetap sederhana (satu baris = satu trip milik auth.uid()),
-// tidak perlu migrasi 15 tabel, dan rencana lama hasil chat tetap bisa dibaca.
-// Rencana lama { city, days:[{title, places:[{name,cost}]}], totalCost }
-// dinormalisasi ke modul yang sesuai tanpa kehilangan data.
 
 import { addDaysToKey, fromDateKey } from "./tripDate.js";
 
@@ -27,7 +20,6 @@ const PILIHAN = {
 export const BUDGET_TANPA_TIKET = "Tanpa tiket pesawat";
 export const BUDGET_DENGAN_TIKET = "Sudah termasuk tiket pesawat";
 
-/** Item transport yang berupa tiket pesawat (bukan transport lokal). */
 export function tiketPesawat(item) {
   return /pesawat|flight|plane|penerbangan|udara/i.test(
     `${item?.mode || ""} ${item?.type || ""}`
@@ -360,7 +352,6 @@ export function barisAwal(collection) {
   }, {});
 }
 
-/** Nilai awal sebuah modul, termasuk field yang tersimpan di kolom trip. */
 export function bagianAwal(modul, trip = {}) {
   const bagian = {};
   (modul.fields || []).forEach((field) => {
@@ -407,7 +398,6 @@ function adaIsi(bagian) {
 }
 
 export function modulTerisi(modul, trip) {
-  // Normalisasi dulu supaya itinerary dari format chat lama ikut terhitung.
   const plan = trip?.plan?.[modul.id] ? trip.plan : ensureUniversalPlan(trip);
   const bagian = plan?.[modul.id] || bagianAwal(modul, trip);
   return Boolean(adaIsi(bagian));
@@ -442,7 +432,6 @@ export function ringkasanBagian(modul, bagian) {
   return jumlah ? `${jumlah} item` : "";
 }
 
-/** Pastikan semua 15 modul ada, dan data lama hasil chat tidak hilang. */
 export function ensureUniversalPlan(trip) {
   const asli = trip?.plan && typeof trip.plan === "object" ? trip.plan : {};
   const plan = { ...asli };
@@ -451,12 +440,10 @@ export function ensureUniversalPlan(trip) {
     if (!plan[modul.id] || typeof plan[modul.id] !== "object") {
       plan[modul.id] = bagianAwal(modul, trip);
     } else {
-      // Pastikan field utama tetap ada walau modul sudah sebagian terisi.
       plan[modul.id] = { ...bagianAwal(modul, trip), ...plan[modul.id] };
     }
   });
 
-  // Prefill dari jawaban wizard/answers yang mungkin belum terpetakan ke field.
   const answers = Array.isArray(asli.answers) ? asli.answers : [];
   answers.forEach((a) => {
     const moduleId = a?.module;
@@ -496,7 +483,6 @@ export function ensureUniversalPlan(trip) {
     });
   }
 
-  // Selaraskan dates & overview dari trip utama
   if (!plan.destination.city && trip.city) plan.destination.city = trip.city;
   if (!plan.overview.name && trip.title) plan.overview.name = trip.title;
   if (!plan.overview.destination && (trip.city || plan.destination.city)) plan.overview.destination = trip.city || plan.destination.city;
@@ -508,7 +494,6 @@ export function ensureUniversalPlan(trip) {
   if (!plan.budget.currency) plan.budget.currency = "IDR";
   if (!plan.budget.planned && Number(asli.totalCost) > 0) plan.budget.planned = Number(asli.totalCost);
 
-  // Jika ada itinerary tapi food/accommodation kosong, isi draft minimal agar modul tidak kosong.
   const hasItin = (plan.itinerary.days || []).some((d) => String(d.activities || "").trim());
   if (hasItin && !(plan.food.items || []).length) {
     plan.food.items = [
@@ -538,7 +523,6 @@ export function ensureUniversalPlan(trip) {
     }];
   }
 
-  // Budget planned dari facts/answers: jika budget items ada tapi planned kosong, jumlahkan.
   if (!plan.budget.planned && (plan.budget.items || []).length) {
     const sum = plan.budget.items.reduce((a, b) => a + (Number(b.amount) || 0), 0);
     if (sum > 0) plan.budget.planned = sum;
@@ -547,12 +531,6 @@ export function ensureUniversalPlan(trip) {
   return plan;
 }
 
-
-/**
- * Rincian budget otomatis: biaya tiap aktivitas, tiket (pesawat dll.) dari modul
- * Transportasi, dan hotel dari modul Akomodasi ikut masuk ke modul Budget. Item
- * budget buatan user/AI di kategori lain (mis. visa) tetap dipertahankan.
- */
 function selarasBudget(plan, hari, totalAi = 0) {
   const angkaPositif = (nilai) => Math.max(0, Number(nilai) || 0);
   const turunan = [];
@@ -571,7 +549,6 @@ function selarasBudget(plan, hari, totalAi = 0) {
     });
   });
 
-  // Biaya per aktivitas juga tampil di modul Activities.
   (plan.activities?.items || []).forEach((aktivitas) => {
     const biaya = biayaTempat.get(String(aktivitas.name || "").toLowerCase());
     if (biaya > 0 && !Number(aktivitas.cost)) aktivitas.cost = biaya;
@@ -587,7 +564,6 @@ function selarasBudget(plan, hari, totalAi = 0) {
     tambah(item.name ? `Menginap: ${item.name}` : "Akomodasi", "Akomodasi", item.cost);
   });
 
-  // Makan dari modul Food hanya ditambahkan bila belum terhitung dari aktivitas.
   const adaMakanDariTempat = turunan.some((item) => item.category === "Makan");
   if (!adaMakanDariTempat) {
     (plan.food?.items || []).forEach((item) => tambah(item.name || item.place || "Makan", "Makan", item.cost));
@@ -600,15 +576,12 @@ function selarasBudget(plan, hari, totalAi = 0) {
   );
   plan.budget.items = [...turunan, ...sisaLama].slice(0, 60);
 
-  // Target anggaran yang hanya berasal dari total AI (belum termasuk tiket & hotel)
-  // dinaikkan ke total rincian. Anggaran yang diisi user tidak diubah.
   const total = plan.budget.items.reduce((jumlah, item) => jumlah + (Number(item.amount) || 0), 0);
   if (total > 0 && (!Number(plan.budget.planned) || (totalAi > 0 && Number(plan.budget.planned) === totalAi && total > totalAi))) {
     plan.budget.planned = total;
   }
 }
 
-/** Gabungkan rencana AI/chat ke 15 modul (dipakai tombol "Isi dari AI"). */
 export function normalizePlan(aiPlan, trip) {
   const plan = ensureUniversalPlan(trip);
   if (!aiPlan || typeof aiPlan !== "object") return plan;
@@ -620,7 +593,6 @@ export function normalizePlan(aiPlan, trip) {
   }
 
   const hari = Array.isArray(aiPlan.days) ? aiPlan.days : [];
-  // Selalu sinkronkan itinerary dari plan AI terbaru bila ada, supaya tidak terpotong.
   if (hari.length) {
     plan.itinerary.days = hari.map((item, index) => {
       const places = Array.isArray(item.places) ? item.places : [];
@@ -631,7 +603,6 @@ export function normalizePlan(aiPlan, trip) {
         activities: acts.join(", "),
       };
     });
-    // Simpan bentuk lama juga agar komponen lama/ekspor tetap kompatibel.
     plan.days = hari;
   }
 
@@ -654,7 +625,6 @@ export function normalizePlan(aiPlan, trip) {
     MODULES.forEach((modul) => {
       const bagian = aiPlan.modules[modul.id];
       if (bagian && typeof bagian === "object") {
-        // Gabungkan koleksi secara cerdas: kalau AI memberi items, pakai jika modul kosong/kurang.
         const merged = { ...plan[modul.id], ...bagian };
         (modul.collections || []).forEach((col) => {
           const lama = plan[modul.id]?.[col.key] || [];
@@ -668,7 +638,6 @@ export function normalizePlan(aiPlan, trip) {
     });
   }
 
-  // Pastikan Date & Duration konsisten dengan trip.
   if (trip.date) plan.dates.startDate = trip.date;
   if (trip.endDate || trip.date) plan.dates.endDate = trip.endDate || trip.date;
   const dur = durasiHari(plan.dates.startDate, plan.dates.endDate);
@@ -676,7 +645,6 @@ export function normalizePlan(aiPlan, trip) {
 
   selarasBudget(plan, hari, Number(aiPlan.totalCost) || 0);
 
-  // Pastikan budget planned terisi.
   if (!Number(plan.budget.planned)) {
     const sum = (plan.budget.items || []).reduce((a, b) => a + (Number(b.amount) || 0), 0);
     if (sum > 0) plan.budget.planned = sum;
@@ -686,7 +654,6 @@ export function normalizePlan(aiPlan, trip) {
   return ensureUniversalPlan({ ...trip, plan, city: city || trip.city });
 }
 
-/** Jadwal harian dari modul itinerary, dengan fallback ke format lama chat. */
 export function getItinerary(trip) {
   const modern = trip?.plan?.itinerary?.days;
   if (Array.isArray(modern) && modern.length) {
@@ -725,14 +692,8 @@ export function getItinerary(trip) {
   ];
 }
 
-
 const norm = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
 
-/**
- * Masukkan jawaban form di chat (wizard) ke modul Trip yang sesuai.
- * Jawaban yang cocok dengan kolom modul (kunci/label sama, pilihan valid) diisi langsung;
- * semuanya juga disimpan di plan.answers supaya tetap terlihat di Trip.
- */
 export function terapkanJawabanForm(plan, fields = [], values = {}) {
   const hasil = { ...plan, answers: [] };
   (fields || []).forEach((f) => {
@@ -745,14 +706,12 @@ export function terapkanJawabanForm(plan, fields = [], values = {}) {
     let kolom = (modul?.fields || []).find(
       (k) => norm(k.key) === norm(f.key) || norm(k.label) === norm(f.key) || norm(k.label) === norm(f.label)
     );
-    // Pemetaan cerdas untuk pertanyaan umum yang tidak persis sama dengan nama kolom.
     if (!kolom && modul.id === "safety") {
       const nkey = norm(f.key + " " + f.label);
       if (/alergi/.test(nkey)) kolom = modul.fields.find((k) => k.key === "allergies");
       else if (/darurat|kontak/.test(nkey)) kolom = modul.fields.find((k) => k.key === "emergencyPhone");
       else kolom = modul.fields.find((k) => k.key === "medicalNote" || k.key === "plan");
     }
-    // Budget: "500 ribu"/"1jt" -> planned
     if (!kolom && modul.id === "budget") {
       const raw = String(nilai).toLowerCase().replace(/\./g, "").replace(/,/g, ".");
       const jt = raw.match(/([\d.]+)\s*(jt|juta)/);
@@ -760,7 +719,6 @@ export function terapkanJawabanForm(plan, fields = [], values = {}) {
       let n = jt ? Math.round(parseFloat(jt[1]) * 1000000) : rb ? Math.round(parseFloat(rb[1]) * 1000) : Number(String(nilai).replace(/[^0-9]/g, ""));
       if (n > 0) { hasil.budget = { ...(hasil.budget || {}), planned: n, currency: "IDR" }; return; }
     }
-    // Transport/accommodation/food: jawaban user harus masuk sebagai item draft.
     if (!kolom && ["transportation","accommodation","food"].includes(modul.id)) {
       const planRef = hasil[modul.id] || {};
       if (modul.id === "transportation" && !(planRef.items || []).length) {
@@ -793,7 +751,6 @@ export function terapkanJawabanForm(plan, fields = [], values = {}) {
   return hasil;
 }
 
-// Tebak kategori modul 9 dari nama tempat / kategori bawaan AI.
 export function tebakKategori(kategori = "", nama = "") {
   const t = `${kategori} ${nama}`;
   if (/stay|hotel|penginapan|akomodasi|check-?in|hostel|villa/i.test(t)) return "Penginapan";
@@ -805,11 +762,6 @@ export function tebakKategori(kategori = "", nama = "") {
   return "Wisata";
 }
 
-// Itinerary (modul 4) -> Activities (modul 9).
-// Setiap aktivitas di itinerary otomatis jadi baris di modul 9 (kategori, hari,
-// biaya, catatan bisa diisi di form). Baris yang diisi/ditambah manual tidak
-// pernah dihapus; baris otomatis yang sudah tidak ada di itinerary dan belum
-// punya biaya ikut dibersihkan.
 export function sinkronAktivitas(plan) {
   const kunci = (teks) => String(teks || "").trim().toLowerCase();
   const hari = Array.isArray(plan?.itinerary?.days) ? plan.itinerary.days : [];
@@ -834,7 +786,6 @@ export function sinkronAktivitas(plan) {
     .map((it) => {
       const cocok = dariItinerary.get(kunci(it.name));
       let baris = cocok && !it.day ? { ...it, day: cocok.day } : it;
-      // Kategori bawaan otomatis ("Wisata") belum dipilih user: perbaiki dengan tebakan.
       if (baris.auto && kunci(baris.category) === "wisata") {
         baris = { ...baris, category: tebakKategori(infoAi.get(kunci(baris.name))?.category, baris.name) };
       }

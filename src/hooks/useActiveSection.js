@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { getSectionTop } from "../utils/scroll";
 
-// Mengembalikan id section yang sedang aktif berdasarkan posisi scroll.
-// Section aktif = section terakhir yang bagian atasnya sudah melewati
-// garis acuan (default 40% tinggi layar). Di dasar halaman, id terakhir aktif.
 function useActiveSection(ids, lineRatio = 0.4) {
   const [active, setActive] = useState(ids[0]);
 

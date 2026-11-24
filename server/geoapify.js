@@ -1,8 +1,3 @@
-// Sumber data lokasi opsional: Geoapify (geocoding + places).
-//
-// Dipakai sebagai alternatif/cadangan selain Nominatim/Overpass (OSM gratis tanpa key)
-// dan Google Places. Butuh GEOAPIFY_API_KEY (https://www.geoapify.com/).
-// Key hanya dipakai di server.
 
 const GEOCODE_URL = "https://api.geoapify.com/v1/geocode/search";
 const PLACES_URL = "https://api.geoapify.com/v2/places";
@@ -43,7 +38,6 @@ function jarakKm(a, b) {
 
 function bboxDariHasil(r) {
   const b = r?.bbox;
-  // format=json: {lat1, lon1, lat2, lon2}
   if (b && Number.isFinite(Number(b.lat1)) && Number.isFinite(Number(b.lon1))) {
     const lat1 = Number(b.lat1);
     const lat2 = Number(b.lat2);
@@ -51,7 +45,6 @@ function bboxDariHasil(r) {
     const lon2 = Number(b.lon2);
     return { s: Math.min(lat1, lat2), n: Math.max(lat1, lat2), w: Math.min(lon1, lon2), e: Math.max(lon1, lon2) };
   }
-  // GeoJSON bbox: [minLon, minLat, maxLon, maxLat]
   if (Array.isArray(b) && b.length === 4 && b.every((v) => Number.isFinite(Number(v)))) {
     return { s: Number(b[1]), n: Number(b[3]), w: Number(b[0]), e: Number(b[2]) };
   }
@@ -69,9 +62,6 @@ function skalaDariHasil(r, spanKm) {
   return "negara";
 }
 
-/**
- * Forward geocoding ke bentuk internal SETAPAK (kompatibel dengan geocodeTujuan Nominatim).
- */
 export async function geocodeGeoapify(query, { env = process.env, fetchFn = globalThis.fetch, ms = 5000, lang = "id" } = {}) {
   const q = String(query || "").trim().slice(0, 80);
   const key = kunciGeoapify(env);
@@ -85,7 +75,6 @@ export async function geocodeGeoapify(query, { env = process.env, fetchFn = glob
     const hasil = Array.isArray(data?.results) ? data.results : [];
     if (!hasil.length) return null;
 
-    // pilih hasil paling relevan: prefer area (city/state/country) dengan rank bagus
     const hit =
       hasil.find((r) => ["city", "state", "country", "county", "district", "island"].includes(String(r.result_type || ""))) ||
       hasil.find((r) => Number(r.rank?.importance) >= 0.3) ||
@@ -96,7 +85,6 @@ export async function geocodeGeoapify(query, { env = process.env, fetchFn = glob
 
     let bb = bboxDariHasil(hit);
     if (!bb) {
-      // fallback: kotak kecil sekitar titik
       const d = 0.08;
       bb = { s: lat - d, n: lat + d, w: lon - d, e: lon + d };
     }
@@ -354,7 +342,6 @@ function variasiKueriTeks(kueri = "", dest = null) {
     tambah(`${q} ${namaDest}`.trim());
   }
 
-  // untuk kueri detail tempat bernama, coba bentuk lebih fokus
   if (tokenQuery(q).length >= 2 && namaDest && !adaDest) {
     tambah(`${q} ${namaDest}`.trim());
   }
@@ -362,10 +349,6 @@ function variasiKueriTeks(kueri = "", dest = null) {
   return out.slice(0, 4);
 }
 
-/**
- * Pencarian tempat/POI berbasis teks (geocoding search) di sekitar tujuan.
- * Berguna untuk pertanyaan spesifik seperti "detail Monas" atau "restoran halal ...".
- */
 async function cariTempatGeoapifyTeks(dest, { env = process.env, fetchFn = globalThis.fetch, ms = 7000, limit = 20, kueri = "" } = {}) {
   const key = kunciGeoapify(env);
   const q = String(kueri || "").trim().slice(0, 120);
@@ -408,7 +391,6 @@ async function cariTempatGeoapifyTeks(dest, { env = process.env, fetchFn = globa
             .map((r) => {
               const place = placeDariGeoapifyProps(r, null, dest, punyaTitik ? { lat, lon } : null, q);
               if (!place) return null;
-              // dorong hasil teks yang memang cocok namanya; variasi utama lebih kuat
               place.skor += idx === 0 ? 2.2 : 1.2;
               if (idx > 0) place.skor += 0.2; // sedikit bonus keberadaan dari variasi
               return place;
@@ -429,11 +411,6 @@ async function cariTempatGeoapifyTeks(dest, { env = process.env, fetchFn = globa
   return [...byId.values()];
 }
 
-/**
- * Places (POI) dari Geoapify di sekitar tujuan. Mengembalikan bentuk mirip OSM-place
- * yang dipakai liveKnowledge. Bila `kueri` diberikan, pencarian/kategori & pemeringkatan
- * dibuat lebih relevan dengan permintaan user (mis. restoran halal, masjid, detail tempat).
- */
 export async function cariTempatGeoapify(dest, { env = process.env, fetchFn = globalThis.fetch, ms = 7000, limit = 40, kueri = "" } = {}) {
   const key = kunciGeoapify(env);
   if (!key || !dest) return [];
@@ -441,8 +418,6 @@ export async function cariTempatGeoapify(dest, { env = process.env, fetchFn = gl
   const lon = Number(dest.lon);
   const punyaTitik = Number.isFinite(lat) && Number.isFinite(lon) && !(lat === 0 && lon === 0);
 
-  // Untuk kueri spesifik, gabungkan hasil pencarian teks + kategori agar bisa menemukan
-  // tempat bernama/detail tertentu (Geoapify Places bersifat kategori, bukan text-search).
   const q = String(kueri || "").trim();
   const tasks = [];
   if (q) {
@@ -487,7 +462,6 @@ export async function cariTempatGeoapify(dest, { env = process.env, fetchFn = gl
       }).catch(() => [])
     );
   } else {
-    // tanpa titik (tujuan semu): andalkan pencarian teks saja
     if (!q) return [];
   }
 
@@ -497,7 +471,6 @@ export async function cariTempatGeoapify(dest, { env = process.env, fetchFn = gl
 
   const mapped = features
     .map((item) => {
-      // item bisa Feature (Places API) atau place object hasil teks (sudah dipetakan)
       if (item && item.sumber === "geoapify" && item.name) return item;
       const f = item;
       const p = f?.properties || {};
@@ -505,7 +478,6 @@ export async function cariTempatGeoapify(dest, { env = process.env, fetchFn = gl
     })
     .filter(Boolean);
 
-  // dedupe: utamakan skor tertinggi
   const byId = new Map();
   for (const p of mapped) {
     const k = p._id || `${normQuery(p.name)}:${p.lat?.toFixed?.(4)},${p.lon?.toFixed?.(4)}`;

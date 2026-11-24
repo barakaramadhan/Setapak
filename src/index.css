@@ -44,7 +44,6 @@
   }
 }
 
-/* Cetak / Simpan PDF dari workspace trip: hanya konten rencana yang keluar. */
 @media print {
   nav[aria-label="Modul trip planner"] {
     display: none !important;

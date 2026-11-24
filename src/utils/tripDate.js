@@ -1,5 +1,3 @@
-// Util tanggal trip. Semua tanggal disimpan sebagai "YYYY-MM-DD" (lokal),
-// bukan UTC, supaya tanggal di kalender tidak bergeser satu hari.
 
 const BULAN = {
   januari: 1,
@@ -72,7 +70,6 @@ function validKey(year, month, day, punyaTahun) {
   ) {
     return null;
   }
-  // Tanggal lampau dianggap untuk tahun depan, kecuali tahun memang disebut.
   if (!punyaTahun) {
     const hariIni = new Date();
     hariIni.setHours(0, 0, 0, 0);
@@ -81,18 +78,15 @@ function validKey(year, month, day, punyaTahun) {
   return toDateKey(date);
 }
 
-/** Baca tanggal dari prompt chat. Mengembalikan "YYYY-MM-DD" atau null. */
 export function parseTripDate(text) {
   if (!text) return null;
   const tulisan = String(text).toLowerCase();
   const tahunIni = new Date().getFullYear();
   let cocok;
 
-  // 2026-12-12
   cocok = tulisan.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
   if (cocok) return validKey(+cocok[1], +cocok[2], +cocok[3], true);
 
-  // 12/12/2026, 12/12, 12-12-26
   cocok = tulisan.match(
     new RegExp(`\\b(\\d{1,2})[/-](\\d{1,2})(?:[/-](\\d{2,4}))?\\b`)
   );
@@ -105,7 +99,6 @@ export function parseTripDate(text) {
     return validKey(tahun, +cocok[2], +cocok[1], Boolean(cocok[3]));
   }
 
-  // 12 desember (2026) / desember 12 (2026)
   cocok = tulisan.match(
     new RegExp(`\\b(\\d{1,2})\\s+(${polaBulan})\\b(?:[,\\s]+(\\d{4}))?`)
   );
@@ -121,7 +114,6 @@ export function parseTripDate(text) {
     return validKey(tahun, BULAN[cocok[1]], +cocok[2], Boolean(cocok[3]));
   }
 
-  // besok / lusa
   if (/\bbesok\b/.test(tulisan) || /\btomorrow\b/.test(tulisan)) {
     const date = new Date();
     date.setDate(date.getDate() + 1);
@@ -136,7 +128,6 @@ export function parseTripDate(text) {
   return null;
 }
 
-/** Geser tanggal lokal (bukan UTC) tanpa riskan berubah hari. */
 export function addDaysToKey(key, amount) {
   const date = fromDateKey(key);
   if (!date) return key;
@@ -144,7 +135,6 @@ export function addDaysToKey(key, amount) {
   return toDateKey(date);
 }
 
-/** Semua tanggal yang disentuh perjalanan (inklusif), maks. 62 hari. */
 export function expandDateRange(start, end) {
   const awal = fromDateKey(start);
   if (!awal) return [];
@@ -158,7 +148,6 @@ export function expandDateRange(start, end) {
   return hasil;
 }
 
-/** "15–20 Des 2026" untuk rentang, atau tanggal biasa kalau satu hari. */
 export function formatRangeId(start, end) {
   const awal = fromDateKey(start);
   if (!awal) return String(start || "");
@@ -176,7 +165,6 @@ export function formatRangeId(start, end) {
   return `${hariBulan.format(awal)} – ${hariBulan.format(akhir)}${tahun}`;
 }
 
-/** "15-20 desember" / "15 s/d 20 desember 2026" → { start, end }. */
 export function parseTripDateRange(text) {
   const tulisan = String(text || "").toLowerCase();
   const tahunIni = new Date().getFullYear();
@@ -215,7 +203,6 @@ function judulDariPrompt(prompt) {
     .trim();
 }
 
-/** Prefill form Schedule dari prompt chat + rencana yang sudah dibuat AI. */
 export function buildTripPrefill(prompt, plan) {
   const rentang = parseTripDateRange(prompt);
   const date = rentang?.start || parseTripDate(prompt);

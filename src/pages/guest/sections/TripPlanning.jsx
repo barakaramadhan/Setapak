@@ -1,10 +1,6 @@
 import SectionMarker from "../../../components/ui/SectionMarker";
 import GoButton from "../../../components/ui/GoButton";
 import FillButton from "../../../components/ui/FillButton";
-// import ImagePlan1 from "../../../assets/images/imageplan1.webp"
-// import ImagePlan2 from "../../../assets/images/imageplan2.webp"
-// import ImagePlan3 from "../../../assets/images/imageplan3.webp"
-// import ImagePlan4 from "../../../assets/images/imageplan4.webp"
 function TripPlanning() {
   return (
     <section className="px-20 bg-bright-white">

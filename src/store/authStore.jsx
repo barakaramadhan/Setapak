@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { supabase, isSupabaseReady } from "../lib/supabase";
 import { AuthContext, LOCAL_DEMO_ID } from "./authContext";
 
-// Tanpa env Supabase, aplikasi tetap bisa didemo dengan user lokal.
 const DEMO_USER = {
   id: LOCAL_DEMO_ID,
   email: "demo@setapak.local",
@@ -10,7 +9,6 @@ const DEMO_USER = {
 };
 
 export default function AuthProvider({ children }) {
-  // Tanpa Supabase langsung pakai user demo (state awal, bukan lewat effect).
   const [user, setUser] = useState(() => (supabase ? null : DEMO_USER));
   const [loading, setLoading] = useState(Boolean(supabase));
   const [authError, setAuthError] = useState("");
@@ -76,8 +74,6 @@ export default function AuthProvider({ children }) {
       setAuthError(error.message);
       return { error: error.message };
     }
-    // Email confirmation aktif → session belum ada; user baru boleh masuk
-    // setelah verifikasi. Tampilkan pesan di halaman sign up.
     setUser(data.session?.user ?? null);
     return { error: null, needsConfirmation: !data.session };
   };

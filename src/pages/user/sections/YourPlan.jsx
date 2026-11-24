@@ -47,7 +47,6 @@ function budgetInfo(trip) {
   return { planned, used };
 }
 
-// 1650000 -> "1.65", 2000000 -> "2" (dalam juta, sesuai desain)
 const juta = (n) => String(Math.round((Number(n) / 1_000_000) * 100) / 100);
 
 function travelersLabel(trip) {

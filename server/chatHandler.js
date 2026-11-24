@@ -1,7 +1,3 @@
-// Handler HTTP yang dipakai dua tempat:
-// 1. Vercel Function -> api/chat.js
-// 2. Vite dev server  -> vite.config.js
-// Jadi logic-nya cuma satu, mudah dibaca dan diubah.
 
 import { createHash } from "node:crypto";
 import {
@@ -54,21 +50,14 @@ import {
   cariFaktaLokasiFilm,
 } from "./liveKnowledge.js";
 
-// Pesan yang layak diberi data lapangan (peta nyata). Obrolan ringan tidak.
 const TOPIK_PERJALANAN =
   /(wisata|tempat|places?\b|jalan-jalan|liburan|trip|itinerar|rute|makan|kuliner|restaurant|restoran|cafe|kafe|hotel|nginap|menginap|penginapan|cuaca|biaya|budget|rencana|rekomendasi|destinasi|kunjung|dekat|murah|gratis|umroh|umrah|ibadah|masjid|mosque|pantai|beach|waterfall|gunung|museum|taman|park|zoo|aquarium|mall|market|shopping|theme park|water ?park|amusement park|attraction|landmark|places to visit|things to see|things to do|where to|where is|where are|eat|stay|berapa hari|hari di|ada apa|mau ke|pergi ke|ke sana)/i;
 const PERTANYAAN_DAFTAR_TEMPAT =
   /\b(tempat|place|wisata|restaurant|restoran|cafe|kafe|hotel|taman|park|zoo|aquarium|museum|pantai|beach|mosque|masjid|mall|market|shopping|rekomendasi|attraction|landmark|places to visit|things to see|things to do|di mana|dimana|where is|where are)\b/i;
 
-// Permintaan tempat spesifik (makan, ibadah, belanja, menginap, dll). Kalau Google Maps
-// aktif, pertanyaan seperti ini WAJIB dijawab dari hasil Google, bukan dari ingatan AI.
 const MINTA_TEMPAT =
   /\b(tempat|place|wisata|restaurant|restoran|resto|rumah makan|warung|kedai|cafe|kafe|kopi|coffee|kuliner|makan|makanan|nasi|bakso|sate|soto|ayam|padang|minang|halal|hotel|penginapan|villa|hostel|masjid|mosque|musholla|mushola|surau|taman|park|zoo|aquarium|museum|pantai|beach|air terjun|waterfall|mall|market|pasar|toko|supermarket|oleh oleh|souvenir|atm|apotek|rumah sakit|bandara|stasiun|rekomendasi|attraction|landmark|places to visit|things to do|nongkrong|tongkrongan|dekat|terdekat|nearby)\b/i;
 
-/**
- * Ubah pesan user jadi kueri Google Maps. Kata basa-basi dibuang; kalau pesan tidak
- * menyebut lokasi, tujuan dari profil trip ditempel supaya pencarian tidak melenceng.
- */
 export function kueriGoogle(message = "", fakta = null) {
   let q = String(message || "")
     .replace(/[?!]+/g, " ")
@@ -83,7 +72,6 @@ export function kueriGoogle(message = "", fakta = null) {
   return q;
 }
 
-/** Teks yang HANYA ditulis user (bukan jawaban AI), dipakai membaca kebutuhan. */
 function teksUser(history = [], message = "") {
   return [
     ...history.filter((h) => (h?.role || "user") === "user").map((h) => h?.text || ""),
@@ -94,8 +82,6 @@ function teksUser(history = [], message = "") {
 const RATE_WINDOW = 60 * 1000; // 1 menit
 const RATE_LIMIT = 10; // maksimal 10 request/menit per IP
 
-// Tidak ada cache jawaban: setiap prompt selalu diproses AI.
-// Data terverifikasi tetap dipakai, tetapi sebagai KONTEKS, bukan jawaban jadi.
 const requests = new Map(); // ip -> { count, resetAt }
 
 function send(res, status, payload) {
@@ -104,7 +90,6 @@ function send(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
-// Vercel sudah mengurai body, Vite belum. Tangani keduanya.
 function readJson(req) {
   if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
   if (typeof req.body === "string") return Promise.resolve(JSON.parse(req.body));
@@ -143,10 +128,8 @@ function fallbackReply() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Mode Searching & Planning                                           */
 /* ------------------------------------------------------------------ */
 
-// AI kadang membungkus JSON array dengan ```json ... ``` atau kalimat pembuka.
 function bacaJsonArrayAI(text) {
   const mulai = String(text || "").indexOf("[");
   if (mulai === -1) return null;
@@ -166,7 +149,6 @@ const infoModul = (id) => {
   return m ? { id: m.id, no: m.no, name: m.name } : null;
 };
 
-// Fallback kalau AI sedang gagal: tetap 3 modul paling dasar, bukan teks acak.
 const FIELD_DEFAULT = [
   {
     key: "tema",
@@ -237,8 +219,6 @@ function parsePlanFields(text) {
           : "text",
         reason: String(item?.reason || "").trim().slice(0, 60),
         placeholder: String(item?.placeholder || "").trim().slice(0, 60),
-        // Pilihan cepat juga dari AI, untuk semua tipe field — bukan contoh
-        // hardcoded di browser.
         ...(Array.isArray(item.options) && item.options.length
           ? { options: item.options.slice(0, 6).map((o) => String(o).slice(0, 40)) }
           : {}),
@@ -249,12 +229,7 @@ function parsePlanFields(text) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Profil trip: satu-satunya "ingatan" tentang data yang sudah ada      */
 /* ------------------------------------------------------------------ */
-// Browser mengirim profil hasil extractTripFacts() dari SEMUA pesan user.
-// Server memakainya untuk menolak pertanyaan dobel dan memberi konteks ke AI.
-// Kalau client lama tidak mengirim profil, semua logika masih jalan seperti
-// sebelumnya lewat regex pada riwayat.
 
 function bersihkanFakta(raw = {}) {
   if (!raw || typeof raw !== "object") return null;
@@ -362,7 +337,6 @@ function topikSudahAda(key = "", knownKeys = []) {
   return knownKeys.some((kunci) => KUNCI_TOPIK[kunci]?.test(nilai));
 }
 
-/** Searching yang sebenarnya minta riset rencana (bukan tanya fakta singkat). */
 function butuhRiset(normalized = "", fakta = null) {
   const teks = String(normalized || "");
   const durasi =
@@ -376,11 +350,7 @@ function butuhRiset(normalized = "", fakta = null) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Verifikasi pilihan jawaban dari AI                                   */
 /* ------------------------------------------------------------------ */
-// AI bebas merangkai pertanyaan & pilihan, tapi pilihannya tetap dicek
-// terhadap data kurasi. Tujuannya: trip ke Jepang tidak boleh ditawari
-// Bogor/Jogja/Bandung/Bali, dan tidak boleh muncul nama tempat karangan.
 
 const KOTA_LOKAL = [
   "bogor", "jogja", "yogyakarta", "bandung", "bali", "jakarta",
@@ -402,7 +372,6 @@ export function konteksTujuan(history = [], message = "", fakta = null) {
     .toLowerCase();
   const tujuanFakta = Array.isArray(fakta?.destinations) ? fakta.destinations.join(" ") : "";
   const seluruhPesanUser = `${gabung} ${tujuanFakta}`.trim();
-  // Kota luar negeri (kunci worldKnowledge) lebih dulu.
   const luar = Object.keys(WORLD_CITIES).find((k) => seluruhPesanUser.includes(k));
   if (luar) return { key: luar, luarNegeri: !KOTA_LOKAL.includes(luar) };
   const negeri = NEGERI_LUAR.find((k) => seluruhPesanUser.includes(k));
@@ -438,11 +407,8 @@ function verifikasiOpsi(options = [], tujuan = {}) {
     if (!teks || teks.length > 70) continue;
     const norm = normalizeText(teks);
 
-    // 1. Jangan tawarkan kota Indonesia kalau tujuannya luar negeri.
     if (luarNegeri && KOTA_LOKAL.some((k) => norm.includes(k))) continue;
 
-    // 2. Kalau opsi itu nama tempat/kota yang dikenal data kurasi tapi bukan
-    //    milik tujuan ini, tolak (anti halusinasi lintas destinasi).
     if (tokens) {
       const namaDikenal = Object.values(WORLD_CITIES).some((c) =>
         c.places.some((p) => normalizeText(p.name) === norm)
@@ -456,10 +422,7 @@ function verifikasiOpsi(options = [], tujuan = {}) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Jangan bertanya dua kali                                             */
 /* ------------------------------------------------------------------ */
-// Obrolan di mode Planning sudah mengumpulkan budget, waktu, dan tema.
-// Saat form 15 modul dibuka, data itu tidak boleh ditanyakan lagi.
 
 const BULAN =
   "januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember";
@@ -506,8 +469,6 @@ function fieldsTanpaPengulangan(fields = [], history = [], fakta = null) {
     accommodation: Boolean(sudah.akomodasi),
   };
 
-  // Satu modul hanya boleh ditanyakan sekali. Modul yang sudah ada di profil
-  // (atau kuncinya sudah disebut user) dibuang sebelum fallback dihitung.
   const unik = [];
   for (const field of fields) {
     const modul = field.module?.id;
@@ -527,8 +488,6 @@ function fieldsTanpaPengulangan(fields = [], history = [], fakta = null) {
   return hasil;
 }
 
-// Cadangan pintar: isi slot dengan modul yang MASIH kurang, bukan mengulang
-// tema/durasi/budget. Ikut menyesuaikan konteks (luar negeri -> dokumen).
 function fieldLanjutan(history = [], yangAda = [], fakta = null) {
   const tujuan = konteksTujuan(history, "", fakta);
   const sudah = infoSudahDijawab(history, fakta);
@@ -611,7 +570,6 @@ function parsePlanJson(text, fakta = null) {
   try {
     const raw = bacaJsonAI(text);
     if (!raw || !Array.isArray(raw.days) || raw.days.length === 0) return null;
-    // Trip 10 hari harus tetap 10 hari — batas lama 7 memotong rencana user.
     const batasHari = fakta?.days ? Math.min(14, fakta.days) : 14;
     return {
       city: String(raw.city || "").slice(0, 80),
@@ -633,9 +591,6 @@ function parsePlanJson(text, fakta = null) {
           })),
       })),
       totalCost: Math.max(0, Number(raw.totalCost) || 0),
-      // Modul tambahan (transport/makanan/dokumen/budget) diteruskan ke
-      // normalizePlan() di browser supaya plan yang tersimpan tidak hanya
-      // berisi daftar tempat.
       ...(raw.modules && typeof raw.modules === "object" ? { modules: raw.modules } : {}),
       createdAt: new Date().toISOString(),
     };
@@ -699,12 +654,6 @@ function beriLabelPembagian(plan, fakta) {
   return plan;
 }
 
-/**
- * Cadangan kalau AI lupa mengirim penanda <<SIAP>>: obrolan dianggap cukup
- * ketika tujuan + durasi/tanggal + (budget atau minat) sudah disebut user.
- */
-// User secara eksplisit minta dibuatkan plan ("buatkan plan", "susun rencana",
-// "create planning", ...): kartu Create Planning harus langsung muncul.
 export const MINTA_BUAT_PLAN =
   /\b(buat(?:kan|in)?|bikin(?:kan|in)?|susun(?:kan)?|rancang(?:kan)?|create|generate|make)\b[^.\n]{0,40}\b(plan(?:ning)?|rencana|itinerary|jadwal|trip)\b/i;
 
@@ -742,10 +691,6 @@ function siapDariObrolan(history, message, fakta = null) {
   return adaWaktu && adaBudgetAtauMinat && adaTujuan;
 }
 
-/**
- * OpenStreetMap / Nominatim = geocoding GRATIS tanpa API key.
- * Dipakai supaya peta yang ditampilkan detail dan tidak butuh billing Google.
- */
 const PUSAT_KOTA = {
   bogor: [-6.6, 106.8],
   yogyakarta: [-7.8, 110.36],
@@ -764,7 +709,6 @@ function embedDenganMarker(lat, lon, lebar = 0.015) {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(5)}%2C${lon.toFixed(5)}`;
 }
 
-/** Cari satu titik di Nominatim; tolak hasil yang jauh dari kota yang diminta. */
 async function cariTitik(query, pusat) {
   try {
     const response = await fetch(
@@ -792,7 +736,6 @@ async function cariTitik(query, pusat) {
   }
 }
 
-/** Lengkapi satu nama tempat dengan koordinat & embed peta OpenStreetMap. */
 async function petaUntuk(nama, label = "", pusat = null) {
   const konteks = [label, "Indonesia"].filter(Boolean).join(", ");
   const osmUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(`${nama}, ${konteks}`)}`;
@@ -815,22 +758,10 @@ async function petaUntuk(nama, label = "", pusat = null) {
   };
 }
 
-/**
- * Nama yang jelas-jelas bukan destinasi wisata. Dipakai supaya jawaban AI
- * yang mengarang "Pegadaian", "bank", dll. tidak ikut masuk ke peta.
- */
 const NAMA_SAMPAH =
   /\b(pegadaian|bank|atm|kantor|sekolah|kampus|rumah sakit|apotek|spbu|pom bensin|pinjaman|kredit|promo|diskon|jasa|toko hardware|mall|plaza)\b/i;
 
-/**
- * AI tidak selalu patuh menulis baris LOKASI:. Kalau tidak ada, ambil nama
- * tempat dari daftar jawaban; kalau tetap kosong, pakai data planner lokal.
- * Dengan begini toggle "Peta" hampir pasti menampilkan peta.
- */
 function namaTempatFallback(reply, kota, diperbolehkan = null) {
-  // Hanya baris daftar (- / 1.) yang dianggap nama tempat. Judul, pertanyaan,
-  // dan catatan DILARANG masuk kartu peta — kalau tidak, tiap kalimat jadi
-  // kartu "Lihat tempat" seperti yang terjadi pada rencana Jepang.
   const dariJawaban = String(reply || "")
     .split("\n")
     .map((baris) => {
@@ -881,10 +812,6 @@ function areaDariPesan(normalized) {
   return Object.keys(AREA_KOTA).find((area) => normalized.includes(area)) || null;
 }
 
-/**
- * Kandidat terverifikasi untuk satu kota. Diurutkan: sesuai area yang disebut
- * user (mis. Kuta), lalu yang paling relevan dengan minat, lalu rating tertinggi.
- */
 function kandidatTerverifikasi(kotaKey, normalized) {
   const areaMode = /\b(sekitar|luar kota|near|sekitar kota)\b/.test(normalized)
     ? "near"
@@ -920,7 +847,6 @@ function kandidatTerverifikasi(kotaKey, normalized) {
   return { daftar: hasil, area };
 }
 
-/** Jawaban Searching untuk kota yang datanya tersedia: 100% dari data lokal. */
 function balasanKotaTerverifikasi(kotaKey, normalized) {
   const label = cityLabels[kotaKey] || kotaKey;
   const { daftar, area } = kandidatTerverifikasi(kotaKey, normalized);
@@ -943,11 +869,8 @@ function balasanKotaTerverifikasi(kotaKey, normalized) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Data kurasi = KONTEKS AI (bukan jawaban jadi)                        */
 /* ------------------------------------------------------------------ */
 
-// Ditempel ke system prompt. AI tetap yang merangkai kalimat, tetapi tidak
-// boleh mengarang nama tempat/lokasi di luar data yang dikirim server.
 const GROUND_ATURAN = `
 Untuk rekomendasi atau klaim tentang tempat wisata, restoran, hotel, atau POI lain, gunakan hanya nama dan lokasi yang tercantum di DATA LAPANGAN OpenStreetMap. Jangan mengambil nama tempat dari ingatan model atau daftar kurasi non-peta. Jika tempat tidak ditemukan di peta, katakan "belum terverifikasi di data peta"; jangan menyimpulkan bahwa tempat itu pasti tidak ada.
 DATA TERVERIFIKASI SETAPAK dan pengetahuan umum bukan sumber pengganti untuk nama POI. DATA SUMBER khusus (mis. sumber film) hanya boleh dipakai untuk fakta non-POI yang memang tertulis di sana.
@@ -955,15 +878,11 @@ Untuk fakta yang tidak bisa diberikan peta (mis. harga, visa, atau jam operasion
 Ikuti "CARA PAKAI DATA LAPANGAN" dan blok KEBUTUHAN bila ada.
 Tetap jawab ramah dan pakai format Markdown yang diminta system prompt. Ikuti panjang jawaban yang ditentukan system prompt (boleh panjang untuk riset rencana).`;
 
-// Cadangan saat data peta kosong: jangan menyerah, cari di web (Gemini/Groq punya search bawaan)
-// dan jawab dari hasil web yang benar-benar ada.
 const WEB_TEMPAT_PROMPT = `Kamu asisten perjalanan SETAPAK. Data peta untuk permintaan ini KOSONG, jadi CARI DI WEB sekarang dan jawab dari hasil pencarian.
 Beri sampai 5 tempat nyata (hotel/restoran/wisata sesuai permintaan) dengan format "- **Nama persis** — area/kota; info singkat dari sumber (kisaran harga bila ada)".
 ATURAN: nama harus benar-benar muncul di hasil web; jangan mengarang nama, alamat, harga, atau jam buka. Kelas bintang hotel hanya disebut jika sumber menyatakannya; kalau tidak, tulis "kelas bintang perlu dicek". Kalau yang terverifikasi kurang dari 5, tampilkan yang ada dan katakan jujur — jangan menolak mentah-mentah.
 Akhiri satu kalimat: harga & ketersediaan bisa berubah, cek lagi di Google Maps/situs resmi. Jangan menulis baris "LOKASI:". Bahasa sama dengan user, maksimal 200 kata, pakai "- " dan **tebal**, tanpa tabel dan tanpa "#".`;
 
-// Data peta dianggap KOSONG kalau tidak ada satu pun tempat yang sejenis dengan yang diminta
-// (mis. minta hotel tapi peta hanya mengembalikan masjid & jalan). Peta OSM tidak memuat hotel.
 const JENIS_DIMINTA = [
   {
     minta: /\b(hotel|penginapan|villa|hostel|losmen|homestay|guest ?house|resort|menginap|nginap)\b/i,
@@ -1049,9 +968,6 @@ export function namaTempatTidakAdaDiPeta(reply, lapangan, fakta = null) {
 const GROUP_KEYS = ["Coffe And Snacks", "Outdoor parks & Trials"];
 const FOOD_KEY = GROUP_KEYS[0];
 
-// URL Unsplash yang sudah dicek benar-benar mengembalikan image/jpeg (200).
-// Dipakai untuk tempat di luar data lokal SETAPAK: AI sering mengarang URL
-// Wikimedia yang ternyata 404/429, sehingga gambar tidak pernah tampil.
 const GAMBAR_MAKANAN = [
   "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600",
   "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600",
@@ -1064,10 +980,6 @@ const GAMBAR_ALAM = [
   "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600",
 ];
 
-/**
- * Terima hanya URL langsung ke file gambar. AI kadang mengirim link artikel
- * atau string kosong; itu ditolak supaya <img> tidak rusak di browser.
- */
 function gambarValid(url) {
   const teks = String(url || "").trim();
   if (!/^https?:\/\//i.test(teks)) return false;
@@ -1075,11 +987,6 @@ function gambarValid(url) {
   return /\.(jpe?g|png|webp|gif)$/i.test(bersih) || /wikimedia|unsplash|gstatic/i.test(teks);
 }
 
-/**
- * AI kadang terpotong di tengah URL gambar sehingga JSON tidak lengkap.
- * Tutup string dan kurung yang menggantung supaya kartu yang sudah jadi
- * tetap bisa dipakai (tidak perlu mengulang panggilan AI yang mahal).
- */
 function perbaikiJson(text) {
   let s = String(text);
   const mulai = s.indexOf("{");
@@ -1121,7 +1028,6 @@ function bacaJsonAI(text) {
   try {
     return JSON.parse(s);
   } catch {
-    // buang kalimat penutup di luar JSON, lalu coba lagi
   }
 
   const akhir = s.lastIndexOf("}");
@@ -1130,7 +1036,6 @@ function bacaJsonAI(text) {
     try {
       return JSON.parse(s);
     } catch {
-      // lanjut ke perbaikan string yang terpotong
     }
   }
 
@@ -1138,10 +1043,6 @@ function bacaJsonAI(text) {
   return diperbaiki ? JSON.parse(diperbaiki) : null;
 }
 
-/**
- * AI kadang membalas JSON dalam blok ```json ... ``` atau menyisipkan kalimat.
- * Fungsi ini mengambil bagian { ... } saja, lalu merapikan jadi kartu.
- */
 function parseRecommendations(text, minRating = 0) {
   try {
     const raw = bacaJsonAI(text);
@@ -1160,7 +1061,6 @@ function parseRecommendations(text, minRating = 0) {
             rating: Number(item?.rating) || 0,
             fact: String(item?.fact || "").replace(/\s+/g, " ").trim().slice(0, 140),
             address: String(item?.address || "").trim().slice(0, 140),
-            // Setiap kartu pasti punya gambar, walaupun AI lupa mengirim URL.
             image: gambarValid(image) ? image.slice(0, 500) : cadangan,
             mapsUrl: mapsLinkFor(
               String(item?.name || "Tempat wisata").trim(),
@@ -1168,13 +1068,11 @@ function parseRecommendations(text, minRating = 0) {
             ),
           };
         })
-        // Saring dulu sesuai bintang & nama sampah, baru urutkan, baru potong 4.
         .filter((item) => item.rating > 0 && item.rating >= minRating && !NAMA_SAMPAH.test(item.name) && item.name !== "Tempat wisata")
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 4);
     }
 
-    // Kalau dua-duanya kosong, berarti AI tidak mengikuti format.
     if (GROUP_KEYS.every((key) => groups[key].length === 0)) return null;
     return groups;
   } catch {
@@ -1182,10 +1080,6 @@ function parseRecommendations(text, minRating = 0) {
   }
 }
 
-/**
- * Jaga-jaga kalau AI tetap menyelipkan nama lama saat reload. Nama itu dibuang,
- * lalu slot kosong diisi dari kandidat lokal yang belum pernah tampil.
- */
 function buangNamaLama(groups, namaLama, daftarLokal) {
   if (!namaLama.length || !groups) return groups;
 
@@ -1215,7 +1109,6 @@ function buangNamaLama(groups, namaLama, daftarLokal) {
   return hasil;
 }
 
-// Logging opsional ke Supabase. Kalau env kosong, fungsi ini tidak melakukan apa-apa.
 async function logToSupabase(env, row) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return;
 
@@ -1241,11 +1134,6 @@ async function logToSupabase(env, row) {
   }
 }
 
-/**
- * @param {import('http').IncomingMessage} req
- * @param {import('http').ServerResponse} res
- * @param {NodeJS.ProcessEnv} env
- */
 export async function handleChatRequest(req, res, env = process.env) {
   if (req.method !== "POST") {
     send(res, 405, { error: "Gunakan POST" });
@@ -1262,8 +1150,6 @@ export async function handleChatRequest(req, res, env = process.env) {
     const areaMode = body.areaMode === "in" ? "in" : "near";
     const city = String(body.city || "").trim().slice(0, 60);
     const refresh = body.refresh === true; // tombol reload: cari hasil yang berbeda
-    // Nama yang sedang tampil di layar dikirim browser saat reload. Ini sumber
-    // kebenaran paling akurat (juga berlaku untuk kota hasil AI tanpa data lokal).
     const excludeNames = Array.isArray(body.excludeNames)
       ? body.excludeNames
           .map((nama) => String(nama || "").trim().slice(0, 80))
@@ -1293,32 +1179,20 @@ export async function handleChatRequest(req, res, env = process.env) {
       return;
     }
 
-    // "Kuta" tetap kuta, "Jepang" tetap jepang. Hanya sinonim asli yang digabung.
     const cityKey = searchCityKey(city);
     const fakta = bersihkanFakta(body.facts);
     const profil = formatFakta(fakta);
 
-    // Tidak ada cache jawaban. Setiap request lewat AI; planner data bersama
-    // tetap dipakai sebagai konteks/penyimpanan kartu "For you".
     let payload;
 
     if (mode === "recommend") {
-      // Mode ini dipakai tombol panah di "For you". AI balas JSON kartu.
-      // Kota/area baru hasil AI disimpan di planner data bersama, supaya orang
-      // lain yang mencari hal yang sama mendapat kartu yang identik.
-      // Tanpa data lokal & tanpa hasil simpanan: setiap request langsung ke AI.
       const tersimpan = null;
 
-      // Tombol reload sengaja melewati hasil lama dan minta yang berbeda.
       if (tersimpan && !refresh) {
-        // Planner data bersama (bukan cache AI): hasil pencarian yang sama
-        // tetap identik untuk semua orang, sesuai permintaan SETAPAK.
         payload = { ...tersimpan, cached: true };
       } else {
         const daftarLokal = []; // data lokal tidak dipakai untuk "For you"
 
-        // Saat reload, nama yang sedang tampil berasal dari browser. Kalau browser
-        // tidak mengirim (misal request lama), pakai nama dari planner data.
         const namaLama = refresh
           ? excludeNames.length
             ? excludeNames
@@ -1328,8 +1202,6 @@ export async function handleChatRequest(req, res, env = process.env) {
                 .filter(Boolean)
           : [];
 
-        // Tempat lokal yang belum tampil jadi prioritas saat reload. AI tetap
-        // boleh mengusulkan tempat nyata lain di area itu supaya ada variasi.
         const tersedia = refresh
           ? daftarLokal.filter((item) => !namaLama.includes(item.name))
           : daftarLokal;
@@ -1349,7 +1221,6 @@ export async function handleChatRequest(req, res, env = process.env) {
             ? `\n\nNama tempat yang BOLEH dipakai HANYA ini (salin alamatnya apa adanya):\n${barisLokal(daftarLokal)}\nJangan pakai nama atau alamat di luar daftar. Tempat kategori food masuk "Coffe And Snacks", sisanya masuk "Outdoor parks & Trials". Jangan mengulang tempat yang sama di dua kategori.`
             : "";
 
-        // Kota di luar data kurasi: nama tempat diambil dari peta nyata (bukan karangan AI).
         let kandidatLive = [];
         const googleOn = googleAktif(env);
         const geoOn = geoapifyAktif(env);
@@ -1365,7 +1236,6 @@ export async function handleChatRequest(req, res, env = process.env) {
           kandidatLive = (lap?.places || []).filter(
             (item) =>
               !namaLama.includes(item.name) &&
-              // Google: hormati batas rating yang dipilih user (rating asli, bukan tebakan AI).
               (item.sumber !== "google" || !item.rating || item.rating >= minRating)
           );
         }
@@ -1388,15 +1258,10 @@ export async function handleChatRequest(req, res, env = process.env) {
           history: [],
           env,
           systemPrompt: RECOMMEND_SYSTEM_PROMPT,
-          // 800 token sering terpotong karena URL gambar panjang -> JSON rusak.
           maxTokens: 2200,
         });
         let groups = result ? parseRecommendations(result.reply, minRating) : null;
 
-        // AI hanya menyusun/mengurutkan. Untuk nama yang ada di data lokal,
-        // pakai rating, alamat, dan foto aslinya (bukan karangan AI).
-        // Untuk nama di luar data lokal (mis. Makassar), URL gambar dari AI
-        // hampir selalu karangan yang 404 — ganti dengan URL terverifikasi.
         if (groups) {
           const lokal = new Map(
             (daftarLokal || []).map((item) => [item.name, item])
@@ -1434,7 +1299,6 @@ export async function handleChatRequest(req, res, env = process.env) {
               return { ...item, image: null, _pool: pool[index % pool.length] };
             });
           }
-          // Google aktif: nama karangan AI dibuang, slot diisi hasil Google yang belum dipakai.
           if (kandidatLive[0]?.sumber === "google") {
             const terpakai = new Set();
             for (const key of GROUP_KEYS) {
@@ -1467,7 +1331,6 @@ export async function handleChatRequest(req, res, env = process.env) {
           }
         }
 
-        // Foto dicari dari NAMA tempat (Wikipedia/Commons) supaya gambar = lokasi.
         if (groups) {
           for (const key of GROUP_KEYS) {
             groups[key] = await Promise.all(
@@ -1475,7 +1338,6 @@ export async function handleChatRequest(req, res, env = process.env) {
                 const { _pool, _gphoto, _cocok, ...bersih } = item;
                 void _cocok;
                 if (item.image) return bersih;
-                // Foto Google (URL publik tanpa key) lebih dulu, sama dengan tempat yang dipilih.
                 if (_gphoto) {
                   const fotoG = await fotoGoogle(_gphoto, env);
                   if (fotoG) return { ...bersih, image: fotoG };
@@ -1492,20 +1354,16 @@ export async function handleChatRequest(req, res, env = process.env) {
           }
         }
 
-        // Reload: nama lama harus benar-benar hilang. Kalau AI menyelipkannya,
-        // slotnya diisi otomatis dari kandidat lokal yang belum pernah tampil.
         if (groups && refresh) {
           groups = buangNamaLama(groups, namaLama, tersedia);
         }
 
-        // Kalau AI gagal saat reload, jangan sampai kartunya hilang.
         payload = groups
           ? { groups, source: result.source }
           : { groups: {}, source: "error", error: "AI belum memberi rekomendasi" };
 
       }
     } else if (mode === "planFields") {
-      // AI yang menentukan data apa saja yang masih kurang untuk membuat plan.
       const result = await askAI({
         message,
         history,
@@ -1517,7 +1375,6 @@ export async function handleChatRequest(req, res, env = process.env) {
       const fields = fieldsTanpaPengulangan(parsePlanFields(result?.reply), history, fakta).map(
         (field) => ({
           ...field,
-          // Pertanyaan & pilihan tetap dari AI, lalu diverifikasi ke data kurasi.
           options: verifikasiOpsi(field.options, tujuan),
         })
       );
@@ -1526,23 +1383,17 @@ export async function handleChatRequest(req, res, env = process.env) {
         source: result?.source || "template",
       };
     } else if (mode === "createPlan") {
-      // Rencana 10–14 hari + modul butuh output JSON panjang.
-      // Data nyata dulu (peta, panduan, cuaca), baru AI menyusun dari data itu.
       const hariPlan = Math.min(14, Math.max(1, fakta?.days || 3));
       const lapangan = await kumpulkanLapangan({
         message,
         fakta,
         pakaiPesan: false,
         teksKota: message,
-        // rencana panjang butuh kandidat lebih banyak supaya tempat tidak berulang
         maksTempat: [Math.min(40, hariPlan * 3 + 6), Math.min(16, hariPlan + 6)],
         batasMs: 9000,
         env: googleAktif(env) ? env : null,
       });
-      // Anggaran waktu: fungsi Vercel dibatasi 60 dtk. Ketiga AI (Gemini, Groq,
-      // 100milionseek) dipanggil BERSAMAAN; jawaban pertama yang JSON-nya valid dipakai.
       const mulaiPlan = Date.now();
-      // Anggaran waktu total (detik). Atur AI_MAX_SECONDS; harus < maxDuration fungsi (300).
       const sisaMs = () => (Number(env.AI_MAX_SECONDS) || 230) * 1000 - (Date.now() - mulaiPlan);
       const planValid = (teks) => Boolean(parsePlanJson(teks, fakta));
       const result = await askAIParalel({
@@ -1551,9 +1402,7 @@ export async function handleChatRequest(req, res, env = process.env) {
         env,
         systemPrompt: CREATE_PLAN_SYSTEM_PROMPT + profil,
         maxTokens: 3600,
-        // Gemini/Groq riset harga & kondisi terkini, AI penulis menyusun JSON-nya.
         webSearch: "riset",
-        // Saat Groq/Gemini istirahat, 100milionseek (lebih lambat) butuh waktu lebih longgar.
         batasMs: Math.max(20000, Math.min(150000, sisaMs() - 8000)),
         valid: planValid,
         json: true, // structured output + temperature rendah
@@ -1563,7 +1412,6 @@ export async function handleChatRequest(req, res, env = process.env) {
         const target = Math.min(14, Math.max(1, Number(fakta?.days) || p.days.length || 1));
         if (p.days.length === target) return p;
         if (p.days.length > target) return { ...p, days: p.days.slice(0, target) };
-        // Kurang hari: isi hari tersisa dengan aktivitas ringan agar tidak mengurangi durasi user.
         const days = [...p.days];
         while (days.length < target) {
           const i = days.length;
@@ -1586,7 +1434,6 @@ export async function handleChatRequest(req, res, env = process.env) {
       let plan = normPlanDays(parsePlanJson(result?.reply, fakta));
       let sumberPlan = result?.source;
       let alasanPlanGagal = null;
-      // JSON gagal/terpotong atau jumlah hari tidak sesuai: coba sekali lagi.
       if ((!plan || (fakta?.days && plan.days.length !== Math.min(14, fakta.days))) && sisaMs() > 14000) {
         const ulang = await askAIParalel({
           message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}\n\nKOREKSI WAJIB: balasan sebelumnya tidak valid/lengkap atau jumlah hari tidak sesuai. Buat tepat ${Math.min(14, fakta?.days || 3)} hari. Balas HANYA JSON valid dan LENGKAP. Boleh kosongkan "modules" dan singkatkan "why" supaya JSON pasti selesai.`,
@@ -1620,7 +1467,6 @@ export async function handleChatRequest(req, res, env = process.env) {
             "AI belum bisa memastikan semua hari dan tempat terbagi benar untuk setiap destinasi. Coba buat rencana lagi sebentar.";
         }
       }
-      // Tiap tempat dicocokkan ke peta nyata; yang tidak terbukti ada dibuang.
       if (plan && lapangan) {
         plan = await perkuatRencana(plan, lapangan, { env });
         if (!rencanaSesuaiPembagian(plan, fakta, lapangan)) {
@@ -1671,7 +1517,6 @@ export async function handleChatRequest(req, res, env = process.env) {
           ? jawabanDuniaDariPesan(normalized)
           : null;
 
-      // Google Maps aktif + user menanyakan tempat spesifik -> jawaban WAJIB dari hasil Google.
       const googleOn = googleAktif(env);
       const geoOn = geoapifyAktif(env);
       const tanyaTempatGoogle =
@@ -1699,8 +1544,6 @@ export async function handleChatRequest(req, res, env = process.env) {
             ? TOPIK_PERJALANAN.test(message)
             : butuhRisetDetail || TOPIK_PERJALANAN.test(message)));
 
-      // Data kurasi -> KONTEKS. AI yang tetap menulis jawabannya.
-      // Untuk pertanyaan perjalanan, tempat hanya boleh bersumber dari OSM.
       const konteks = gerbangLapangan
         ? ""
         : jawabanLokal
@@ -1724,8 +1567,6 @@ export async function handleChatRequest(req, res, env = process.env) {
         ? "\n\nUser ingin melihat kartu tempat. Jika kamu menyebut nama tempat, WAJIB akhiri jawaban dengan satu baris: LOKASI: Nama 1 | Nama 2 | Nama 3 (maksimal 4 nama, dipisah ' | '). Nama itu harus berasal dari data terverifikasi di atas."
         : "";
 
-      // Data lapangan nyata untuk tujuan yang sedang dibahas (gagal jaringan -> null,
-      // alur lama tetap jalan). Obrolan ringan tidak memicu pengambilan data.
       let lapangan = null;
       if (gerbangLapangan) {
         lapangan = await kumpulkanLapangan({
@@ -1736,7 +1577,6 @@ export async function handleChatRequest(req, res, env = process.env) {
           kueri: kueriTempat,
         });
       } else if (mode === "plan" && fakta?.destinations?.length) {
-        // Hangatkan data supaya "Create Planning" nanti langsung cepat.
         kumpulkanLapangan({ message, fakta, pakaiPesan: false, env }).catch(() => {});
       }
       const blokLapangan = lapangan?.blok || "";
@@ -1770,11 +1610,7 @@ export async function handleChatRequest(req, res, env = process.env) {
         env,
         systemPrompt,
         maxTokens: butuhRisetDetail ? 2000 : mode === "search" ? 500 : 400,
-        // Urutan provider mengikuti prioritas global (AI_PROVIDER_ORDER / default).
-        // Kalau provider melaporkan jawaban terpotong, lanjutkan sekali (semua mode).
         allowContinue: true,
-        // Mode Searching boleh mengambil data online (cuaca, harga, jadwal, berita).
-        // Nama tempat spesifik tetap hanya dari DATA LAPANGAN (lihat prompt).
         webSearch: mode === "search",
       };
       const jawabanRekreasi =
@@ -1782,13 +1618,10 @@ export async function handleChatRequest(req, res, env = process.env) {
           ? jawabanTempatRekreasi(message, lapangan, fakta)
           : null;
 
-      // Pertanyaan tempat + Google aktif, tapi Google tak memberi hasil / tak terjangkau:
-      // jangan serahkan ke AI (rawan menebak). Jawab jujur, langsung dari status data.
       const googleTanpaData =
         tanyaTempatGoogle &&
         mode === "search" &&
         (!lapangan || (lapangan.sumber === "google" && lapangan.places.length === 0));
-      // Data peta kosong untuk pertanyaan tempat -> cari di web, bukan menolak.
       const tanyaTempatUmum =
         mode === "search" &&
         !pertanyaanLokasiFilm &&
@@ -1804,7 +1637,6 @@ export async function handleChatRequest(req, res, env = process.env) {
             systemPrompt: WEB_TEMPAT_PROMPT,
             maxTokens: 1200,
             allowContinue: true,
-            // AI dengan internet bawaan didahulukan; sisanya dibantu catatan riset.
             providerOrder: ["groq", "gemini", "100milionseek", "cerebras", "mistral", "openrouter", "ollama"],
             webSearch: true,
             wajibWeb: true,
@@ -1832,7 +1664,6 @@ export async function handleChatRequest(req, res, env = process.env) {
         dariWeb = Boolean(result);
       }
       if (!result && tanyaTempatUmum && lapanganKosong && !jawabanRekreasi && !jawabanLokal && !jawabanDunia) {
-        // Web juga gagal: jujur soal penyebabnya, jangan pura-pura "tidak ada tempatnya".
         result = {
           reply:
             "Aku belum berhasil mencari di internet untuk pertanyaan ini (pencarian web sedang gagal atau belum diaktifkan), jadi aku tidak mau menebak nama tempat. Coba kirim ulang sebentar lagi. Untuk pemilik aplikasi: isi GEMINI_API_KEY atau GROQ_API_KEY di .env, lalu restart server.",
@@ -1840,7 +1671,6 @@ export async function handleChatRequest(req, res, env = process.env) {
         };
       }
       if (result) {
-        // sudah dijawab (web / pesan jujur)
       } else if (googleTanpaData) {
         result = {
           reply: lapangan
@@ -1854,8 +1684,6 @@ export async function handleChatRequest(req, res, env = process.env) {
         result = await askAI({ message: pesanAI, ...opsiAI });
       }
 
-      // Penjaga mutu: jangan menanyakan hal yang sudah diketahui / sudah pernah
-      // ditanya, dan jangan menyerahkan jawaban yang berhenti di tengah kalimat.
       if (result?.reply && !dariWeb) {
         const dobel = pertanyaanDobel(result.reply, fakta, history);
         const potong = terpotong(result.reply);
@@ -1872,7 +1700,6 @@ export async function handleChatRequest(req, res, env = process.env) {
             result = ulang;
           }
         }
-        // Masih menggantung? Rapikan ujungnya secara lokal.
         result = { ...result, reply: rapikanAkhir(result.reply) };
       }
       if ((tanyaDaftarTempat || tanyaTempatGoogle) && result?.reply && !googleTanpaData && !dariWeb) {
@@ -1896,13 +1723,11 @@ export async function handleChatRequest(req, res, env = process.env) {
           ) {
             result = ulang;
           } else if (dariGoogle) {
-            // Jaring pengaman: jawaban disusun langsung dari data Google, tanpa AI.
             result = {
               reply: balasanDariGoogle(lapangan.places, { kueri: kueriTempat }),
               source: "google-maps",
             };
           } else if (await jawabWeb().then((w) => (w ? ((result = w), true) : false))) {
-            // Nama dari AI tidak ada di data OSM -> dijawab ulang dari hasil web nyata.
           } else {
             const tujuan =
               lapangan?.dests?.[0]?.display ||
@@ -1918,7 +1743,6 @@ export async function handleChatRequest(req, res, env = process.env) {
       }
       let reply =
         result?.reply ||
-        // Jaring pengaman terakhir kalau semua provider AI sedang gagal.
         (gerbangLapangan
           ? lapangan?.sumber === "google" && tanyaTempatGoogle && lapangan.places.length
             ? balasanDariGoogle(lapangan.places, { kueri: kueriTempat })
@@ -1953,8 +1777,6 @@ export async function handleChatRequest(req, res, env = process.env) {
       }
       if (butuhRisetDetail) detail.handoff = true;
 
-      // Pilihan jawaban juga harus dari AI, bukan contoh hardcoded di browser.
-      // Baris PILIHAN: disembunyikan dari teks, dikirim sebagai chip pilihan.
       const barisPilihan = reply.match(/^PILIHAN:\s*(.+)$/im);
       if (barisPilihan) {
         reply = reply.replace(/^PILIHAN:\s*.+$/im, "").trim();
@@ -1970,7 +1792,6 @@ export async function handleChatRequest(req, res, env = process.env) {
         if (!detail.ready) detail.ready = siapDariObrolan(history, message, fakta);
       }
 
-      // Selain kartu, jangan biarkan baris LOKASI: bocor ke teks jawaban.
       const kartuGoogle = lapangan?.sumber === "google" && tanyaTempatGoogle && mode === "search";
       if (showMap || kartuGoogle) {
         const livePlaces = lapangan?.places || [];
@@ -1981,10 +1802,6 @@ export async function handleChatRequest(req, res, env = process.env) {
           : jawabanDunia?.places.map((item) => item.name) || [];
         const diperbolehkan = [...namaKurasi, ...livePlaces.map((item) => item.name)];
 
-        // Destinasi di luar data kurasi (mis. USA, Palestina, Makkah) tidak
-        // punya nama tempat terverifikasi. Jangan ever bikin kartu "Lihat
-        // tempat" dari kalimat/opsi jawaban — itu bukan tempat, hasilnya
-        // kartu palsu seperti "USA: wisata sejarah".
         if (diperbolehkan.length) {
           const kotaPeta = jawabanLokal ? kotaKey : jawabanDunia?.kotaKey;
           const labelPeta = jawabanLokal
@@ -2002,11 +1819,9 @@ export async function handleChatRequest(req, res, env = process.env) {
               .filter(Boolean)
               .slice(0, 4);
           }
-          // Nama dari AI dicocokkan toleran ke daftar nyata (huruf/kata sedikit beda tetap kena).
           if (!nama.length && livePlaces.length) {
             nama = tempatDalamTeks(reply, livePlaces).map((p) => p.name);
           }
-          // Pertanyaan tempat + Google: kartu selalu muncul dari hasil teratas Google.
           if (!nama.length && kartuGoogle) nama = livePlaces.slice(0, 4).map((p) => p.name);
           if (!nama.length) nama = namaTempatFallback(reply, kotaPeta, diperbolehkan);
           nama = nama
@@ -2014,7 +1829,6 @@ export async function handleChatRequest(req, res, env = process.env) {
               diperbolehkan.includes(n) ? n : cocokkanNama(n, livePlaces)?.name || null
             )
             .filter(Boolean);
-          // Tanpa nama yang terbukti ada, jangan memunculkan peta sembarang (kecuali data kurasi).
           if (!nama.length && namaKurasi.length) nama = namaKurasi.slice(0, 4);
 
           if (nama.length) {
@@ -2022,11 +1836,9 @@ export async function handleChatRequest(req, res, env = process.env) {
               [...new Set(nama)]
                 .slice(0, Math.min(4, batasJumlah(normalized, 4)))
                 .map(async (n) => {
-                  // Tempat dari peta nyata sudah punya koordinat: tak perlu geocode lagi.
                   const live = livePlaces.find((p) => p.name === n);
                   if (!live) return petaUntuk(n, labelPeta, pusat);
                   const kartu = keKartuPeta(live, embedDenganMarker);
-                  // Foto resmi Google (URL publik tanpa API key).
                   if (live.sumber === "google" && live.photoName) {
                     const foto = await fotoGoogle(live.photoName, env);
                     if (foto) kartu.image = foto;
@@ -2045,7 +1857,6 @@ export async function handleChatRequest(req, res, env = process.env) {
       payload = result || { reply: fallbackReply(), source: "template" };
     }
 
-    // Tidak ada cache jawaban — log saja untuk riwayat/analitik.
     logToSupabase(env, {
       ...payload,
       reply:

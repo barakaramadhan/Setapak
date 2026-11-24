@@ -32,12 +32,10 @@ function Recomendations() {
     <section className="sticky top-0 z-0 px-20 py-8 bg-bright-white max-lg:px-12 max-sm:px-5">
       <SectionMarker title="Recommendation" className="mb-6 w-36 max-sm:px-3 max-sm:py-1 max-sm:mb-5" />
 
-      {/* Container diubah dengan menambahkan snap-scroll dan menyembunyikan scrollbar */}
       <div className="flex gap-9 max-lg:gap-4 max-sm:gap-4 overflow-x-auto pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
         {recomendations.map((item) => (
           <div
             key={item.id}
-            // Card diberikan ukuran khusus mobile dan ditambahkan efek snap-center
             className="group relative w-[362px] h-[399px] max-lg:flex-1 max-lg:h-[300px] max-sm:flex-none max-sm:w-[280px] max-sm:h-[340px] rounded-2xl overflow-hidden shrink-0 shadow-lg snap-center"
           >
             <img

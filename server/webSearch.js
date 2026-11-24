@@ -1,10 +1,3 @@
-// Pencarian web real-time untuk provider yang TIDAK punya internet bawaan
-// (100milionseek, OpenRouter, Ollama). Gemini & Groq memakai tool bawaan mereka
-// sendiri (lihat aiProviders.js), jadi file ini hanya cadangan.
-//
-// - Kalau TAVILY_API_KEY diisi -> pakai Tavily (https://tavily.com, ada free tier).
-// - Kalau tidak -> pakai DuckDuckGo HTML TANPA API key (gratis, cukup untuk daftar tempat).
-// Hasilnya diselipkan ke prompt sebagai blok "HASIL PENCARIAN WEB".
 
 const TTL_MS = 5 * 60 * 1000;
 const cache = new Map();
@@ -24,7 +17,6 @@ const teksBersih = (html) =>
     .replace(/\s+/g, " ")
     .trim();
 
-/** Parser hasil html.duckduckgo.com (dipisah supaya bisa dites tanpa internet). */
 export function parseDuckDuckGo(html, maks = 6) {
   const hasil = [];
   const blok = String(html || "").split(/class="result__a"/).slice(1);
@@ -38,7 +30,6 @@ export function parseDuckDuckGo(html, maks = 6) {
       try {
         url = decodeURIComponent(uddg);
       } catch {
-        /* biarkan */
       }
     }
     if (url.startsWith("//")) url = `https:${url}`;
@@ -64,7 +55,6 @@ async function cariDuckDuckGo(q, maks, timeoutMs, fetchFn) {
   return parseDuckDuckGo(await res.text(), maks);
 }
 
-/** Parser hasil Bing (cadangan kalau DuckDuckGo memblokir/kosong). */
 export function parseBing(html, maks = 6) {
   const hasil = [];
   for (const potong of String(html || "").split(/<li class="b_algo"/).slice(1)) {
@@ -75,7 +65,6 @@ export function parseBing(html, maks = 6) {
       try {
         url = Buffer.from(u.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
       } catch {
-        /* biarkan */
       }
     }
     const judul = teksBersih((potong.match(/<h2[^>]*>([\s\S]*?)<\/h2>/) || [])[1]);

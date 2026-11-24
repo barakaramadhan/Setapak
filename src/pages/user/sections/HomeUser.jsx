@@ -21,7 +21,6 @@ import { useAuth, displayName } from "../../../store/useAuth";
 import { useTrips } from "../../../store/useTrips";
 import { toDateKey } from "../../../utils/tripDate";
 
-
 function HomeUser() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,9 +41,6 @@ function HomeUser() {
   const prefillDariChat = location.state?.prefillSchedule;
   const prefill = prefillDariChat || prefillLokal;
 
-  // Tombol "Simpan ke Schedule" di Chat mengirim prefill lewat location.state.
-  // State dibersihkan setelah ScheduleCard sempat memakainya (microtask),
-  // supaya form tidak terbuka lagi saat halaman di-refresh.
   useEffect(() => {
     if (!prefillDariChat) return undefined;
     const id = setTimeout(() => {
@@ -73,7 +69,6 @@ function HomeUser() {
   const [aiSource, setAiSource] = useState(""); // sumber AI
   const [aiError, setAiError] = useState(false);
 
-  // Filter bintang dipakai untuk data lokal DAN hasil AI (aman kalau cache lama).
   const saringRating = (groups, batas) =>
     Object.fromEntries(
       Object.entries(groups || {}).map(([kategori, items]) => [
@@ -82,8 +77,6 @@ function HomeUser() {
       ])
     );
 
-  // Gambar dari AI/Wikimedia bisa rusak atau diblokir jaringan. Kalau gagal
-  // dimuat, ganti dengan gambar lokal yang ikut ter-bundle, jadi tetap tampil.
   const gambarCadangan = (kategori) =>
     kategori === "Coffe And Snacks" ? ImageFallbackFood : ImageFallbackOutdoor;
   const perbaikiGambar = (event, kategori) => {
@@ -93,14 +86,10 @@ function HomeUser() {
     img.src = gambarCadangan(kategori);
   };
 
-  // Selama belum ada hasil AI, kartu tetap memakai data lokal.
-  // searchCityKey: "kuta" tetap kuta (bukan bali), "Jepang" tetap Jepang.
   const kunciKota = searchCityKey(city);
-  // Semua kartu murni dari AI. Tidak ada data lokal sebagai pengganti.
   const places = saringRating(aiGroups || {}, minRating);
   const adaTempat = Object.values(places).some((items) => items.length > 0);
 
-  // Minta rekomendasi ke AI lewat server (API key tidak masuk browser).
   const mintaRekomendasi = async (
     nextCity,
     nextMode,
@@ -127,9 +116,6 @@ function HomeUser() {
     }
   };
 
-  // Tombol reload: AI cari tempat lain, lalu hasilnya jadi planner data terbaru.
-  // Nama yang sedang tampil dikirim supaya AI tidak mengulangnya (termasuk
-  // untuk kota hasil AI yang tidak punya data lokal di SETAPAK).
   const muatUlang = () => {
     if (loadingCity) return;
     const namaTampil = Object.values(aiGroups || places || {})
@@ -139,7 +125,6 @@ function HomeUser() {
     mintaRekomendasi(city, mode, minRating, true, namaTampil);
   };
 
-  // Pertama kali halaman dibuka, langsung minta rekomendasi ke AI.
   useEffect(() => {
     mintaRekomendasi(city, mode, minRating);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -155,27 +140,23 @@ function HomeUser() {
     const tulisan = cityInput.trim();
     if (!tulisan || loadingCity) return;
 
-    // Biarkan nama yang diketik user. "Kuta" tidak diubah jadi "Bali".
     setCity(tulisan);
     setEditingCity(false);
     await mintaRekomendasi(tulisan, mode, minRating);
   };
 
-  // Ganti in/near tidak mengubah kota: city tetap dipakai untuk request berikutnya.
   const pilihMode = (nextMode) => {
     if (nextMode === mode) return;
     setMode(nextMode);
     mintaRekomendasi(city, nextMode, minRating);
   };
 
-  // Bintang bersifat opsional: klik lagi untuk membatalkan (kembali ke 0).
   const pilihRating = (nextRating) => {
     const nilai = minRating === nextRating ? 0 : nextRating;
     setMinRating(nilai);
     mintaRekomendasi(city, mode, nilai);
   };
 
-  // Klik kotak = langsung bantu susun prompt di halaman chat.
   const travel = [
     {
       id: 1,
@@ -201,9 +182,7 @@ function HomeUser() {
   ];
 
   return (
-    // [PERBAIKAN 1]: Ditambah max-w-7xl mx-auto w-full agar layout terpusat rapi
     <section className="font-jakarta max-w-7xl mx-auto w-full bg-bright-white">
-      {/* bagian atas: sapaan + lonceng + profil */}
       <header className="flex flex-wrap items-start justify-between gap-3 px-5 pt-6 sm:px-10 sm:pt-9">
         <div>
           <h1 className="text-2xl font-bold font-jakarta text-grey-light sm:text-4xl">
@@ -235,18 +214,14 @@ function HomeUser() {
         </div>
       </header>
 
-      {/* pembungkus bagian bawah, dibagi dua deretan */}
       <div className="flex items-stretch gap-6 px-5 pt-8 pb-10 sm:px-10 sm:pt-12 max-md:flex-col">
-        {/* deretan pertama: hero + travel interests */}
         <div className="flex min-w-0 flex-1 flex-col gap-5 max-md:w-full">
-          {/* bagian hero homeUser */}
           <div className="relative min-h-[250px] overflow-hidden rounded-3xl bg-dark-brown-new shadow-lg max-md:w-full">
             <img loading="lazy" decoding="async"
               src={ImageHeaderUser}
               alt=""
               className="absolute inset-0 h-full w-full object-cover"
             />
-            {/* lapisan gelap supaya teks putih terbaca */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent"></div>
 
             <div className="relative z-10 flex h-full flex-col items-start px-6 py-8">
@@ -270,13 +245,11 @@ function HomeUser() {
             </div>
           </div>
 
-          {/* bagian travel interests */}
           <div>
             <h2 className="text-xl font-jakarta font-bold text-grey-light mt-6">
               Travel Interests
             </h2>
 
-            {/* [PERBAIKAN 2]: max-w-[820px] diubah menjadi w-full agar mengisi ruang kosong secara maksimal */}
             <div className="mt-2 grid w-full grid-cols-3 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
               {travel.map((item) => (
                 <button
@@ -293,7 +266,6 @@ function HomeUser() {
                     alt={item.title}
                     className="absolute inset-0 h-full w-full object-cover"
                   />
-                  {/* lapisan gelap di bagian bawah supaya teks terbaca */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
 
                   <div className="absolute bottom-0 left-0 z-10 px-4 pb-5">
@@ -310,9 +282,7 @@ function HomeUser() {
           </div>
         </div>
 
-        {/* deretan kedua: calendar + schedule */}
         <div className="w-[325px] shrink-0 max-md:w-full">
-          {/* bagian kalender */}
           <CalendarCard
             tripsByDate={tripsByDate}
             selectedDate={selectedDate}
@@ -321,7 +291,6 @@ function HomeUser() {
             onEditTrip={setEditTrip}
           />
 
-          {/* bagian schedule */}
           <ScheduleCard
             trips={trips}
             prefill={prefill}
@@ -335,9 +304,7 @@ function HomeUser() {
         </div>
       </div>
 
-      {/* bagian for you (hasil planner SETAPAK) */}
       <div className="px-5 pb-10 mt-12 sm:px-10 sm:mt-20">
-        {/* judul: For you [In|Near] Bogor > [Bintang] */}
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-3xl font-jakarta font-bold text-grey-light">
             For you
@@ -400,7 +367,6 @@ function HomeUser() {
                 <i className="fi fi-rr-cross-small text-xl leading-none"></i>
               </FillButton>
 
-              {/* Rating opsional: muncul hanya saat input kota dibuka. Klik lagi untuk batal. */}
               <div className="flex w-full flex-wrap items-center gap-2">
               <span className="ml-1 text-xs font-jakarta font-medium text-grey-light/60">
                 Rating (opsional)
@@ -438,7 +404,6 @@ function HomeUser() {
             </button>
           )}
 
-          {/* Reload: cari variasi tempat lain, lalu disimpan lagi sebagai data bersama */}
           <FillButton
             type="button"
             onClick={muatUlang}
@@ -482,7 +447,6 @@ function HomeUser() {
           </p>
         )}
 
-        {/* kategori + card tempat */}
         {Object.entries(places)
           .filter(([, items]) => items.length > 0)
           .map(([category, items]) => (

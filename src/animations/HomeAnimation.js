@@ -3,19 +3,15 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Panjang scroll selama garis digambar (px).
 export const HOME_PIN_DISTANCE = 1500;
 
 export const svgHomeAnimation = (container) => {
-  // 1. BYPASS KASAR: Jika layar adalah mobile/tablet (< 1024px), jangan jalankan GSAP sama sekali
   if (!container || window.innerWidth < 1024) return () => {};
 
   const section = container.closest("section");
   
-  // 2. Gunakan matchMedia sebagai pengganti context
   const mm = gsap.matchMedia();
 
-  // Animasi HANYA akan dibuat jika layar minimal 1024px (Desktop)
   mm.add("(min-width: 1024px)", () => {
     const paths = gsap.utils.toArray(".garis");
     const ikon1 = container.querySelector("#ikon-1");
@@ -79,7 +75,6 @@ export const svgHomeAnimation = (container) => {
   return () => {
     window.removeEventListener("load", refresh);
     imgs.forEach((img) => img.removeEventListener("load", refresh));
-    // 3. Bersihkan memori matchMedia saat halaman berpindah
     mm.revert();
   };
 };

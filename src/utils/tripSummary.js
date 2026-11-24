@@ -10,7 +10,6 @@ import {
   BUDGET_DENGAN_TIKET,
 } from "./tripModules.js";
 
-// Label kategori = nilai yang dipilih di form Activities (modul 9).
 const WARNA = {
   wisata: { label: "Wisata", bg: "#D9EBD6", fg: "#1F4A1B" },
   kuliner: { label: "Kuliner", bg: "#F4DCD3", fg: "#6B2A14" },
@@ -25,14 +24,12 @@ const WARNA = {
 export function kategoriInfo(kategori, nama = "") {
   const kunciKat = String(kategori || "").trim().toLowerCase();
   if (WARNA[kunciKat]) return WARNA[kunciKat];
-  // Kategori bawaan AI (mis. "stay", "food") atau kosong: tebak dari teks.
   return WARNA[tebakKategori(kategori, nama).toLowerCase()] || WARNA.lainnya;
 }
 
 const pad = (n) => String(n).padStart(2, "0");
 const kunci = (teks) => String(teks || "").trim().toLowerCase();
 
-// Hari dari plan AI (plan.days) atau dari itinerary modul 4.
 export function ambilHari(trip) {
   if (Array.isArray(trip.plan?.days) && trip.plan.days.length) {
     return trip.plan.days.map((h, i) => ({
@@ -46,7 +43,6 @@ export function ambilHari(trip) {
   }));
 }
 
-// Jam default (bila AI tidak memberi startTime): mulai 10:00, geser sesuai durasi.
 function beriJam(places) {
   let menit = 10 * 60;
   return places.map((p) => {
@@ -59,8 +55,6 @@ function beriJam(places) {
   });
 }
 
-// Satu model ringkasan trip dipakai halaman detail DAN PDF, jadi isi keduanya selalu sama.
-// Biaya / kategori / catatan diambil dari modul 9 (Activities) yang tersimpan di Supabase.
 export function buildTripSummary(trip) {
   const plan = ensureUniversalPlan(trip);
   const aktivitas = Array.isArray(plan.activities?.items) ? plan.activities.items : [];
@@ -102,7 +96,6 @@ export function buildTripSummary(trip) {
     };
   });
 
-  // Aktivitas yang diisi langsung di modul 9 tapi belum ada di itinerary.
   const belumDijadwalkan = aktivitas
     .filter((a) => a?.name && !dipakaiNama.has(kunci(a.name)))
     .map((a) => ({
@@ -118,7 +111,6 @@ export function buildTripSummary(trip) {
     ...hari.flatMap((h) => h.items.map((it) => ({ cat: it.category.label, cost: it.cost }))),
     ...belumDijadwalkan.map((it) => ({ cat: it.category.label, cost: it.cost })),
   ];
-  // Cakupan budget: tiket pesawat hanya dihitung bila budget "sudah termasuk tiket".
   const lingkup = plan.budget?.scope || "";
   const tiket = (plan.transportation?.items || [])
     .filter(tiketPesawat)

@@ -1,8 +1,3 @@
-// Gerbang AI untuk frontend.
-// Setiap prompt SELALU lewat API /api/chat. Tidak ada cache jawaban dan tidak
-// ada jawaban lokal yang menggantikan AI. Data terverifikasi dikirim server
-// sebagai KONTEKS supaya AI tetap paham dunia tanpa mengarang lokasi.
-// API key tidak pernah masuk browser.
 
 import { parseTripDate, parseTripDateRange } from "../utils/tripDate";
 import {
@@ -12,8 +7,6 @@ import {
   extractTripDurations,
 } from "../utils/tripFacts.js";
 
-// Rencana terakhir masih disimpan lokal supaya halaman Schedule/Trip bisa
-// menampilkannya. Ini bukan cache jawaban AI.
 const PLAN_KEY = "setapak:last-plan";
 
 function readStorage(key, fallback) {
@@ -29,15 +22,9 @@ function writeStorage(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // Abaikan kalau localStorage penuh / tidak tersedia.
   }
 }
 
-/**
- * Profil trip diekstrak dari SEMUA pesan user, bukan 6–8 pesan terakhir.
- * Setiap request AI membawa profil ini supaya kota, durasi, budget, dan
- * preferensi makanan tidak ditanyakan ulang oleh prompt Planning/planFields.
- */
 export function extractTripFacts(history = []) {
   const teks = (Array.isArray(history) ? history : [])
     .filter((item) => (item?.role || "user") === "user")
@@ -70,7 +57,6 @@ export function extractTripFacts(history = []) {
   const companions = (lower.match(/\b(istri|suami|pasangan|berdua|keluarga|anak-anak|anak|teman)\b/) || [])[0] || null;
   const occasion =
     (lower.match(/\b(akhir tahun|liburan akhir tahun|tahun baru|natal|lebaran|idul fitri|libur sekolah|weekend|akhir pekan)\b/) || [])[0] || null;
-  // Infer tanggal dari momen umum jika user belum beri tanggal spesifik.
   let inferredStart = startDate;
   if (!inferredStart && occasion) {
     const y = new Date().getFullYear();
@@ -146,23 +132,14 @@ export function extractTripFacts(history = []) {
   };
 }
 
-/** Simpan rencana terakhir supaya dashboard bisa menampilkannya. */
 export function saveLastPlan(plan) {
   if (plan) writeStorage(PLAN_KEY, plan);
 }
 
-/** Dipakai dashboard untuk mengisi bagian Schedule. */
 export function getLastPlan() {
   return readStorage(PLAN_KEY, null);
 }
 
-/**
- * Tanya SETAPAK. Selalu memanggil AI lewat server.
- * @param {string} message
- * @param {Array<{role:string,text:string}>} history
- * @param {{mode?: "chat"|"search"|"plan", showMap?: boolean}} options
- * @returns {Promise<{reply: string, source: string, plan?: object, ready?: boolean, mapPlaces?: Array}>}
- */
 export async function askSetapak(
   message,
   history = [],
@@ -203,7 +180,6 @@ export async function askSetapak(
   }
 }
 
-/** AI menentukan field yang masih dibutuhkan sebelum plan dibuat. */
 export async function askPlanFields(history = []) {
   try {
     const facts = extractTripFacts(history);
@@ -226,7 +202,6 @@ export async function askPlanFields(history = []) {
   }
 }
 
-/** AI menyusun plan final dari obrolan + jawaban field. */
 export async function askCreatePlan(ringkasan, facts = null) {
   try {
     const response = await fetch("/api/chat", {
@@ -256,13 +231,6 @@ export async function askCreatePlan(ringkasan, facts = null) {
   }
 }
 
-/**
- * Rekomendasi kartu "For you" lewat AI (mode = "in" / "near").
- * Kota/area baru disimpan di planner data bersama di server, jadi pencarian
- * yang sama selalu menghasilkan kartu yang sama untuk semua orang.
- * Tidak ada cache browser: tombol reload selalu meminta variasi baru ke AI.
- * @returns {Promise<{groups: object, source: string}>}
- */
 export async function askRecommendations(
   city,
   mode = "near",
@@ -273,7 +241,6 @@ export async function askRecommendations(
   if (!cleanCity) return { groups: {}, source: "engine" };
 
   const batas = Number(minRating) || 0;
-  // Tidak ada data lokal: kalau AI gagal, kartu dikosongkan (bukan diisi data bawaan).
   const gagal = () => ({ groups: {}, source: "error" });
 
   try {

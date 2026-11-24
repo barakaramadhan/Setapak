@@ -4,8 +4,6 @@ const inputClass =
   "w-full rounded-xl border-grey-label/60 bg-grey-label/15 py-2 text-sm";
 const labelClass = "block text-xs font-semibold text-grey-light/70";
 
-// Satu field generik untuk seluruh 15 modul. Input memakai InputAll supaya
-// tampilannya konsisten dengan form lain di aplikasi.
 export default function ModuleField({ field, value, onChange, id }) {
   const teks = {
     id,

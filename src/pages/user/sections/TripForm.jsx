@@ -14,8 +14,6 @@ const isiAwal = (initial) => {
   };
 };
 
-// Form bersama untuk tambah & edit perjalanan. Dipakai Schedule, popover
-// kalender, dan halaman Trip supaya perilakunya identik di semua tempat.
 export default function TripForm({
   initial,
   onSubmit,

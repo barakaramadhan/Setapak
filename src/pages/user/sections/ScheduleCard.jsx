@@ -4,8 +4,6 @@ import InputAll from "../../../components/ui/InputAll";
 import TripForm from "./TripForm";
 import { formatRangeId, toDateKey } from "../../../utils/tripDate";
 
-// Satu kartu = satu perjalanan, ringkas: judul, tanggal, dan tempat saja.
-// Detail per hari ada di halaman Trip. Form tambah memakai TripForm yang sama dengan edit.
 export default function ScheduleCard({
   trips,
   prefill,
@@ -214,7 +212,6 @@ export default function ScheduleCard({
           </p>
         )}
 
-        {/* Hanya satu perjalanan yang tampil; yang lain lewat panah / search. */}
         {!loading && !formInitial && tampil && (
           <div className="rounded-2xl border-2 border-grey-label/80 bg-white px-3 py-3">
             <div className="flex items-start gap-2">

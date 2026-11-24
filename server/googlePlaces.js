@@ -1,20 +1,7 @@
-// Sumber data tempat UTAMA SETAPAK: Google Places API (New).
-//
-// Kenapa ada file ini: dulu nama tempat hanya boleh berasal dari OpenStreetMap,
-// sehingga untuk pertanyaan seperti "restoran Indonesia terkenal di Malaysia" AI
-// menyerah ("belum bisa memverifikasi"). Sekarang setiap nama tempat, alamat,
-// rating, jumlah ulasan, status buka, foto, dan tautan berasal LANGSUNG dari
-// Google Maps. AI hanya boleh memilih/menjelaskan dari hasil ini, tidak boleh
-// menambah nama dari ingatannya.
-//
-// Perlu: GOOGLE_MAPS_API_KEY (alias GOOGLE_PLACES_API_KEY) dengan "Places API (New)"
-// aktif di Google Cloud. Key hanya dipakai di server, tidak pernah dikirim ke browser
-// (foto diambil lewat skipHttpRedirect sehingga browser hanya menerima URL foto publik).
 
 const ENDPOINT = "https://places.googleapis.com/v1";
 const JAM = 60 * 60 * 1000;
 
-// Hanya field yang benar-benar dipakai (mengurangi biaya & ukuran respons).
 const FIELD_MASK = [
   "places.id",
   "places.displayName",
@@ -82,13 +69,11 @@ function jarakKm(a, b) {
   return 6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
-/** Satu hasil Google -> bentuk internal SETAPAK. null kalau tidak layak. */
 export function normalisasiGoogle(g, pusat = null) {
   const name = String(g?.displayName?.text || "").trim();
   const lat = Number(g?.location?.latitude);
   const lon = Number(g?.location?.longitude);
   if (name.length < 2 || !g?.id || !Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-  // Tempat yang sudah tutup permanen / sementara tidak boleh direkomendasikan.
   if (g.businessStatus && g.businessStatus !== "OPERATIONAL") return null;
 
   const rating = Number.isFinite(Number(g.rating)) ? Number(g.rating) : null;
@@ -99,8 +84,6 @@ export function normalisasiGoogle(g, pusat = null) {
       ? g.googleMapsUri
       : `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(g.id)}`;
 
-  // Skor: rating dikalikan kepercayaan (jumlah ulasan). Rating 5.0 dari 3 ulasan
-  // tidak boleh mengalahkan 4.6 dari 4.000 ulasan.
   const skor = rating ? rating * Math.log10(ulasan + 10) : 0;
   const buka = g.regularOpeningHours?.openNow;
 
@@ -128,11 +111,6 @@ export function normalisasiGoogle(g, pusat = null) {
   };
 }
 
-/**
- * Text Search Google Places (New). Melempar error kalau API menolak (key salah,
- * API belum aktif, kuota habis) — pemanggil memutuskan cadangan. Hasil kosong
- * (tidak ada tempat) BUKAN error: mengembalikan [].
- */
 export async function cariGoogle({
   query,
   env = process.env,
@@ -182,9 +160,7 @@ export async function cariGoogle({
       try {
         detail = (await res.json())?.error?.message || "";
       } catch {
-        // abaikan
       }
-      // Jangan pernah mencatat key-nya.
       throw new Error(`Google Places HTTP ${res.status}${detail ? `: ${detail.slice(0, 160)}` : ""}`);
     }
     const data = await res.json();
@@ -194,7 +170,6 @@ export async function cariGoogle({
   return mentah.map((g) => normalisasiGoogle(g, pusat)).filter(Boolean);
 }
 
-/** URL foto publik (tanpa key) untuk satu foto tempat. null kalau gagal. */
 export async function fotoGoogle(photoName, env = process.env, { fetchFn = globalThis.fetch, lebar = 800, ms = 4000 } = {}) {
   const key = kunciGoogle(env);
   const nama = String(photoName || "");
@@ -214,7 +189,6 @@ export async function fotoGoogle(photoName, env = process.env, { fetchFn = globa
   }
 }
 
-/** Gabung beberapa hasil, buang duplikat (placeId), urutkan paling layak dulu. */
 export function gabungGoogle(...daftar) {
   const unik = new Map();
   for (const p of daftar.flat()) {
@@ -230,17 +204,12 @@ export function teksUlasan(n) {
   return n > 0 ? `${ANGKA.format(n)} ulasan` : "belum ada ulasan";
 }
 
-/** Satu baris ringkas "Nama — alamat. Rating 4,6 (1.234 ulasan)". */
 export function barisGoogle(p) {
   const rating = p.rating ? `Rating **${p.rating.toFixed(1)}/5** (${teksUlasan(p.ulasan)})` : "Belum ada rating";
   const buka = p.jam ? `, ${p.jam}` : "";
   return `- **${p.name}** — ${p.alamat || "alamat ada di Google Maps"}. ${rating}${buka}.`;
 }
 
-/**
- * Jawaban 100% dari data Google, tanpa AI. Dipakai sebagai jaring pengaman ketika
- * AI gagal atau menyebut nama yang tidak ada di hasil Google.
- */
 export function balasanDariGoogle(places = [], { kueri = "", maks = 5 } = {}) {
   if (!places.length) {
     return `Google Maps tidak mengembalikan hasil untuk pencarian${kueri ? ` “${kueri}”` : ""}. Aku tidak mau menebak nama dari ingatan, jadi coba perjelas kota/areanya atau jenis tempatnya (misalnya “restoran Padang di Kuala Lumpur”).`;

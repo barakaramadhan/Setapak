@@ -1,6 +1,3 @@
-// Posisi atas sebuah section di dalam dokumen (px).
-// Elemen "sticky" (mis. Recomendations) dihitung dari posisi aslinya,
-// yaitu tepat di bawah elemen sebelumnya, bukan posisi saat sedang menempel.
 export function getSectionTop(el) {
   if (!el) return 0;
 

@@ -1,8 +1,3 @@
-// Foto + titik peta tempat, GRATIS tanpa API key:
-//  - Foto: Wikipedia (pageimages) -> Wikimedia Commons. Dicari dari NAMA tempat,
-//    jadi gambar selalu sesuai nama lokasinya (bukan URL karangan AI).
-//  - Titik peta: Nominatim (OpenStreetMap).
-// Hasil disimpan di memory server supaya tidak mengulang request.
 
 const UA = { "User-Agent": "SETAPAK/1.0 (travel planner)" };
 const memo = new Map();
@@ -13,15 +8,11 @@ async function getJson(url, ms = 4500) {
   return res.json();
 }
 
-// Kata umum yang tidak cukup untuk membuktikan bahwa hasil pencarian
-// benar-benar tempat. Tanpa ini, "Taman Kota" bisa kena artikel tentang
-// orang/kejadian dan fotonya malah wajah pejabat.
 const KATA_UMUM = new Set([
   "taman", "kota", "wisata", "tempat", "pusat", "jalan", "daerah",
   "indonesia", "sekitar", "tempat", "tempatnya", "object", "file",
 ]);
 
-// Judul yang jelas tentang orang/kejadian, bukan destinasi.
 const JUDUL_ORANG =
   /(anies|baswedan|gubernur|menteri|presiden|wakil|wali kota|bupati|politikus|tokoh|aktivis|pemilihan|pilpres|pilkada|kampanye|demo|kunjungan|rapat|wawancara|biografi|lahir|meninggal|portrait|potret|foto bersama)/i;
 
@@ -37,8 +28,6 @@ function fotoLayak(hit, nama, kota = "") {
   if (!hit?.image) return false;
   const judul = String(hit.title || "");
   if (JUDUL_ORANG.test(judul)) return false;
-  // Nama kota tidak boleh jadi satu-satunya bukti, kalau tidak artikel
-  // "Kota Bogor" akan dipakai untuk foto "Kebun Raya Bogor".
   const kotaToken = String(kota || "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
@@ -83,7 +72,6 @@ async function commonsImage(query, nama, kota) {
     : null;
 }
 
-/** Foto yang cocok dengan nama tempat. null kalau benar-benar tidak ketemu. */
 export async function fotoTempat(nama, kota = "") {
   const kunci = `${nama}|${kota}`.toLowerCase();
   if (memo.has(kunci)) return memo.get(kunci);
@@ -100,7 +88,6 @@ export async function fotoTempat(nama, kota = "") {
       hasil = await coba();
       if (hasil) break;
     } catch {
-      // lanjut ke sumber berikutnya
     }
   }
   memo.set(kunci, hasil);
@@ -113,7 +100,6 @@ export function linkMaps(nama, kota = "") {
   )}`;
 }
 
-/** Titik koordinat (OSM). Dibatasi sekitar pusat kota bila diberikan. */
 export async function titikTempat(nama, kota = "", pusat = null) {
   const q = `${nama}${kota ? `, ${kota}` : ""}, Indonesia`;
   try {
@@ -132,7 +118,6 @@ export async function titikTempat(nama, kota = "", pusat = null) {
   }
 }
 
-/** Satu tempat lengkap: foto + link + titik peta (paralel). */
 export async function lengkapiTempat(nama, kota = "", pusat = null, denganTitik = true) {
   const [foto, titik] = await Promise.all([
     fotoTempat(nama, kota),

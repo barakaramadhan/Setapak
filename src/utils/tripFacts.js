@@ -98,7 +98,6 @@ export function extractBudgetScope(text) {
   return null;
 }
 
-/** "tanpa tiket" / "belum termasuk tiket" vs "sudah termasuk tiket pesawat". */
 export function extractBudgetTicket(text) {
   const lower = String(text || "").toLowerCase();
   if (/(tanpa|belum\s+termasuk|di\s+luar|diluar|exclude|ga\s+termasuk|gak\s+termasuk|nggak\s+termasuk|tidak\s+termasuk)\s+(tiket|pesawat|ongkos\s+pesawat)/.test(lower)) return "tanpa tiket";

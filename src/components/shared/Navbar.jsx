@@ -16,8 +16,6 @@ const rightLinks = [
   { label: "Info", href: "#footer" },
 ];
 
-// Menu khusus sidebar mobile (urutan & ikon sesuai desain)
-// Semua ikon ditulis versi outline (fi-rr-), versi solid dipakai otomatis saat menu aktif
 const mobileLinks = [
   { label: "Home", href: "#home", icon: "fi fi-rr-house-blank" },
   { label: "Destination", href: "#recomendations", icon: "fi fi-rr-marker" },
@@ -29,7 +27,6 @@ const mobileLinks = [
   { label: "Info", href: "#footer", icon: "fi fi-rr-info" },
 ];
 
-// id section yang dipantau untuk isActive (urutan bebas)
 const sectionIds = [...leftLinks, ...rightLinks].map((link) =>
   link.href.slice(1),
 );
@@ -45,15 +42,12 @@ function Navbar() {
   const itemRefs = useRef({});
   const firstPlace = useRef(true);
 
-  // Background muncul setelah animasi garis selesai, lalu scroll dilanjutkan
   const lenis = useLenis((instance) => {
-    // Tablet (< 1024px) tidak ada animasi garis, jadi background muncul begitu di-scroll
     const batasScroll = window.innerWidth < 1024 ? 20 : HOME_PIN_DISTANCE;
     setSolid(instance.scroll > batasScroll);
     setMobileSolid(instance.scroll > 20);
   });
 
-  // Klik menu: scroll halus ke section tujuan
   const handleClick = (e, href) => {
     e.preventDefault();
     e.stopPropagation();
@@ -71,13 +65,11 @@ function Navbar() {
     }
   };
 
-  // Klik menu di sidebar mobile: tutup sidebar, lalu scroll ke section
   const handleMobileClick = (e, href) => {
     setMenuOpen(false);
     handleClick(e, href);
   };
 
-  // Geser "pill" ke menu yang aktif
   useLayoutEffect(() => {
     const place = (animate) => {
       const item = itemRefs.current[active];
@@ -93,11 +85,9 @@ function Navbar() {
     place(!firstPlace.current);
     firstPlace.current = false;
 
-    // Hitung ulang kalau lebar menu berubah (mis. font selesai dimuat)
     const list = listRef.current;
     if (!list || !window.ResizeObserver) return;
 
-    // ResizeObserver selalu memanggil callback sekali saat mulai observe; lewati
     let skipFirst = true;
     const observer = new ResizeObserver(() => {
       if (skipFirst) {
@@ -111,7 +101,6 @@ function Navbar() {
   }, [active]);
 
   useEffect(() => {
-    // Reset state "pertama kali" supaya mount ulang tidak menganimasikan pill dari 0
     return () => {
       firstPlace.current = true;
     };
@@ -154,7 +143,6 @@ function Navbar() {
           }`}
         >
           <ul ref={listRef} className="relative flex items-center">
-            {/* Pill isActive: bergeser mengikuti menu yang aktif */}
             <span
               ref={pillRef}
               aria-hidden="true"
@@ -179,7 +167,6 @@ function Navbar() {
 
       {/* ===== NAVBAR MOBILE (hanya tampil di mobile) ===== */}
       <div className="hidden max-sm:block">
-        {/* 1. Bar atas: logo + tombol menu */}
         <header
           className={`fixed top-0 inset-x-0 z-50 flex items-center justify-between px-5 py-4 transition-all duration-300 ${
             mobileSolid
@@ -203,7 +190,6 @@ function Navbar() {
           </button>
         </header>
 
-        {/* 2. Layar gelap + blur di belakang sidebar (klik untuk menutup) */}
         <div
           onClick={() => setMenuOpen(false)}
           className={`fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
@@ -211,13 +197,11 @@ function Navbar() {
           }`}
         />
 
-        {/* 3. Sidebar: geser dari kiri */}
         <aside
           className={`fixed top-0 left-0 z-50 flex h-full w-3/4 flex-col rounded-r-3xl bg-white px-8 py-8 transition-transform duration-300 ${
             menuOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          {/* Atas: logo + tombol tutup */}
           <div className="flex items-center justify-between">
             <span className="font-clash font-bold text-2xl text-black">
               SETAPAK
@@ -233,10 +217,8 @@ function Navbar() {
             </button>
           </div>
 
-          {/* Daftar menu */}
           <ul className="mt-10 flex flex-col gap-8">
             {mobileLinks.map(({ label, href, icon }) => {
-              // menu yang sedang aktif -> ikon jadi solid & hitam
               const isActive = active === href.slice(1);
 
               return (
@@ -260,7 +242,6 @@ function Navbar() {
             })}
           </ul>
 
-          {/* Bawah: tombol Sign Up & Log In (mt-auto = didorong ke dasar) */}
           <div className="mt-auto flex flex-col gap-4">
             <GoButton to="/sign-up"
               className="w-full rounded-xl py-3 bg-grey-light text-bright-white ring-dark-brown-new "

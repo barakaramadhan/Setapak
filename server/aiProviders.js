@@ -1,7 +1,3 @@
-// Pemanggil provider AI. Ditaruh di SERVER supaya API key tidak bocok ke browser.
-// Urutan fallback diatur di fungsi askAI() di bawah.
-// Default (terbaik -> cadangan): Groq, Gemini, 100milionseek, OpenRouter, Ollama.
-// Bisa diubah lewat AI_PROVIDER_ORDER. Provider tanpa key/konfigurasi aktif akan dilewati.
 
 import { MODULES } from "../src/utils/tripModules.js";
 import { cariWeb } from "./webSearch.js";
@@ -11,9 +7,6 @@ Jawab singkat, maksimal 120 kata, pakai bahasa yang sama dengan pertanyaan pengg
 Berikan langkah praktis: nama tempat, perkiraan biaya, dan satu tips.
 Jangan mengulang pertanyaan pengguna. Jika tidak tahu datanya, katakan terus terang.`;
 
-
-// Cara berpikir perencana ahli. Ditempel ke prompt Searching/Planning/createPlan
-// supaya AI memahami KEBUTUHAN orang, bukan sekadar menyebut nama tempat.
 export const PRINSIP_AHLI = `
 
 CARA BERPIKIR PERENCANA AHLI (terapkan diam-diam; jangan dibacakan sebagai daftar aturan):
@@ -25,7 +18,6 @@ CARA BERPIKIR PERENCANA AHLI (terapkan diam-diam; jangan dibacakan sebagai dafta
 6. Kalau perjalanan romantis/bulan madu juga membawa anak, seimbangkan waktu berdua dengan aktivitas yang aman dan nyaman untuk anak; jangan merencanakan seolah mereka bepergian berdua saja.
 7. Sisipkan satu "tips orang dalam" yang benar-benar berguna (waktu terbaik, yang perlu dipesan duluan, atau yang sebaiknya dilewati).`;
 
-// Prompt khusus untuk "For you": AI wajib mengembalikan JSON, bukan teks biasa.
 export const RECOMMEND_SYSTEM_PROMPT = `Kamu adalah mesin rekomendasi tempat wisata SETAPAK.
 Balas HANYA dengan JSON valid, tanpa markdown, tanpa penjelasan.
 Format persis:
@@ -45,8 +37,6 @@ ATURAN FOTO (WAJIB): setiap tempat HARUS punya "image" berupa URL LANGSUNG ke fi
 FAKTA: \"fact\" = SATU kalimat fakta singkat (maks 110 karakter) yang benar-benar kamu yakini tentang tempat itu (sejarah, keunikan, menu andalan). Kalau tidak yakin, isi string kosong \"\" — jangan mengarang. Pilih tempat makan dan wisata dengan rating TERTINGGI dan paling populer di area itu.
 Patuhi batas rating minimal yang disebut di pesan user. Gunakan bahasa yang sama dengan nama kota.`;
 
-// Mode "Searching": AI untuk website trip. Boleh memakai pengetahuan dunia,
-// tetapi WAJIB benar lokasi & fokus pada perjalanan.
 export const SEARCH_SYSTEM_PROMPT = `Kamu adalah asisten perjalanan SETAPAK. Untuk pengetahuan umum tentang destinasi mana pun (budaya, musim, jarak, tips) kamu boleh memakai pengetahuan dunia nyata. Tetapi NAMA TEMPAT SPESIFIK (restoran, kafe, hotel, tempat wisata, masjid, toko) HANYA boleh diambil dari blok DATA LAPANGAN yang disertakan sistem (hasil Google Maps), lengkap dengan rating dan alamat dari blok itu. Jangan menyebut nama tempat spesifik dari ingatan.
 
 GAYA NGOBROL: kamu teman ngobrol yang kebetulan jago soal tempat. Boleh bahas film, musik, kuliner, atau topik ringan lain — jawab santai 1–3 kalimat dulu, jangan terdengar seperti robot yang menolak. Contoh: ditanya soal rating film, jawab ratingnya dulu; kalau user lanjut "film Doraemon syutingnya di mana, saya mau ke sana", jawab lokasinya dengan serius, beri cara mengecek di Google Maps, lalu tawarkan bantuan merencanakan kunjungannya. Ikuti yang sedang dibahas user, jangan loncat ke topik lain, dan JANGAN pakai kalimat kaku "Saya hanya bisa bantu soal perjalanan."
@@ -69,12 +59,6 @@ ATURAN JAWABAN:
 - Format: maksimal 140 kata. Obrolan ringan cukup 1–3 paragraf tanpa judul. Kalau memang perlu daftar tempat, pakai "## Judul" per bagian, "- " untuk poin, **tebal** untuk hal penting. Gunakan HANYA "## " untuk judul, jangan "#" atau "###", dan jangan tabel markdown.
 - Pakai bahasa yang sama dengan pengguna.` + PRINSIP_AHLI;
 
-// Dipakai kalau pertanyaan Searching sebenarnya permintaan riset rencana
-// (mis. "10 hari ke Makkah dan Madinah, budget cukup, makanan Indonesia").
-// Jawabannya boleh panjang, tapi tetap tidak membuat jadwal harian — itu
-// pekerjaan mode Planning. Nama tempat/resto yang tidak terverifikasi DILARANG
-// dikarang, supaya tidak muncul alamat palsu seperti contoh "Sari Rasa, Jl.
-// Al-Madinah, Madinah".
 export const SEARCH_DETAIL_SYSTEM_PROMPT = `Kamu adalah peneliti perjalanan SETAPAK. Jawab PERTANYAAN RENCANA dengan riset yang terstruktur, jelas, dan jujur. Pakai bahasa yang sama dengan pengguna.
 
 PANJANG: 250–350 kata, maksimal 4 poin per bagian. Selesaikan SEMUA bagian sampai kalimat terakhir — jangan berhenti di tengah daftar, di tengah kalimat, atau di tengah angka harga. Tulis seperti teman yang menjelaskan, BUKAN katalog daftar nama: setiap bagian cukup 2–4 poin, sisanya kalimat ngobrol yang nyambung. "## " untuk bagian, "- " untuk poin, **tebal** untuk penekanan. JANGAN "#", "###", atau tabel markdown.
@@ -103,7 +87,6 @@ ATURAN KEBENARAN:
 - DILARANG menyebut vaksinasi COVID-19, test PCR, atau syarat pandemic lain sebagai kewajiban perjalanan: aturan itu sudah berubah. Untuk dokumen, sebut saja paspor/visa/izin yang relevan lalu arahkan: "cek syarat resmi terbaru di situs kedubes/lembaga terkait sebelum berangkat." Jangan pula memakai informasi lama lain yang kamu ragukan — kalau ragu, katakan perlu dicek.
 - Jangan menyebut Pegadaian, bank, kantor, atau sekolah sebagai destinasi. Jangan mengulang pertanyaan user.` + PRINSIP_AHLI;
 
-// Mode "Planning": ngobrol santai sambil mengumpulkan info rencana perjalanan.
 export const PLAN_SYSTEM_PROMPT = `Kamu adalah teman ngobrol sekaligus perencana perjalanan SETAPAK.
 Boleh bahas topik ringan (film, musik, kuliner) secukupnya supaya obrolan terasa hidup, tapi jangan jauh-jauh dari rencana yang sedang dibahas. Kalau topik itu menyebut tempat, lokasi syuting, atau "saya mau ke sana", ikuti saja — jawab dulu bagian yang ditanya, lalu kaitkan dengan rencana perjalanan. JANGAN memotong dengan kalimat kaku "Saya hanya bisa bantu soal perjalanan".
 
@@ -127,8 +110,6 @@ Ketika kamu sudah punya: (1) tujuan, (2) durasi atau tanggal/periode, dan (3) bu
 <<SIAP>>
 Jangan pernah menulis <<SIAP>> sebelum ketiga hal itu jelas. Kalau user sudah memberi konteks implisit (mis. "bulan madu" = romantis/berdua, "akhir tahun" = periode akhir Desember-awal Januari, "3 hari" = durasi), anggap itu sudah diketahui dan jangan ditanya ulang; cukup konfirmasi singkat dalam jawabanmu.` + PRINSIP_AHLI;
 
-// Dipanggil setelah tombol "Create Planning": AI yang memutuskan modul mana
-// dari 15 modul universal yang paling dibutuhkan, lalu menyusun pertanyaannya.
 export const PLAN_FIELDS_SYSTEM_PROMPT = `Kamu adalah form cerdas SETAPAK. Dari obrolan perjalanan sebelumnya, tentukan DATA yang MASIH DIBUTUHKAN dari 15 modul universal di bawah, lalu urutkan berdasarkan prioritas untuk trip ini.
 
 15 MODUL (id | no | nama):
@@ -164,7 +145,6 @@ Aturan field:
 - "reason" maksimal 60 karakter, alasan kenapa field ini prioritas untuk trip ini.
 - Gunakan bahasa yang sama dengan obrolan.`;
 
-// Dipanggil setelah user mengisi field: AI menyusun plan terakhir.
 export const CREATE_PLAN_SYSTEM_PROMPT = `Kamu adalah mesin penyusun rencana perjalanan SETAPAK.
 Balas HANYA JSON valid, tanpa markdown dan tanpa penjelasan. Format persis:
 {
@@ -202,16 +182,12 @@ Aturan:
 import { bersihkanSitasi } from "../src/utils/bersihkanSitasi.js";
 
 const TIMEOUT_MS = 12000;
-// Pencarian web membutuhkan waktu lebih lama daripada jawaban biasa.
 const TIMEOUT_WEB_MS = 25000;
-// gemini-2.5-flash sudah tidak tersedia untuk akun baru (404).
 const MODEL_GEMINI = "gemini-3.8-flash";
 const MODEL_GROQ = "openai/gpt-oss-20b";
 const MODEL_HMS = "deepseek-v4.1-flash-free";
 const MODEL_OLLAMA = "llama3.2";
 
-// Gambar cadangan kalau AI tidak mengirim URL gambar yang sah.
-// Dipilih per kategori supaya kartu tetap relevan (makanan vs. alam).
 export const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600";
 export const DEFAULT_IMAGE_FOOD =
@@ -229,7 +205,6 @@ function postJson(url, body, headers, timeoutMs = TIMEOUT_MS) {
 }
 
 function toHistory(history) {
-  // Gemini memakai role "model", bukan "assistant"/"ai".
   return history.slice(-8).map((item) => ({
     role: item.role === "user" ? "user" : "model",
     parts: [{ text: String(item.text || "").slice(0, 1000) }],
@@ -263,7 +238,6 @@ async function askGemini({
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
 
   const kirim = (denganWeb) => postJson(url, {
-    // Grounding bawaan Google: Gemini mencari di internet sendiri.
     ...(denganWeb ? { tools: [{ google_search: {} }] } : {}),
     systemInstruction: { parts: [{ text: systemPrompt }] },
     contents: [
@@ -273,17 +247,12 @@ async function askGemini({
     generationConfig: {
       maxOutputTokens: maxTokens, // batas ini yang bikin jawaban tidak "habis-habis"
       temperature: json ? 0.2 : 0.7,
-      // Structured output: Gemini dipaksa membalas JSON valid (bukan hanya lewat prompt).
       ...(json && !denganWeb ? { responseMimeType: "application/json" } : {}),
-      // Gemini 3.x menghitung token berpikir sebagai bagian dari maxOutputTokens.
-      // LOW mencegah jawaban kosong/error MAX_TOKENS pada prompt pendek.
       thinkingConfig: { thinkingLevel: "LOW", includeThoughts: false },
     },
   }, {}, denganWeb ? TIMEOUT_WEB_MS : timeoutMs);
 
   let response = await kirim(webSearch);
-  // Model/akun tertentu menolak tool search (400/403). Ulangi tanpa web
-  // supaya user tetap mendapat jawaban.
   if (!response.ok && webSearch && [400, 403, 404].includes(response.status)) {
     console.warn(`[setapak] Gemini google_search ditolak (${response.status}), ulang tanpa web`);
     response = await kirim(false);
@@ -296,7 +265,6 @@ async function askGemini({
     .join("")
     .trim();
   if (!text) throw new Error("Gemini balasan kosong");
-  // MAX_TOKENS = jawaban dipotong meski kalimatnya belum selesai.
   return { reply: text, truncated: data.candidates?.[0]?.finishReason === "MAX_TOKENS" };
 }
 
@@ -314,14 +282,10 @@ async function askGroq({
     "https://api.groq.com/openai/v1/chat/completions",
     {
       model: MODEL_GROQ,
-      // Browser search bawaan Groq (khusus openai/gpt-oss-*), jalan di server Groq.
       ...(denganWeb ? { tools: [{ type: "browser_search" }], tool_choice: "auto" } : {}),
       max_tokens: maxTokens,
       temperature: json ? 0.2 : 0.7,
-      // Structured output Groq: JSON mode (tidak bisa dipadukan dengan browser_search).
       ...(json && !denganWeb ? { response_format: { type: "json_object" } } : {}),
-      // gpt-oss menyimpan sebagian besar token untuk "reasoning".
-      // Tanpa ini, jawaban JSON bisa habis di reasoning dan content kosong.
       reasoning_effort: "low",
       messages: [
         { role: "system", content: systemPrompt },
@@ -349,8 +313,6 @@ async function askGroq({
   return { reply: text, truncated: data.choices?.[0]?.finish_reason === "length" };
 }
 
-// Provider gratis kompatibel OpenAI (Cerebras, Mistral). Tidak punya internet sendiri:
-// data online datang dari "catatan riset" Gemini/Groq/Tavily (lihat risetBersama).
 async function askOpenAICompat({
   nama, url, key, model, message, history = [], systemPrompt = SYSTEM_PROMPT,
   maxTokens = 400, timeoutMs = TIMEOUT_MS, json = false,
@@ -473,8 +435,6 @@ async function askHundredMillionSeek({
     };
   };
 
-  // Model ini bisa memakai token untuk reasoning_content, sehingga content kosong
-  // jika ruang output terlalu kecil. Beri ruang cukup agar jawaban final sempat keluar.
   const mintaMax = Number(maxTokens) || 400;
   let budget = Math.min(64000, Math.max(mintaMax, 1024));
   let hasil = await minta(budget);
@@ -526,16 +486,9 @@ async function askOllama({
   return { reply: text, truncated: data.choices?.[0]?.finish_reason === "length" };
 }
 
-// Tugas "peneliti": AI yang punya internet bawaan (Gemini/Groq) mencari fakta terkini,
-// lalu menyerahkan CATATAN RISET ke AI penulis (mis. 100milionseek) yang tidak punya internet.
 const RISET_PROMPT = `Kamu peneliti web untuk SETAPAK. Cari di internet fakta TERKINI yang relevan dengan permintaan (harga, tiket, jam buka, cuaca/musim, aturan, event, berita). Balas HANYA 3-8 poin singkat "- fakta (sumber: domain)". Jangan memberi rekomendasi, jangan membuat jadwal, jangan mengarang. Tulis bahasa Indonesia. Kalau tidak menemukan apa pun yang relevan, balas persis: TIDAK ADA.`;
 
-// Provider yang kena 429 (kuota/rate limit) diistirahatkan sebentar supaya tidak
-// dipanggil ulang dan memperlambat jawaban.
 const dingin = new Map();
-// Lama sebuah AI "diistirahatkan" setelah kuotanya habis (429) / sibuk (503).
-// Selama istirahat, AI cadangan (100milionseek dll) yang dipakai; setelah lewat,
-// otomatis kembali ke Groq/Gemini. Atur dari .env: AI_FALLBACK_MINUTES=1 / 2 / 5 ...
 const masaDingin = (env) =>
   Math.max(10_000, (Number(env?.AI_FALLBACK_MINUTES) || 2) * 60_000);
 const tandaiDingin = (nama, error, env) => {
@@ -543,16 +496,13 @@ const tandaiDingin = (nama, error, env) => {
     dingin.set(nama, Date.now() + masaDingin(env));
   }
 };
-// AI utama dicoba lebih dulu; sisanya hanya cadangan. Ubah lewat AI_PRIMARY.
 const daftarUtama = (env) =>
   new Set(String(env?.AI_PRIMARY || "groq,gemini").split(",").map((x) => x.trim().toLowerCase()));
 
 let gagalTerakhir = {};
-/** Alasan gagal tiap AI pada permintaan paralel terakhir (untuk diagnosa). */
 export const alasanGagalTerakhir = () =>
   Object.entries(gagalTerakhir).map(([n, e]) => `${n}: ${e}`).join("; ");
 
-/** Nama AI yang key-nya terpasang di server (untuk diagnosa). */
 export function providerAktif(env) {
   const dipakai = new Set();
   return Object.entries(daftarProvider(env))
@@ -617,9 +567,6 @@ function daftarProvider(env) {
 
 const URUTAN_DEFAULT = "groq,gemini,100milionseek,cerebras,mistral,openrouter,ollama";
 
-/**
- * Coba provider satu per satu. Kalau semua gagal / kuota habis, kembalikan null.
- */
 export async function askAI({
   message,
   history,
@@ -628,23 +575,15 @@ export async function askAI({
   maxTokens,
   providerOrder,
   allowContinue = false,
-  // true = ambil data online real-time. Gemini & Groq memakai search bawaan;
-  // provider lain memakai Tavily (opsional, TAVILY_API_KEY). Kill switch: AI_WEB_SEARCH=off.
   webSearch = false,
-  // true = jangan menjawab dari ingatan: provider tanpa internet dilewati bila tidak ada hasil web.
   wajibWeb = false,
 }) {
-  // webSearch: true  = provider berinternet mencari langsung; provider tanpa internet dibantu catatan riset.
-  //            "riset" = SELALU riset dulu oleh Gemini/Groq, lalu penulis menjawab tanpa tool web
-  //                      (dipakai untuk output JSON agar format tidak rusak oleh sitasi).
   const webAktif = Boolean(webSearch) && String(env.AI_WEB_SEARCH || "").toLowerCase() !== "off";
   const paksaRiset = webSearch === "riset";
   const NATIVE_WEB = new Set(["gemini", "groq"]);
   let blokWebCache; // dicari sekali saja, dipakai ulang antar provider
   const daftar = daftarProvider(env);
 
-  // Urutan default (terbaik -> terjelek/cadangan) bisa diubah dari .env
-  // lewat AI_PROVIDER_ORDER. Provider tanpa key/konfigurasi aktif akan dilewati.
   const defaultOrder = "groq,gemini,100milionseek,cerebras,mistral,openrouter,ollama";
 
   const urutan = (Array.isArray(providerOrder) && providerOrder.length
@@ -656,9 +595,6 @@ export async function askAI({
 
   const providers = urutan.map((name) => ({ name, ...daftar[name] }));
 
-  // Error sementara (429/5xx) sering hilang dalam hitungan detik. Coba ulang
-  // sekali sebelum pindah provider, supaya user tidak melihat pesan "sibuk"
-  // hanya karena jeda sesaat pada token bucket / overload.
   const sementara = /(500|502|503|504|timeout|timed out|abort)/i;
 
   for (const provider of providers) {
@@ -670,7 +606,6 @@ export async function askAI({
         let pesan = message;
         if (webAktif && !native) {
           if (blokWebCache === undefined) {
-            // 1) Gemini/Groq riset, 2) cadangan Tavily. Dicari sekali, dipakai semua penulis.
             blokWebCache =
               (await risetBersama({ message, env, history })) || (await cariWeb(message, env));
           }
@@ -691,9 +626,6 @@ export async function askAI({
         const reply = bersihkanSitasi(typeof hasil === "string" ? hasil : hasil?.reply);
         if (!reply) throw new Error(`${provider.name} balasan kosong`);
 
-        // Jawaban riset boleh panjang. Kalau provider memotongnya, minta satu
-        // lanjutan dari titik terakhir supaya user tidak melihat daftar yang
-        // berhenti di tengah ("Tiket pesawat (Jakarta-Jeddah), ...").
         if (allowContinue && typeof hasil === "object" && hasil.truncated) {
           const sambung = await provider.call({
             message:
@@ -716,7 +648,6 @@ export async function askAI({
         console.warn(
           `[setapak] ${provider.name} gagal (percobaan ${percobaan + 1}): ${error.message}`
         );
-        // 429 = kuota habis: langsung pindah provider & istirahatkan 1 menit.
         tandaiDingin(provider.name, error, env);
         const bisaUlang = sementara.test(error.message) && percobaan === 0;
         if (!bisaUlang) break;
@@ -728,17 +659,6 @@ export async function askAI({
   return null;
 }
 
-/**
- * Menggabungkan semua AI yang aktif (Gemini, Groq, 100milionseek, ...):
- * semuanya dipanggil BERSAMAAN, dan jawaban pertama yang lolos `valid`
- * dipakai. Cocok untuk output JSON panjang (rencana perjalanan): lebih cepat
- * daripada mencoba satu per satu, dan satu provider yang lambat/gagal tidak
- * menggagalkan semuanya.
- *
- * webSearch: "riset" -> Gemini/Groq riset fakta terkini sekali (maks risetMs),
- * lalu semua penulis memakai catatan itu.
- * @returns {Promise<{reply: string, source: string}|null>}
- */
 export async function askAIParalel({
   message,
   history = [],
@@ -761,7 +681,6 @@ export async function askAIParalel({
     .map((name) => String(name).trim().toLowerCase())
     .filter((name) => daftar[name]);
 
-  // Alias (hms, 100milionseek, ...) menunjuk fungsi yang sama: panggil sekali saja.
   const dipakai = new Set();
   const aktif = urutan
     .map((name) => ({ name, ...daftar[name] }))
@@ -810,9 +729,6 @@ export async function askAIParalel({
       })
     ).catch(() => null);
 
-  // Bertingkat: Groq/Gemini dulu. Yang sedang istirahat (kuota habis) otomatis
-  // terlewati; kalau semua AI utama gagal/istirahat, baru AI cadangan dipakai.
-  // Setelah masa istirahat habis, AI utama dipakai lagi.
   const utamaSet = daftarUtama(env);
   const utama = aktif.filter((p) => utamaSet.has(p.name));
   const cadangan = aktif.filter((p) => !utamaSet.has(p.name));

@@ -1,6 +1,3 @@
-// Foto asli tempat (Wikimedia/Wikipedia + sumber web terverifikasi).
-// Google Places butuh API key + billing, jadi tidak dipakai di sini.
-// Tempat yang belum punya foto asli memakai foto stok + tautan Google Maps.
 export const placeImages = {
   "bogor-kebun-raya": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Kebun_Raya_Bogor_19.jpg/960px-Kebun_Raya_Bogor_19.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
   "bogor-taman-safari": "https://edensorhills.com/wp-content/uploads/2022/12/Taman-Safari-Indonesia-Bogor.jpg",
@@ -31,9 +28,6 @@ export const placeImages = {
   "jogja-jomblang": "https://upload.wikimedia.org/wikipedia/commons/f/fa/Foto_Goa_Jomblang.jpeg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
   "bali-babi-guling": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a9/Babi_Guling_-_Roasted_Suckling_Pig.jpg/960px-Babi_Guling_-_Roasted_Suckling_Pig.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
 
-  // Foto tambahan dari link langsung (situs wisata/Wikimedia) yang sudah dicek.
-  // Link langsung ke file gambar seperti ini sah dipakai; yang tidak bisa
-  // dipakai tanpa API/billing hanyalah foto yang di-host Google Places/Maps.
   "bogor-curug-cilember": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Curug_cilember_bogor.jpg/960px-Curug_cilember_bogor.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "bogor-gunung-pancar": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d1/Taman_Wisata_Alam_Gunung_Pancar.jpg/960px-Taman_Wisata_Alam_Gunung_Pancar.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
   "bogor-alun-alun": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Alun-Alun_Bogor_00.jpg/960px-Alun-Alun_Bogor_00.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",

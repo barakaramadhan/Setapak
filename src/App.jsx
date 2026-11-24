@@ -13,7 +13,6 @@ const SignIn = lazy(() => import("./pages/auth/SignIn"));
 const SignUp = lazy(() => import("./pages/auth/SignUp"));
 const TripPage = lazy(() => import("./pages/user/TripPage"));
 
-// HALAMAN AWAL SAAT DEVELOPMENT
 const START_PAGE = "";
 
 function App() {
@@ -22,17 +21,14 @@ function App() {
       <SmoothScroll>
         <Suspense fallback={<div className="flex min-h-screen items-center justify-center font-jakarta text-sm text-grey-light/60">Memuat…</div>}>
         <Routes>
-          {/* Kalau START_PAGE diisi, "/" langsung diarahkan ke sana */}
           {START_PAGE && (
             <Route path="/" element={<Navigate to={START_PAGE} replace />} />
           )}
 
-          {/* Halaman untuk pengunjung (belum login) */}
           <Route element={<GuestLayout />}>
             {!START_PAGE && <Route path="/" element={<LandingPage />} />}
           </Route>
 
-          {/* Halaman sign in / sign up */}
           <Route element={<AuthLayout />}>
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/sign-up" element={<SignUp />} />
@@ -40,7 +36,6 @@ function App() {
             <Route path="/signup" element={<SignUp />} />
           </Route>
 
-          {/* Halaman user: hanya bisa diakses setelah login (backend/main logic) */}
           <Route
             element={
               <RequireAuth>
@@ -51,7 +46,6 @@ function App() {
             <Route path="/dashboard" element={<DashboardUser />} />
             <Route path="/chats" element={<AiChat />} />
             <Route path="/plan" element={<Navigate to="/trip" replace />} />
-            {/* Trip: baraka UI for listing, main logic/workspace for detail */}
             <Route path="/trip" element={<YourPlan />} />
             <Route path="/trip/:id" element={<TripPage />} />
           </Route>

@@ -8,7 +8,6 @@ import TripModal from "./sections/TripModal";
 import TripDetail from "./sections/TripDetail";
 import TripWorkspace from "./TripWorkspace";
 
-// /trip = daftar perjalanan, /trip/:id = workspace 15 modul.
 export default function TripPage() {
   const { id } = useParams();
   const { trips, loading, error, updateTrip } = useTrips();

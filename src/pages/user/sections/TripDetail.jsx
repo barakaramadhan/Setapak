@@ -9,8 +9,6 @@ import { ensureUniversalPlan, formatRupiah, sinkronAktivitas } from "../../../ut
 import { ambilHari, buildTripSummary } from "../../../utils/tripSummary";
 import { printTripPdf } from "../../../utils/tripPdf";
 
-// Ringkasan trip. Semua angka, kategori & catatan dibaca dari plan yang tersimpan
-// (modul 4 Itinerary + modul 9 Activities), jadi perubahan di form langsung muncul di sini.
 export default function TripDetail({ trip, onOpenDetail }) {
   const { updateTrip } = useTrips();
   const model = useMemo(() => buildTripSummary(trip), [trip]);
@@ -25,7 +23,6 @@ export default function TripDetail({ trip, onOpenDetail }) {
   const titikPeta = useMemo(() => mapMarkersFromPlan(trip.plan), [trip.plan]);
   const titikHari = titikPeta.filter((t) => t.day === hariAktif?.title);
 
-  // Simpan ke plan.days + itinerary (modul 4), lalu sinkron ke modul 9 -> tersimpan di Supabase.
   const simpanHari = async (hariBaru) => {
     setPesan("");
     let plan = { ...ensureUniversalPlan(trip) };

@@ -21,7 +21,6 @@ function Sidebar() {
   const { pathname } = useLocation();
   useEffect(() => setMobileOpen(false), [pathname]);
   const tombolMenu = () => {
-    // layar kecil: tutup laci; desktop: ciutkan/lebarkan sidebar
     if (typeof window !== "undefined" && window.innerWidth < 1024) setMobileOpen(false);
     else setIsOpen((v) => !v);
   };
@@ -55,7 +54,6 @@ function Sidebar() {
 
   return (
     <>
-    {/* bilah atas + latar gelap: hanya di layar kecil */}
     <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-3 border-b border-grey-label/50 bg-white px-4 lg:hidden">
       <button type="button" aria-label="Buka menu" onClick={() => setMobileOpen(true)}>
         <i className="fi fi-rr-bars-staggered text-grey-light text-xl leading-none" />
@@ -116,7 +114,6 @@ function Sidebar() {
           >
             {({ isActive }) => (
               <>
-                {/* aktif -> ikon solid (fi-sr-), tidak aktif -> ikon outline (fi-rr-) */}
                 <i
                   className={`${
                     isActive ? m.icon.replace("fi-rr-", "fi-sr-") : m.icon
@@ -141,7 +138,6 @@ function Sidebar() {
         }`}
       />
 
-      {/* Daftar chat — tepat di bawah garis pemisah Explore */}
       <div
         data-lenis-prevent
         className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-3 [scrollbar-width:thin] transition-opacity duration-300 ${

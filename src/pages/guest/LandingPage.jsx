@@ -5,7 +5,6 @@ import FindYourPlace from "./sections/FindYourPlace";
 import Recomendations from "./sections/Recomendations";
 import HowItWorks from "./sections/HowItWorks";
 
-// Menyusun semua section landing page. Tambah section baru di sini.
 function LandingPage() {
   return (
     <>

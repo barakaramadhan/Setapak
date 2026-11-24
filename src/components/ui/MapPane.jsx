@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Peta detail & GRATIS: ubin OpenStreetMap (tanpa API key / billing).
 const PUSAT_DEFAULT = [-2.5, 118]; // Indonesia
 const TILE = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 

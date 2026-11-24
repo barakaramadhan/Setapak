@@ -27,9 +27,6 @@ const daftarAktivitas = (teks) =>
     .map((bagian) => bagian.trim())
     .filter(Boolean);
 
-// Workspace 15 modul untuk satu perjalanan. Semua modul memakai satu store
-// trip yang sama dengan kalender & Schedule, jadi perubahan langsung tampil
-// di seluruh aplikasi.
 export default function TripWorkspace({ trip }) {
   const { updateTrip } = useTrips();
   const { chats, openChat } = useChats();
@@ -41,12 +38,10 @@ export default function TripWorkspace({ trip }) {
   const [aiPesan, setAiPesan] = useState("");
 
   const modulAktif = MODULES.find((modul) => modul.id === aktif) || MODULES[0];
-  // Aktivitas dari itinerary (no. 4) selalu tampil di Activities (no. 9), termasuk trip lama.
   const plan = sinkronAktivitas(ensureUniversalPlan(trip));
   const progres = progresModul(trip);
   const persen = Math.round((progres / MODULES.length) * 100);
   const durasi = durasiHari(trip.date, trip.endDate) || 1;
-  // Peta yang sama dengan di chat: titik dari plan hasil Planning, per hari.
   const titikPeta = useMemo(() => mapMarkersFromPlan(trip.plan), [trip.plan]);
   const chatAsal = chats.find((c) => c.tripId === trip.id);
 
@@ -54,10 +49,7 @@ export default function TripWorkspace({ trip }) {
     const modul = MODULES.find((item) => item.id === moduleId);
     const planBaru = { ...plan, [moduleId]: draft };
 
-    // Jaga kompatibilitas dengan format lama hasil chat.
     if (moduleId === "itinerary") {
-      // Pertahankan koordinat/tautan Maps tempat yang namanya tidak berubah,
-      // supaya titik di peta tidak hilang setelah itinerary diedit.
       const lama = new Map();
       (trip.plan?.days || []).forEach((h) =>
         (h.places || []).forEach((t) => {
@@ -72,7 +64,6 @@ export default function TripWorkspace({ trip }) {
         })),
       }));
     }
-    // Aktivitas di itinerary (modul 4) otomatis masuk ke Activities (modul 9).
     const planFinal = moduleId === "itinerary" ? sinkronAktivitas(planBaru) : planBaru;
     if (moduleId === "destination" && draft.city) planBaru.city = draft.city;
     if (moduleId === "budget" && Number(draft.planned) > 0) {
@@ -298,7 +289,6 @@ export default function TripWorkspace({ trip }) {
                 id={`nav-${modul.id}`}
                 onClick={() => {
                   setAktif(modul.id);
-                  // layar kecil: langsung gulir ke editor modul yang dipilih
                   if (typeof window !== "undefined" && window.innerWidth < 1024) {
                     requestAnimationFrame(() =>
                       document.getElementById("editor-modul")?.scrollIntoView({ behavior: "smooth", block: "start" })

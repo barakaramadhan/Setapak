@@ -1,6 +1,3 @@
-// Data destinasi untuk "otak" planner SETAPAK.
-// Semua tempat dikelompokkan per kota supaya mesin bisa memilih dengan cepat.
-// Tambah tempat baru cukup menambah objek di array `places`.
 
 import { placeImages } from "./placeImages.js";
 
@@ -19,9 +16,6 @@ export const cityLabels = {
   makassar: "Makassar",
 };
 
-// Hanya SINONIM (nama lain dari tempat yang SAMA) yang digabungkan di sini.
-// Area seperti kuta / ubud / seminyak / lembang / dago sengaja TIDAK masuk:
-// kalau user cari "Kuta", yang muncul harus Kuta, bukan Bali.
 export const searchCityAliases = {
   jogja: "yogyakarta",
   yogya: "yogyakarta",
@@ -38,12 +32,7 @@ export const categoryLabels = {
   adventure: "petualangan",
 };
 
-// Arti toggle "For you":
-// in   = di dalam kota
-// near = di sekitar kota (bukan di dalam kota)
-// Ditaruh di sini supaya tidak perlu mengubah semua objek tempat.
 export const placeAreas = {
-  // Bogor
   "bogor-kebun-raya": "in",
   "bogor-coffe-breads": "in",
   "bogor-kopi-kenangan": "in",
@@ -54,7 +43,6 @@ export const placeAreas = {
   "bogor-gunung-pancar": "near",
   "bogor-kopi-puncak": "near",
 
-  // Yogyakarta
   "jogja-keraton": "in",
   "jogja-gudeg": "in",
   "jogja-borobudur": "near",
@@ -65,7 +53,6 @@ export const placeAreas = {
   "jogja-parangtritis": "near",
   "jogja-kopi-milio": "near",
 
-  // Bali
   "bali-seminyak-beach": "in",
   "bali-kuta-beach": "in",
   "bali-pasar-badung": "in",
@@ -80,7 +67,6 @@ export const placeAreas = {
   "bali-tirta-empul": "near",
   "bali-mount-batur": "near",
 
-  // Bandung
   "bandung-braga-permai": "in",
   "bandung-kopi-progo": "in",
   "bandung-nasi-ampera": "in",
@@ -98,7 +84,6 @@ export const placeAreas = {
   "bandung-kebun-raya-cikole": "near",
   "bandung-curug-cimahi": "near",
 
-  // Tambahan supaya tiap kota punya 4 tempat per kategori
   "bogor-museum-zoologicum": "in",
   "bogor-taman-topi": "in",
   "bogor-alun-alun": "in",
@@ -122,8 +107,6 @@ export const placeAreas = {
   "bali-warung-bola": "near",
 };
 
-// cost = perkiraan biaya masuk per orang (rupiah)
-// durationHours = perkiraan waktu kunjungan
 const daftarPlaces = [
   // ---------------- BOGOR ----------------
   {
@@ -1000,7 +983,6 @@ const daftarPlaces = [
   },
 ];
 
-// Foto asli menggantikan foto stok kalau tersedia (lihat placeImages.js).
 export const places = daftarPlaces.map((place) => ({
   ...place,
   image: placeImages[place.id] || place.image,

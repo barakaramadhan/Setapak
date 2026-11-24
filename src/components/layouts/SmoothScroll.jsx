@@ -8,10 +8,8 @@ gsap.registerPlugin(ScrollTrigger);
 function SmoothScroll({ children }) {
   const lenisRef = useRef(null);
 
-  // setiap Lenis scroll, kabari ScrollTrigger
   useLenis(ScrollTrigger.update);
 
-  // Lenis ikut ticker GSAP (bukan requestAnimationFrame sendiri)
   useEffect(() => {
     const update = (time) => {
       lenisRef.current?.lenis?.raf(time * 1000);

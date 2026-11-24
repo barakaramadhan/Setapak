@@ -5,17 +5,14 @@ import ImageFooter from "../../assets/images/footer/imagefooter.webp";
 function Footer() {
   return (
     <footer id="footer" className="relative w-full overflow-hidden bg-black font-sans text-grey-light">
-      {/* Foto latar (img, paling belakang) */}
       <img
         src={ImageFooter}
         alt=""
         className="absolute inset-0 z-0 h-full w-full object-cover object-center"
       />
 
-      {/* Overlay gelap supaya teks tetap terbaca */}
       <div className="absolute inset-0 z-0 bg-black/30" />
 
-      {/* Kurva putih DESKTOP (disembunyikan di mobile) */}
       <svg
         className="absolute bottom-0 left-0 z-0 h-[360px] w-full max-lg:h-[280px] max-sm:hidden"
         viewBox="0 0 1272 500"
@@ -29,7 +26,6 @@ function Footer() {
         />
       </svg>
 
-      {/* Kurva putih MOBILE (hanya tampil di mobile) */}
       <svg
         className="hidden max-sm:block absolute bottom-0 left-0 z-0 h-[480px] w-full"
         viewBox="0 0 390 358"
@@ -43,7 +39,6 @@ function Footer() {
         />
       </svg>
 
-      {/* 1. CTA: Start Exploring */}
       <section className="relative mb-10 z-10 flex items-center justify-between gap-8 px-20 pt-7 pb-10 text-white max-lg:px-8 max-lg:pt-6 max-sm:flex-col max-sm:gap-4 max-sm:px-5 max-sm:pt-20 max-sm:pb-10">
         <h2 className="text-8xl font-bold leading-none font-clash text-bright-white max-lg:text-6xl max-sm:text-5xl max-sm:-ml-20">
           Start
@@ -51,9 +46,7 @@ function Footer() {
           Exploring.
         </h2>
 
-        {/* Blok kanan: pakai relative + top, bukan mt */}
         <div className="relative top-20 flex max-w-[406px] flex-col items-end gap-6 text-right max-lg:top-14 max-lg:max-w-[260px] max-lg:gap-4 max-sm:top-0 max-sm:max-w-[406px] max-sm:items-start max-sm:text-left">
-          {/* Ikon pin + tangan (disembunyikan di mobile) */}
           <svg
             width="383"
             height="344"
@@ -166,9 +159,7 @@ function Footer() {
         </div>
       </section>
 
-      {/* 2. Brand + Social (di atas area putih) */}
       <section className="relative z-10 flex items-start justify-between gap-10 px-12 pt-14 pb-14 max-lg:px-8 max-lg:pt-10 max-lg:pb-10 max-sm:flex-col max-sm:gap-8 max-sm:px-5 max-sm:pt-24 max-sm:pb-0">
-        {/* Brand */}
         <div className="flex max-w-xs flex-col gap-3 max-sm:gap-2">
           <h2 className="text-4xl font-bold font-clash text-grey-light uppercase max-lg:text-3xl max-sm:text-black max-sm:text-3xl">
             SETAPAK
@@ -180,14 +171,12 @@ function Footer() {
           </p>
         </div>
 
-        {/* Social: pakai relative + top, bukan mt */}
         <nav className="relative top-32 flex flex-col items-end gap-3 max-lg:top-20 max-sm:top-0 max-sm:items-start">
           <h3 className="text-3xl font-bold font-clash text-grey-light max-lg:text-2xl max-sm:text-xl max-sm:text-black">
             Social
           </h3>
 
           <div className="flex flex-col items-end gap-2 text-xs font-medium text-grey-light max-sm:items-start max-sm:-mt-4 max-sm:gap-0">
-            {/* Baris 1 */}
             <ul className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 max-lg:gap-x-3 max-sm:justify-start max-sm:gap-x-2 ">
               <li>
                 <a
@@ -220,7 +209,6 @@ function Footer() {
               </li>
             </ul>
 
-            {/* Baris 2 */}
             <ul className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 max-lg:gap-x-3 max-sm:justify-start max-sm:gap-x-3">
               <li>
                 <a
@@ -253,7 +241,6 @@ function Footer() {
               </li>
             </ul>
 
-            {/* Baris 3 */}
             <ul className="flex items-center justify-end max-sm:justify-start">
               <li>
                 <a
@@ -269,7 +256,6 @@ function Footer() {
         </nav>
       </section>
 
-      {/* 3. Copyright */}
       <div className="relative z-10 px-10 pt-10 pb-6 max-lg:px-8 max-lg:pt-6 max-sm:px-5 max-sm:pt-6">
         <small className="block text-base font-jakarta font-bold text-grey-light max-lg:text-sm max-sm:text-sm max-sm:font-normal max-sm:text-black">
           © 2026 Setapak. Crafted by The Rijalz.

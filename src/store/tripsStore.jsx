@@ -1,6 +1,3 @@
-// Satu sumber kebenaran untuk semua trip: kalender, Schedule, dan halaman Trip.
-// Supabase + RLS dipakai kalau env & login tersedia; sisanya fallback localStorage
-// supaya aplikasi tetap bisa didemo tanpa konfigurasi.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
@@ -26,7 +23,6 @@ function writeLocal(userId, trips) {
   try {
     localStorage.setItem(localKey(userId), JSON.stringify(trips));
   } catch {
-    // localStorage penuh / tidak tersedia — abaikan.
   }
 }
 
@@ -216,7 +212,6 @@ export default function TripsProvider({ children }) {
     return { error: null };
   };
 
-  // Satu perjalanan ber rentang tanggal muncul di semua tanggal yang disentuh.
   const tripsByDate = useMemo(
     () =>
       trips.reduce((acc, trip) => {

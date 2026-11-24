@@ -146,8 +146,6 @@ export function buildTripHtml(model, tanggalCetak = new Date()) {
 </body></html>`;
 }
 
-// Membuka dialog cetak browser; pilih "Save as PDF" untuk menyimpan.
-// Teks tetap vektor (tajam & bisa dicopy), tanpa library tambahan.
 export function printTripPdf(model) {
   const html = buildTripHtml(model);
   const iframe = document.createElement("iframe");
@@ -164,7 +162,6 @@ export function printTripPdf(model) {
     try {
       await Promise.race([win.document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]);
     } catch {
-      /* font gagal dimuat: pakai font cadangan */
     }
     win.addEventListener("afterprint", bersihkan);
     win.focus();
