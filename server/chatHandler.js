@@ -1542,7 +1542,8 @@ export async function handleChatRequest(req, res, env = process.env) {
       // Anggaran waktu: fungsi Vercel dibatasi 60 dtk. Ketiga AI (Gemini, Groq,
       // 100milionseek) dipanggil BERSAMAAN; jawaban pertama yang JSON-nya valid dipakai.
       const mulaiPlan = Date.now();
-      const sisaMs = () => 52000 - (Date.now() - mulaiPlan);
+      // Anggaran waktu total (detik). Atur AI_MAX_SECONDS; harus < maxDuration fungsi (300).
+      const sisaMs = () => (Number(env.AI_MAX_SECONDS) || 230) * 1000 - (Date.now() - mulaiPlan);
       const planValid = (teks) => Boolean(parsePlanJson(teks, fakta));
       const result = await askAIParalel({
         message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}`,
@@ -1552,7 +1553,8 @@ export async function handleChatRequest(req, res, env = process.env) {
         maxTokens: 3600,
         // Gemini/Groq riset harga & kondisi terkini, AI penulis menyusun JSON-nya.
         webSearch: "riset",
-        batasMs: Math.max(15000, Math.min(32000, sisaMs() - 8000)),
+        // Saat Groq/Gemini istirahat, 100milionseek (lebih lambat) butuh waktu lebih longgar.
+        batasMs: Math.max(20000, Math.min(150000, sisaMs() - 8000)),
         valid: planValid,
         json: true, // structured output + temperature rendah
       });
