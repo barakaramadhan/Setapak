@@ -8,6 +8,7 @@ import {
   askAI,
   askAIParalel,
   providerAktif,
+  alasanGagalTerakhir,
   RECOMMEND_SYSTEM_PROMPT,
   SEARCH_SYSTEM_PROMPT,
   SEARCH_DETAIL_SYSTEM_PROMPT,
@@ -1632,7 +1633,7 @@ export async function handleChatRequest(req, res, env = process.env) {
         alasanPlanGagal = result
           ? "AI membalas, tapi rencananya belum utuh. Tekan Create Planning sekali lagi ya."
           : providerAktif(env).length
-            ? `AI (${providerAktif(env).join(", ")}) belum merespons tepat waktu — kemungkinan kuota habis atau sedang sibuk. Coba lagi sebentar.`
+            ? `AI (${providerAktif(env).join(", ")}) belum merespons tepat waktu — kemungkinan kuota habis atau sedang sibuk. Coba lagi sebentar.${alasanGagalTerakhir() ? ` [Detail: ${alasanGagalTerakhir()}]` : ""}`
             : "Server belum punya API key AI. Isi GROQ_API_KEY / GEMINI_API_KEY (dan HUNDREDMILLIONSEEK_API_KEY) di Vercel → Settings → Environment Variables, lalu Redeploy.";
       }
       payload = {

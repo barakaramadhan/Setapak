@@ -544,6 +544,11 @@ const tandaiDingin = (nama, error, env) => {
 const daftarUtama = (env) =>
   new Set(String(env?.AI_PRIMARY || "groq,gemini").split(",").map((x) => x.trim().toLowerCase()));
 
+let gagalTerakhir = {};
+/** Alasan gagal tiap AI pada permintaan paralel terakhir (untuk diagnosa). */
+export const alasanGagalTerakhir = () =>
+  Object.entries(gagalTerakhir).map(([n, e]) => `${n}: ${e}`).join("; ");
+
 /** Nama AI yang key-nya terpasang di server (untuk diagnosa). */
 export function providerAktif(env) {
   const dipakai = new Set();
@@ -596,7 +601,7 @@ function daftarProvider(env) {
       call: askHundredMillionSeek,
     },
     ollama: {
-      key: env.OLLAMA_BASE_URL || env.OLLAMA_MODEL || env.OLLAMA_API_KEY || "local",
+      key: env.OLLAMA_BASE_URL || env.OLLAMA_MODEL || env.OLLAMA_API_KEY || (env.VERCEL ? "" : "local"),
       call: askOllama,
     },
     gemini: { key: env.GEMINI_API_KEY, call: askGemini },
@@ -774,6 +779,7 @@ export async function askAIParalel({
     if (blok) pesan = `${message}${blok}`;
   }
 
+  gagalTerakhir = {};
   const jalankan = (kelompok, batas) =>
     Promise.any(
       kelompok.map(async (provider) => {
@@ -794,6 +800,7 @@ export async function askAIParalel({
           return { reply, source: provider.name };
         } catch (error) {
           console.warn(`[setapak] ${provider.name} gagal (paralel): ${error.message}`);
+          gagalTerakhir[provider.name] = String(error.message).slice(0, 80);
           tandaiDingin(provider.name, error, env);
           throw error;
         }
@@ -809,7 +816,7 @@ export async function askAIParalel({
   const total = Math.max(8000, batasMs - (Date.now() - mulai));
   let hasil = null;
   if (utama.length) {
-    hasil = await jalankan(utama, cadangan.length ? Math.max(8000, Math.round(total * 0.55)) : total);
+    hasil = await jalankan(utama, cadangan.length ? Math.max(8000, Math.round(total * 0.65)) : total);
   }
   if (!hasil && cadangan.length) {
     hasil = await jalankan(cadangan, Math.max(8000, batasMs - (Date.now() - mulai)));
