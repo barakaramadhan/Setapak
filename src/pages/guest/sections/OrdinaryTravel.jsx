@@ -66,7 +66,7 @@ function OrdinaryTravel() {
             <span className="max-lg:text-white max-sm:text-sm max-sm:text-white">
               Start planning
             </span>
-            <i className="fi fi-rr-angle-small-right leading-none text-[20px] pt-2 max-lg:text-white max-sm:text-base max-sm:pt-1 max-sm:text-white"></i>
+            <i className="fi fi-rr-angle-small-right text-[20px] max-lg:text-white max-sm:text-base max-sm:text-white leading-[70%]"></i>
           </span>
         </FillButton>
       </div>

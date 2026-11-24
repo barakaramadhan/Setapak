@@ -132,7 +132,7 @@ function FindYourPlace() {
                     className="w-full pr-10 cursor-pointer focus:border-blue-500 focus:ring-blue-500 placeholder:text-grey-light/50 placeholder:font-jakarta placeholder:font-normal placeholder:text-sm"
                   />
                   <i
-                    className={`fi fi-br-angle-small-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg leading-none pointer-events-none transition-transform duration-300 ${
+                    className={`fi fi-br-angle-small-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg leading-[70%] pointer-events-none transition-transform duration-300 ${
                       isCategoryOpen ? "rotate-180" : ""
                     }`}
                   ></i>
@@ -175,7 +175,7 @@ function FindYourPlace() {
                     readOnly
                     className="w-full pr-10 cursor-pointer focus:border-blue-500 focus:ring-blue-500 placeholder:text-grey-light/50 placeholder:font-jakarta placeholder:font-normal placeholder:text-sm"
                   />
-                  <i className="fi fi-br-angle-small-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg leading-none pointer-events-none"></i>
+                  <i className="fi fi-br-angle-small-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg pointer-events-none leading-[70%]"></i>
                 </div>
 
                 {isDateOpen && (
@@ -188,7 +188,7 @@ function FindYourPlace() {
                         }
                         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
                       >
-                        <i className="fi fi-br-angle-small-left text-gray-400 text-lg leading-none"></i>
+                        <i className="fi fi-br-angle-small-left text-gray-400 text-lg leading-[70%]"></i>
                       </button>
                       <p className="font-jakarta font-medium text-sm text-grey-light">
                         {monthNames[month]} {year}
@@ -200,7 +200,7 @@ function FindYourPlace() {
                         }
                         className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
                       >
-                        <i className="fi fi-br-angle-small-right text-gray-400 text-lg leading-none"></i>
+                        <i className="fi fi-br-angle-small-right text-gray-400 text-lg leading-[70%]"></i>
                       </button>
                     </div>
 

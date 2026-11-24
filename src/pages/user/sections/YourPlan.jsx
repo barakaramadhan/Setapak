@@ -153,7 +153,7 @@ function YourPlan() {
         {/* Tambahan Card: Start a new trip */}
         <div className="border-2 border-dashed border-grey-label/70 rounded-2xl flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:bg-grey-label/20 transition-colors min-h-[350px] font-jakarta">
           <div className="bg-arctic-blue/30 rounded-full w-10 h-10 flex items-center justify-center mb-4">
-            <i className="fi fi-rr-plus-small text-2xl flex items-center justify-center "></i>
+            <i className="fi fi-rr-plus-small text-2xl flex items-center justify-center leading-[70%]"></i>
           </div>
           <h3 className="font-jakarta font-bold text-xl text-grey-light mb-1">
             Start a new trip

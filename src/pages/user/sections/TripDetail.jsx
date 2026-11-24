@@ -231,13 +231,13 @@ function TripDetail() {
                       <div className="flex flex-col items-center justify-center gap-2 shrink-0 pr-1">
                         <OutlineButton
                           title={
-                            <i className="fi fi-rr-pencil text-xs flex items-center justify-center"></i>
+                            <i className="fi fi-rr-pencil text-xs flex items-center justify-center leading-[70%]"></i>
                           }
                           className="w-8 h-8 p-0 min-w-0 border border-grey-label/50 rounded-xl flex items-center justify-center text-grey-light/70 hover:bg-grey-label/10 cursor-pointer"
                         />
                         <OutlineButton
                           title={
-                            <i className="fi fi-rr-trash text-xs flex items-center justify-center"></i>
+                            <i className="fi fi-rr-trash text-xs flex items-center justify-center leading-[70%]"></i>
                           }
                           className="w-8 h-8 p-0 min-w-0 border border-grey-label/50 rounded-xl flex items-center justify-center text-grey-light/70 hover:bg-red-50 hover:text-red-500 cursor-pointer"
                         />

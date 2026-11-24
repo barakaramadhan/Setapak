@@ -198,7 +198,7 @@ function Navbar() {
             onClick={() => setMenuOpen(true)}
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/30 text-xl text-bright-white"
           >
-            <i className="fi fi-rr-bars-staggered" />
+            <i className="fi fi-rr-bars-staggered leading-[70%]" />
           </button>
         </header>
 
@@ -228,7 +228,7 @@ function Navbar() {
               onClick={() => setMenuOpen(false)}
               className="text-2xl mt-1 text-black"
             >
-              <i class="fi fi-br-cross-small"></i>
+              <i class="fi fi-br-cross-small leading-[70%]"></i>
             </button>
           </div>
 
@@ -248,7 +248,7 @@ function Navbar() {
                     <i
                       className={`${
                         isActive ? icon.replace("fi-rr-", "fi-sr-") : icon
-                      } text-xl ${
+                      } text-xl leading-[70%] ${
                         isActive ? "text-black" : "text-dark-brown-new"
                       }`}
                     />

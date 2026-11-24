@@ -20,7 +20,7 @@ function TripPlanning() {
          <FillButton className="mt-10">
               <span className="inline-flex items-center justify-center gap-2">
                 <span>Start planning</span>
-                <i className="fi fi-rr-angle-small-right leading-none text-[20px] pt-2"></i>
+                <i className="fi fi-rr-angle-small-right text-[20px] leading-[70%]"></i>
               </span>
             </FillButton>
       </div>

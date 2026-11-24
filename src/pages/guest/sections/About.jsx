@@ -12,13 +12,13 @@ function About() {
       <div className="relative z-10 flex flex-col items-end gap-6 max-lg:items-center max-sm:items-center max-sm:gap-4">
         <div className="flex justify-center gap-10 max-sm:gap-4">
           <div className="flex gap-3 max-sm:gap-1.5 items-center">
-            <i className="fi fi-sr-users-alt text-base max-sm:text-sm text-arctic-blue flex"></i>
+            <i className="fi fi-sr-users-alt text-base max-sm:text-sm text-arctic-blue flex leading-[70%]"></i>
             <p className="font-jakarta font-semibold text-sm max-sm:text-xs text-grey-light">
               We are Setapak
             </p>
           </div>
           <div className="flex gap-3 max-sm:gap-1.5 items-center">
-            <i className="fi fi-sr-star text-base max-sm:text-sm text-[#FFD738] flex"></i>
+            <i className="fi fi-sr-star text-base max-sm:text-sm text-[#FFD738] flex leading-[70%]"></i>
             <p className="font-jakarta font-semibold text-sm max-sm:text-xs text-grey-light">
               5K + People Satisfied
             </p>

@@ -73,7 +73,7 @@ function AiChat() {
         {isEmpty ? (
           <div className="flex h-full flex-col justify-center pb-24">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-grey-light text-white">
-              <i className="fi fi-rr-sparkles leading-none pt-1"></i>
+              <i className="fi fi-rr-sparkles leading-[70%]"></i>
             </span>
 
             <h1 className="mt-4 text-2xl  font-bold text-grey-light max-sm:text-xl">
@@ -103,7 +103,7 @@ function AiChat() {
               ) : (
                 <div key={msg.id} className="flex items-start gap-3">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-grey-light text-white">
-                    <i className="fi fi-rr-sparkles text-sm leading-none pt-1"></i>
+                    <i className="fi fi-rr-sparkles text-sm leading-[70%]"></i>
                   </span>
                   <p className="max-w-[75%] rounded-2xl rounded-tl-sm border border-grey-label/50 bg-white px-4 py-3 text-base text-grey-light max-sm:max-w-[90%]">
                     {msg.text}
@@ -116,7 +116,7 @@ function AiChat() {
             {isLoading && (
               <div className="flex items-start gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-grey-light text-white">
-                  <i className="fi fi-rr-sparkles text-sm leading-none pt-1"></i>
+                  <i className="fi fi-rr-sparkles text-sm leading-[70%]"></i>
                 </span>
                 <div className="flex gap-1 rounded-2xl rounded-tl-sm border border-grey-label/50 bg-white px-4 py-4">
                   <span className="h-2 w-2 animate-bounce rounded-full bg-grey-label"></span>
@@ -148,7 +148,7 @@ function AiChat() {
           disabled={isLoading || !input.trim()}
           className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-arctic-blue text-white disabled:opacity-50"
         >
-          <i className="fi fi-rr-arrow-small-up text-xl leading-none pt-1"></i>
+          <i className="fi fi-rr-arrow-small-up text-xl leading-[70%]"></i>
         </button>
       </div>
     </section>

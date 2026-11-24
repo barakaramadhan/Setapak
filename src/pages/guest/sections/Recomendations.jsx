@@ -60,7 +60,7 @@ function Recomendations() {
               </div>
 
               <div className="flex items-center gap-2 max-lg:gap-1 max-sm:gap-1 text-sm max-lg:text-xs max-sm:text-xs font-normal font-jakarta text-bright-white">
-                <i className="fi fi-sr-star text-base max-lg:text-sm max-sm:text-sm text-[#FFD738] flex"></i>{" "}
+                <i className="fi fi-sr-star text-base max-lg:text-sm max-sm:text-sm text-[#FFD738] flex leading-[70%]"></i>{" "}
                 {item.ratting}
               </div>
             </div>

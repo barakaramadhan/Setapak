@@ -17,7 +17,7 @@ function Footer() {
 
       {/* Kurva putih DESKTOP (disembunyikan di mobile) */}
       <svg
-        className="absolute bottom-0 left-0 z-0 h-[360px] w-full max-lg:h-[280px] max-sm:hidden"
+        className="absolute bottom-0 left-0 z-0 h-[360px] w-full max-lg:h-[400px] max-sm:hidden"
         viewBox="0 0 1272 500"
         preserveAspectRatio="none"
         fill="none"
@@ -44,7 +44,8 @@ function Footer() {
       </svg>
 
       {/* 1. CTA: Start Exploring */}
-      <section className="relative mb-10 z-10 flex items-center justify-between gap-8 px-20 pt-7 pb-10 text-white max-lg:px-8 max-lg:pt-6 max-sm:flex-col max-sm:gap-4 max-sm:px-5 max-sm:pt-20 max-sm:pb-10">
+      {/* TABLET: pb ditambah jadi 16 supaya jarak ke SVG lebih lega (mobile tetap max-sm:pb-10) */}
+      <section className="relative mb-10 z-10 flex items-center justify-between gap-8 px-20 pt-7 pb-10 text-white max-lg:mb-0 max-lg:px-8 max-lg:pt-6 max-lg:pb-16 max-sm:mb-10 max-sm:flex-col max-sm:gap-4 max-sm:px-5 max-sm:pt-20 max-sm:pb-10">
         <h2 className="text-8xl font-bold leading-none font-clash text-bright-white max-lg:text-6xl max-sm:text-5xl max-sm:-ml-20">
           Start
           <br />
@@ -162,27 +163,27 @@ function Footer() {
             fillClassName="bg-bright-white text-dark-brown-new"
           >
             Start Planning
-          </FillButton>
+          </FillButton> 
         </div>
       </section>
 
       {/* 2. Brand + Social (di atas area putih) */}
-      <section className="relative z-10 flex items-start justify-between gap-10 px-12 pt-14 pb-14 max-lg:px-8 max-lg:pt-10 max-lg:pb-10 max-sm:flex-col max-sm:gap-8 max-sm:px-5 max-sm:pt-24 max-sm:pb-0">
+      <section className="relative z-10 flex items-start justify-between gap-10 px-12 pt-14 pb-14 max-lg:px-8 max-lg:pt-6 max-lg:pb-4 max-sm:flex-col max-sm:gap-8 max-sm:px-5 max-sm:pt-24 max-sm:pb-0">
         {/* Brand */}
         <div className="flex max-w-xs flex-col gap-3 max-sm:gap-2">
-          <h2 className="text-4xl font-bold font-clash text-grey-light uppercase max-lg:text-3xl max-sm:text-black max-sm:text-3xl">
+          <h2 className="text-4xl font-bold font-clash text-grey-light uppercase max-lg:text-4xl max-sm:text-black max-sm:text-3xl">
             SETAPAK
           </h2>
 
-          <p className="text-base font-jakarta font-normal leading-relaxed text-grey-light max-lg:text-sm max-sm:text-sm max-sm:leading-snug max-sm:text-black">
+          <p className="text-base font-jakarta font-normal leading-relaxed text-grey-light max-lg:text-base max-sm:text-sm max-sm:leading-snug max-sm:text-black">
             Discover new places, explore local experiences, and create
             meaningful journeys filled with unforgettable moments with Setapak.
           </p>
         </div>
 
         {/* Social: pakai relative + top, bukan mt */}
-        <nav className="relative top-32 flex flex-col items-end gap-3 max-lg:top-20 max-sm:top-0 max-sm:items-start">
-          <h3 className="text-3xl font-bold font-clash text-grey-light max-lg:text-2xl max-sm:text-xl max-sm:text-black">
+        <nav className="relative top-32 flex flex-col items-end gap-3 max-lg:top-24 max-sm:top-0 max-sm:items-start">
+          <h3 className="text-3xl font-bold font-clash text-grey-light max-lg:text-3xl max-sm:text-xl max-sm:text-black">
             Social
           </h3>
 
@@ -192,9 +193,9 @@ function Footer() {
               <li>
                 <a
                   href="#"
-                  className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light max-lg:text-sm max-sm:text-sm max-sm:text-black"
+                  className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light max-lg:text-base max-sm:text-sm max-sm:text-black"
                 >
-                  <i className="fi fi-brands-youtube text-2xl pt-2 max-lg:text-xl max-sm:text-xl" />
+                  <i className="fi fi-brands-youtube text-2xl max-lg:text-xl max-sm:text-xl leading-[70%]" />
                   Setapak.
                 </a>
               </li>
@@ -202,9 +203,9 @@ function Footer() {
               <li>
                 <a
                   href="#"
-                  className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light max-lg:text-sm max-sm:text-sm max-sm:text-black"
+                  className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light max-lg:text-base max-sm:text-sm max-sm:text-black"
                 >
-                  <i className="fi fi-brands-instagram text-2xl pt-1 max-lg:text-xl max-sm:text-xl" />
+                  <i className="fi fi-brands-instagram text-2xl max-lg:text-xl max-sm:text-xl leading-[70%]" />
                   SetapakGo
                 </a>
               </li>
@@ -212,9 +213,9 @@ function Footer() {
               <li>
                 <a
                   href="#"
-                  className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light max-lg:text-sm max-sm:text-sm max-sm:text-black"
+                  className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light max-lg:text-base max-sm:text-sm max-sm:text-black"
                 >
-                  <i className="fi fi-brands-facebook text-2xl pt-1 max-lg:text-xl max-sm:text-xl" />
+                  <i className="fi fi-brands-facebook text-2xl max-lg:text-xl max-sm:text-xl leading-[70%]" />
                   Setapak
                 </a>
               </li>
@@ -225,9 +226,9 @@ function Footer() {
               <li>
                 <a
                   href="#"
-                  className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75 max-lg:text-sm max-sm:text-sm max-sm:text-black"
+                  className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75 max-lg:text-base max-sm:text-sm max-sm:text-black"
                 >
-                  <i className="fi fi-brands-github text-2xl pt-1 max-lg:text-xl max-sm:text-xl" />
+                  <i className="fi fi-brands-github text-2xl max-lg:text-xl max-sm:text-xl leading-[70%]" />
                   fawwazRN
                 </a>
               </li>
@@ -235,9 +236,9 @@ function Footer() {
               <li>
                 <a
                   href="#"
-                  className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75 max-lg:text-sm max-sm:text-sm max-sm:text-black"
+                  className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75 max-lg:text-base max-sm:text-sm max-sm:text-black"
                 >
-                  <i className="fi fi-brands-github text-2xl pt-1 max-lg:text-xl max-sm:text-xl" />
+                  <i className="fi fi-brands-github text-2xl max-lg:text-xl max-sm:text-xl leading-[70%]" />
                   barakaramadhan
                 </a>
               </li>
@@ -245,9 +246,9 @@ function Footer() {
               <li>
                 <a
                   href="#"
-                  className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75 max-lg:text-sm max-sm:text-sm max-sm:text-black"
+                  className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75 max-lg:text-base max-sm:text-sm max-sm:text-black"
                 >
-                  <i className="fi fi-brands-github text-2xl pt-1 max-lg:text-xl max-sm:text-xl" />
+                  <i className="fi fi-brands-github text-2xl max-lg:text-xl max-sm:text-xl leading-[70%]" />
                   Izzamnuddin
                 </a>
               </li>
@@ -258,9 +259,9 @@ function Footer() {
               <li>
                 <a
                   href="mailto:setapakinfo@gmail.com"
-                  className="flex items-center gap-2 font-jakarta font-semibold text-base text-grey-light hover:opacity-75 max-lg:text-sm max-sm:text-sm max-sm:text-black"
+                  className="flex items-center gap-2 font-jakarta font-semibold text-base text-grey-light hover:opacity-75 max-lg:text-base max-sm:text-sm max-sm:text-black"
                 >
-                  <i className="fi fi-sr-envelope text-xl pt-1 max-lg:text-lg max-sm:text-lg" />
+                  <i className="fi fi-sr-envelope text-xl max-lg:text-xl max-sm:text-lg leading-[70%]" />
                   setapakinfo@gmail.com
                 </a>
               </li>
@@ -270,8 +271,8 @@ function Footer() {
       </section>
 
       {/* 3. Copyright */}
-      <div className="relative z-10 px-10 pt-10 pb-6 max-lg:px-8 max-lg:pt-6 max-sm:px-5 max-sm:pt-6">
-        <small className="block text-base font-jakarta font-bold text-grey-light max-lg:text-sm max-sm:text-sm max-sm:font-normal max-sm:text-black">
+      <div className="relative z-10 px-10 pt-10 pb-6 max-lg:px-8 max-lg:pt-6 max-lg:pb-4 max-sm:px-5 max-sm:pt-6 max-sm:pb-6">
+        <small className="block text-base font-jakarta font-bold text-grey-light max-lg:text-base max-sm:text-sm max-sm:font-normal max-sm:text-black">
           © 2026 Setapak. Crafted by The Rijalz.
         </small>
       </div>

@@ -178,18 +178,18 @@ function HomeUser() {
     // [PERBAIKAN 1]: Ditambah max-w-7xl mx-auto w-full agar layout terpusat rapi
     <section className="font-jakarta max-w-7xl mx-auto w-full bg-bright-white">
       {/* bagian atas: sapaan + lonceng + profil */}
-      <header className="flex items-start justify-between px-10 pt-9">
+      <header className="flex items-start justify-between px-10 pt-9 max-sm:px-5">
         <div>
-          <h1 className="text-4xl font-bold font-jakarta text-grey-light">
+          <h1 className="text-4xl font-bold font-jakarta text-grey-light max-sm:text-3xl">
             Hello, {dummyUser.name}!
           </h1>
-          <p className="text-base font-jakarta font-normal text-grey-light">
+          <p className="text-base font-jakarta font-normal text-grey-light max-sm:text-sm max-sm:w-96">
             wut i have put in here?, so i’ll just put some random word here
           </p>
         </div>
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-5 max-sm:hidden">
           <button className="text-2xl ">
-            <i className="fi fi-rr-bell"></i>
+            <i className="fi fi-rr-bell leading-[70%]"></i>
           </button>
           <button className="-mt-2">
             <img
@@ -202,11 +202,11 @@ function HomeUser() {
       </header>
 
       {/* pembungkus bagian bawah, dibagi dua deretan */}
-      <div className="flex items-stretch gap-6 px-10 pt-12 pb-10 max-md:flex-col">
+      <div className="flex items-stretch gap-6 px-10 pt-12 pb-10 max-md:flex-col max-sm:px-5 max-sm:pt-6">
         {/* deretan pertama: hero + travel interests */}
         <div className="flex min-w-0 flex-1 flex-col gap-5 max-md:w-full">
           {/* bagian hero homeUser */}
-          <div className="relative min-h-[250px] overflow-hidden rounded-3xl bg-dark-brown-new shadow-lg max-md:w-full">
+          <div className="relative min-h-[250px] max-sm:min-h-[200px] overflow-hidden rounded-3xl bg-dark-brown-new shadow-lg max-md:w-full">
             <img
               src={ImageHeaderUser}
               alt=""
@@ -215,21 +215,22 @@ function HomeUser() {
             {/* lapisan gelap supaya teks putih terbaca */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent"></div>
 
-            <div className="relative z-10 flex h-full flex-col items-start px-6 py-8">
-              <h2 className="font-clash text-4xl font-bold text-white">
+            <div className="relative z-10 flex h-full flex-col items-start px-6 py-8 max-sm:px-5 max-sm:py-5">
+              <h2 className="font-clash text-4xl font-bold text-white max-sm:text-2xl">
                 Your Next Journey Awaits!
               </h2>
-              <p className="mt-1 max-w-md text-base font-normal font-jakarta text-white">
+              <p className="mt-1 max-w-md text-base font-normal font-jakarta text-white max-sm:text-sm">
                 Discover amazing destinations and let AI help you create the
                 perfect travel itinerary.
               </p>
               <FillButton
-                className="mt-7 ring-bright-white text-bright-white px-6 py-2"
+                className="mt-12 ring-bright-white text-bright-white px-6 py-3 max-sm:mt-8 max-sm:px-3 max-sm:py-3 max-sm:text-sm max-sm:rounded-xl"
+                baseClassName="max-sm:bg-white max-sm:text-grey-light ring-1 ring-inset ring-white"
                 fillClassName="bg-bright-white text-dark-brown-new"
               >
                 <span className="inline-flex items-center justify-center gap-2">
                   <span>Start planning</span>
-                  <i className="fi fi-rr-angle-small-right leading-none text-[20px] pt-2"></i>
+                  <i className="fi fi-rr-angle-small-right text-[20px] leading-[70%] max-sm:text-base"></i>
                 </span>
               </FillButton>
             </div>
@@ -241,26 +242,25 @@ function HomeUser() {
               Travel Interests
             </h2>
 
-            {/* [PERBAIKAN 2]: max-w-[820px] diubah menjadi w-full agar mengisi ruang kosong secara maksimal */}
-            <div className="mt-2 grid w-full grid-cols-3 gap-4 max-sm:grid-cols-1">
+            <div className="mt-2 grid w-full grid-cols-3 gap-4 max-sm:flex max-sm:overflow-x-auto hide-scrollbar">
               {travel.map((item) => (
                 <div
                   key={item.id}
-                  className="relative h-[320px] overflow-hidden rounded-2xl bg-dark-brown-new shadow-lg"
+                  className="relative h-[320px] overflow-hidden rounded-2xl bg-dark-brown-new shadow-lg max-sm:w-52 max-sm:h-[280px] max-sm:flex-shrink-0"
                 >
                   <img
                     src={item.image}
                     alt={item.title}
                     className="absolute inset-0 h-full w-full object-cover"
                   />
-                  {/* lapisan gelap di bagian bawah supaya teks terbaca */}
+
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
 
                   <div className="absolute bottom-0 left-0 z-10 px-4 pb-5">
-                    <h3 className="font-clash text-4xl font-bold text-white tracking-normal">
+                    <h3 className="font-clash text-4xl font-bold text-white tracking-normal max-sm:text-3xl">
                       {item.title}
                     </h3>
-                    <p className="text-sm font-light leading-tight text-white">
+                    <p className="text-sm font-light leading-tight text-white max-sm:text-xs">
                       {item.description}
                     </p>
                   </div>
@@ -281,7 +281,7 @@ function HomeUser() {
                 onClick={handlePrevMonth}
                 className="h-8 w-8 rounded-full hover:bg-grey-label/50 flex items-center justify-center pt-1"
               >
-                <i className="fi fi-rr-angle-small-left text-lg"></i>
+                <i className="fi fi-rr-angle-small-left text-lg leading-[70%]"></i>
               </button>
 
               <h3 className="font-jakarta text-base font-semibold text-grey-light">
@@ -293,7 +293,7 @@ function HomeUser() {
                 onClick={handleNextMonth}
                 className="h-8 w-8 rounded-full hover:bg-grey-label/50 flex items-center justify-center pt-1"
               >
-                <i className="fi fi-rr-angle-small-right text-lg"></i>
+                <i className="fi fi-rr-angle-small-right text-lg leading-[70%]"></i>
               </button>
             </div>
 
@@ -352,7 +352,7 @@ function HomeUser() {
                   className="flex items-center gap-2 rounded-2xl border-2 border-grey-label/80 bg-white px-3 py-3"
                 >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-arctic-blue text-white">
-                    <i className="fi fi-rr-marker leading-none text-sm pt-1"></i>
+                    <i className="fi fi-rr-marker text-sm leading-[70%]"></i>
                   </span>
                   <div className="min-w-0">
                     <h3 className="text-base font-jakarta font-semibold leading-tight text-grey-light">
@@ -370,7 +370,7 @@ function HomeUser() {
       </div>
 
       {/* bagian for you (data dummy, nanti dari AI planning) */}
-      <div className="px-10 pb-10 mt-20">
+      <div className="px-10 pb-10 mt-20 max-sm:px-5 max-sm:mt-10">
         {/* judul: For you [In|Near] Bogor > */}
         <div className="flex items-center gap-3">
           <h2 className="text-3xl font-jakarta font-bold text-grey-light">
@@ -384,7 +384,9 @@ function HomeUser() {
                 type="button"
                 onClick={() => setMode(m)}
                 className={`rounded-full px-3 py-1 text-sm font-jakarta font-medium capitalize ${
-                  mode === m ? "bg-arctic-blue text-white" : "text-grey-light/80"
+                  mode === m
+                    ? "bg-arctic-blue text-white"
+                    : "text-grey-light/80"
                 }`}
               >
                 {m}
@@ -395,7 +397,7 @@ function HomeUser() {
           <h2 className="text-3xl font-jakarta font-bold text-grey-light">
             Bogor
           </h2>
-          <i className="fi fi-rr-angle-small-right text-2xl leading-none pt-1"></i>
+          <i className="fi fi-rr-angle-small-right text-2xl leading-[70%]"></i>
         </div>
 
         {/* kategori + card tempat */}
@@ -405,9 +407,12 @@ function HomeUser() {
               {category}
             </h3>
 
-            <div className="mt-3 grid w-full grid-cols-4 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
+            <div className="mt-3 grid w-full grid-cols-4 gap-4 max-md:grid-cols-2 max-sm:flex max-sm:overflow-x-auto hide-scrollbar">
               {items.map((place) => (
-                <div key={place.id} className="flex flex-col">
+                <div
+                  key={place.id}
+                  className="flex flex-col max-sm:w-48 max-sm:flex-shrink-0"
+                >
                   <img
                     src={place.image}
                     alt={place.name}
@@ -419,7 +424,8 @@ function HomeUser() {
                       {place.name}
                     </h4>
                     <span className="shrink-0 text-sm font-jakarta font-medium text-grey-light">
-                      <i className="fi fi-sr-star text-xs"></i> {place.rating}
+                      <i className="fi fi-sr-star text-xs leading-[70%]"></i>{" "}
+                      {place.rating}
                     </span>
                   </div>
 
