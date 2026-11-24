@@ -9,7 +9,7 @@ import {
   saveLastPlan,
   extractTripFacts,
 } from "../../../api/chat";
-import { planTrip, resolveCity, cityLabels } from "../../../api/plannerEngine";
+import { planTrip, resolveCity, cityLabels, normalizeText } from "../../../api/plannerEngine";
 import MapPane from "../../../components/ui/MapPane";
 import { mapMarkersFromPlan, ringkasPlan } from "../../../utils/planSummary";
 import { useAuth, displayName } from "../../../store/useAuth";
@@ -659,12 +659,21 @@ function AiChatInner() {
       const ringkasanField = wiz.fields
         .map((f) => `${f.label}: ${wiz.values[f.key] || "-"}`)
         .join(", ");
+      const obrolanUser = history
+        .filter((item) => item.role === "user")
+        .map((item) => item.text)
+        .join(" | ");
       const obrolan = history.map((item) => `${item.role}: ${item.text}`).join(" | ");
       const ringkasan = `Buat rencana perjalanan. Data dari user: ${ringkasanField}. ${wiz.values.catatan ? `Catatan: ${wiz.values.catatan}. ` : ""}Obrolan: ${obrolan}`.slice(0, 2000);
 
-      const lokal = planTrip(ringkasan);
-      let plan = lokal.handled ? lokal.plan : null;
-      let sumber = lokal.handled ? "engine" : null;
+      const lokal = planTrip(`${ringkasanField}. ${obrolanUser}`);
+      const kotaLokal = normalizeText(cityLabels[lokal.plan?.city] || lokal.plan?.city || "");
+      const cocokTujuanLokal = (facts.destinations || []).every((destination) => {
+        const tujuan = normalizeText(destination).replace(/^gunung\s+/, "");
+        return tujuan && kotaLokal.includes(tujuan);
+      });
+      let plan = lokal.handled && cocokTujuanLokal ? lokal.plan : null;
+      let sumber = plan ? "engine" : null;
       let pesanGagalPlan = "";
       if (!plan) {
         const hasilAI = await askCreatePlan(ringkasan, facts);

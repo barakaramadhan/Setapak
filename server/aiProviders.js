@@ -168,6 +168,7 @@ Balas HANYA JSON valid, tanpa markdown dan tanpa penjelasan. Format persis:
 }
 Aturan:
 - Jumlah hari 1 sampai 14. Kalau ada PROFIL TRIP dengan jumlah hari, ikuti angka itu apa adanya (misalnya 10 hari = 10 entri "days"). Jangan memotong jadi 7 hari.
+- Tujuan pada PROFIL TRIP adalah sumber kebenaran. "city" wajib mencantumkan setiap tujuan itu; jangan menggantinya dengan kota/gunung lain meskipun tempat di DATA LAPANGAN tidak cukup. Jika data untuk tujuan tidak cukup, tetap gunakan tujuan user dan pilih aktivitas yang aman untuk diverifikasi.
 - Jika PROFIL TRIP memuat "Pembagian durasi", buat tepat sejumlah hari untuk SETIAP destinasi sesuai angkanya, dengan urutan destinasi yang diberikan. Jangan menggabungkan atau menghilangkan negara/kota; cantumkan nama destinasi pada judul hari dan isi tempat yang benar-benar berada di destinasi hari itu. "city" harus menyebut semua destinasi utama.
 - Maksimal 3 tempat per hari. Kategori hanya nature|food|culture|beach|adventure|lainnya. cost angka Rupiah (0 kalau gratis). Pakai nama tempat yang benar-benar ada; jangan mengarang restoran beralamat.
 - Kalau ada DATA LAPANGAN: pilih tempat dari daftar TEMPAT dan isi "ref" dengan id-nya (mis. "P12"). Satu hari = satu zona atau zona bertetangga. "ref": null HANYA untuk tempat terkenal yang kamu yakin ada di tujuan itu. Salin nama persis seperti di daftar.
@@ -231,11 +232,12 @@ async function askGemini({
   systemPrompt = SYSTEM_PROMPT,
   maxTokens = 400,
   webSearch = false,
-  timeoutMs = TIMEOUT_MS,
+  timeoutMs,
   json = false,
 }) {
   const model = env.GEMINI_MODEL || MODEL_GEMINI;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
+  const batas = Number(timeoutMs) || (webSearch ? TIMEOUT_WEB_MS : TIMEOUT_MS);
 
   const kirim = (denganWeb) => postJson(url, {
     ...(denganWeb ? { tools: [{ google_search: {} }] } : {}),
@@ -250,7 +252,7 @@ async function askGemini({
       ...(json && !denganWeb ? { responseMimeType: "application/json" } : {}),
       thinkingConfig: { thinkingLevel: "LOW", includeThoughts: false },
     },
-  }, {}, denganWeb ? TIMEOUT_WEB_MS : timeoutMs);
+  }, {}, denganWeb ? Math.min(TIMEOUT_WEB_MS, batas) : batas);
 
   let response = await kirim(webSearch);
   if (!response.ok && webSearch && [400, 403, 404].includes(response.status)) {
@@ -275,9 +277,10 @@ async function askGroq({
   systemPrompt = SYSTEM_PROMPT,
   maxTokens = 400,
   webSearch = false,
-  timeoutMs = TIMEOUT_MS,
+  timeoutMs,
   json = false,
 }) {
+  const batas = Number(timeoutMs) || (webSearch ? TIMEOUT_WEB_MS : TIMEOUT_MS);
   const kirim = (denganWeb) => postJson(
     "https://api.groq.com/openai/v1/chat/completions",
     {
@@ -297,7 +300,7 @@ async function askGroq({
       ],
     },
     { Authorization: `Bearer ${env.GROQ_API_KEY}` },
-    denganWeb ? TIMEOUT_WEB_MS : timeoutMs
+    denganWeb ? Math.min(TIMEOUT_WEB_MS, batas) : batas
   );
 
   let response = await kirim(webSearch);
@@ -454,6 +457,7 @@ async function askOllama({
   env,
   systemPrompt = SYSTEM_PROMPT,
   maxTokens = 400,
+  timeoutMs = TIMEOUT_MS,
 }) {
   const base = String(env.OLLAMA_BASE_URL || "http://localhost:11434/v1").replace(/\/$/, "");
   const model = env.OLLAMA_MODEL || MODEL_OLLAMA;
@@ -476,7 +480,8 @@ async function askOllama({
         { role: "user", content: message },
       ],
     },
-    headers
+    headers,
+    timeoutMs
   );
 
   if (!response.ok) throw new Error(`Ollama ${response.status}`);
@@ -496,9 +501,6 @@ const tandaiDingin = (nama, error, env) => {
     dingin.set(nama, Date.now() + masaDingin(env));
   }
 };
-const daftarUtama = (env) =>
-  new Set(String(env?.AI_PRIMARY || "groq,gemini").split(",").map((x) => x.trim().toLowerCase()));
-
 let gagalTerakhir = {};
 export const alasanGagalTerakhir = () =>
   Object.entries(gagalTerakhir).map(([n, e]) => `${n}: ${e}`).join("; ");
@@ -511,12 +513,17 @@ export function providerAktif(env) {
 }
 const sedangDingin = (nama) => (dingin.get(nama) || 0) > Date.now();
 
-async function risetBersama({ message, env, history }) {
-  for (const [nama, fn, key] of [
+async function risetBersama({ message, env, history, timeoutMs = TIMEOUT_WEB_MS * 2 }) {
+  const providers = [
     ["gemini", askGemini, env.GEMINI_API_KEY],
     ["groq", askGroq, env.GROQ_API_KEY],
-  ]) {
+  ];
+  const mulai = Date.now();
+  for (let i = 0; i < providers.length; i += 1) {
+    const [nama, fn, key] = providers[i];
     if (!key || sedangDingin(nama)) continue;
+    const sisaMs = timeoutMs - (Date.now() - mulai);
+    if (sisaMs <= 0) break;
     try {
       const hasil = await fn({
         message: `Permintaan user: ${String(message).slice(0, 1200)}`,
@@ -525,12 +532,12 @@ async function risetBersama({ message, env, history }) {
         systemPrompt: RISET_PROMPT,
         maxTokens: 700,
         webSearch: true,
+        timeoutMs: Math.max(1, Math.floor(sisaMs / (providers.length - i))),
       });
       const teks = String(hasil?.reply || "").trim();
       if (teks && !/^TIDAK ADA\b/i.test(teks)) {
         return `\n\n=== CATATAN RISET WEB (real-time, dari ${nama}) ===\n${teks.slice(0, 1800)}\n=== AKHIR CATATAN ===\nPakai catatan ini hanya untuk fakta terkini (harga, jadwal, cuaca, aturan). Jangan menyebut nama tempat spesifik dari catatan ini kecuali ada di DATA LAPANGAN.`;
       }
-      return null;
     } catch (error) {
       console.warn(`[setapak] riset ${nama} gagal: ${error.message}`);
       tandaiDingin(nama, error, env);
@@ -659,7 +666,7 @@ export async function askAI({
   return null;
 }
 
-export async function askAIParalel({
+export async function askAISequential({
   message,
   history = [],
   env,
@@ -673,6 +680,7 @@ export async function askAIParalel({
   valid = () => true,
 }) {
   const mulai = Date.now();
+  const batasAkhir = mulai + Math.max(8000, Number(batasMs) || 30000);
   const daftar = daftarProvider(env);
   const urutan = (Array.isArray(providerOrder) && providerOrder.length
     ? providerOrder
@@ -694,51 +702,37 @@ export async function askAIParalel({
   let pesan = message;
   const webAktif = Boolean(webSearch) && String(env.AI_WEB_SEARCH || "").toLowerCase() !== "off";
   if (webAktif) {
-    const batas = new Promise((resolve) => setTimeout(() => resolve(null), risetMs));
-    const blok = await Promise.race([risetBersama({ message, env, history }), batas]).catch(
-      () => null
-    );
+    const blok = await risetBersama({ message, env, history, timeoutMs: risetMs });
     if (blok) pesan = `${message}${blok}`;
   }
 
   gagalTerakhir = {};
-  const jalankan = (kelompok, batas) =>
-    Promise.any(
-      kelompok.map(async (provider) => {
-        try {
-          const hasil = await provider.call({
-            message: pesan,
-            history,
-            env,
-            systemPrompt,
-            maxTokens,
-            webSearch: false,
-            json,
-            timeoutMs: batas,
-          });
-          const reply = bersihkanSitasi(typeof hasil === "string" ? hasil : hasil?.reply);
-          if (!reply) throw new Error(`${provider.name} balasan kosong`);
-          if (!valid(reply)) throw new Error(`${provider.name} balasan tidak valid`);
-          return { reply, source: provider.name };
-        } catch (error) {
-          console.warn(`[setapak] ${provider.name} gagal (paralel): ${error.message}`);
-          gagalTerakhir[provider.name] = String(error.message).slice(0, 80);
-          tandaiDingin(provider.name, error, env);
-          throw error;
-        }
-      })
-    ).catch(() => null);
+  for (let i = 0; i < aktif.length; i += 1) {
+    const provider = aktif[i];
+    const sisaMs = batasAkhir - Date.now();
+    if (sisaMs <= 0) break;
+    if (sedangDingin(provider.name)) continue;
 
-  const utamaSet = daftarUtama(env);
-  const utama = aktif.filter((p) => utamaSet.has(p.name));
-  const cadangan = aktif.filter((p) => !utamaSet.has(p.name));
-  const total = Math.max(8000, batasMs - (Date.now() - mulai));
-  let hasil = null;
-  if (utama.length) {
-    hasil = await jalankan(utama, cadangan.length ? Math.max(8000, Math.round(total * 0.65)) : total);
+    try {
+      const hasil = await provider.call({
+        message: pesan,
+        history,
+        env,
+        systemPrompt,
+        maxTokens,
+        webSearch: false,
+        json,
+        timeoutMs: Math.max(1, Math.floor(sisaMs / (aktif.length - i))),
+      });
+      const reply = bersihkanSitasi(typeof hasil === "string" ? hasil : hasil?.reply);
+      if (!reply) throw new Error(`${provider.name} balasan kosong`);
+      if (!valid(reply)) throw new Error(`${provider.name} balasan tidak valid`);
+      return { reply, source: provider.name };
+    } catch (error) {
+      console.warn(`[setapak] ${provider.name} gagal: ${error.message}`);
+      gagalTerakhir[provider.name] = String(error.message).slice(0, 80);
+      tandaiDingin(provider.name, error, env);
+    }
   }
-  if (!hasil && cadangan.length) {
-    hasil = await jalankan(cadangan, Math.max(8000, batasMs - (Date.now() - mulai)));
-  }
-  return hasil;
+  return null;
 }

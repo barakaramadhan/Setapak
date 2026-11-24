@@ -1,4 +1,5 @@
 export const LABEL_DESTINASI = {
+  "gunung merbabu": "Gunung Merbabu", merbabu: "Gunung Merbabu",
   makkah: "Makkah", mekah: "Makkah", mekkah: "Makkah", mecca: "Makkah",
   madinah: "Madinah", medina: "Madinah",
   jeddah: "Jeddah", jedda: "Jeddah",

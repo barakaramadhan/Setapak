@@ -2,7 +2,7 @@
 import { createHash } from "node:crypto";
 import {
   askAI,
-  askAIParalel,
+  askAISequential,
   providerAktif,
   alasanGagalTerakhir,
   RECOMMEND_SYSTEM_PROMPT,
@@ -600,6 +600,7 @@ function parsePlanJson(text, fakta = null) {
 }
 
 export function rencanaSesuaiPembagian(plan, fakta, lapangan) {
+  if (!rencanaSesuaiTujuan(plan, fakta)) return false;
   const pembagian = Object.entries(fakta?.daysByDestination || {});
   if (pembagian.length < 2) return true;
 
@@ -628,6 +629,20 @@ export function rencanaSesuaiPembagian(plan, fakta, lapangan) {
     }
   }
   return true;
+}
+
+export function rencanaSesuaiTujuan(plan, fakta) {
+  const destinations = Array.isArray(fakta?.destinations) ? fakta.destinations : [];
+  if (!destinations.length) return true;
+
+  const city = normalizeText(plan?.city || "");
+  return Boolean(
+    city &&
+      destinations.every((destination) => {
+        const target = normalizeText(destination).replace(/^gunung\s+/, "");
+        return target && city.includes(target);
+      })
+  );
 }
 
 function beriLabelPembagian(plan, fakta) {
@@ -1395,8 +1410,11 @@ export async function handleChatRequest(req, res, env = process.env) {
       });
       const mulaiPlan = Date.now();
       const sisaMs = () => (Number(env.AI_MAX_SECONDS) || 230) * 1000 - (Date.now() - mulaiPlan);
-      const planValid = (teks) => Boolean(parsePlanJson(teks, fakta));
-      const result = await askAIParalel({
+      const planValid = (teks) => {
+        const kandidat = parsePlanJson(teks, fakta);
+        return Boolean(kandidat && rencanaSesuaiTujuan(kandidat, fakta));
+      };
+      const result = await askAISequential({
         message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}`,
         history: [],
         env,
@@ -1435,7 +1453,7 @@ export async function handleChatRequest(req, res, env = process.env) {
       let sumberPlan = result?.source;
       let alasanPlanGagal = null;
       if ((!plan || (fakta?.days && plan.days.length !== Math.min(14, fakta.days))) && sisaMs() > 14000) {
-        const ulang = await askAIParalel({
+        const ulang = await askAISequential({
           message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}\n\nKOREKSI WAJIB: balasan sebelumnya tidak valid/lengkap atau jumlah hari tidak sesuai. Buat tepat ${Math.min(14, fakta?.days || 3)} hari. Balas HANYA JSON valid dan LENGKAP. Boleh kosongkan "modules" dan singkatkan "why" supaya JSON pasti selesai.`,
           history: [],
           env,
@@ -1448,7 +1466,7 @@ export async function handleChatRequest(req, res, env = process.env) {
         if (parsedUlang) { plan = parsedUlang; sumberPlan = ulang?.source; }
       }
       if (plan && !rencanaSesuaiPembagian(plan, fakta, lapangan) && sisaMs() > 14000) {
-        const ulang = await askAIParalel({
+        const ulang = await askAISequential({
           message: `${message}${lapangan?.blok || ""}${blokKebutuhan(message)}\n\nKOREKSI WAJIB: rencana sebelumnya tidak memenuhi pembagian hari per destinasi. Buat tepat ${fakta.days} hari; setiap hari wajib berisi tempat dari destinasi yang sesuai urutan dan jumlah pada PROFIL TRIP. Gunakan hanya ref dari DATA LAPANGAN, dan jangan menghilangkan destinasi mana pun.`,
           history: [],
           env,
