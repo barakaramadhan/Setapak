@@ -57,10 +57,10 @@ export default function TripDetail({ trip, onOpenDetail }) {
   };
 
   return (
-    <div className="min-h-screen w-full px-10 py-9 font-jakarta text-grey-light max-sm:px-6">
+    <div className="min-h-screen w-full px-5 py-6 font-jakarta text-grey-light sm:px-10 sm:py-9">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-jakarta text-4xl font-bold text-grey-light">{model.title}</h1>
+          <h1 className="font-jakarta text-2xl font-bold text-grey-light sm:text-4xl">{model.title}</h1>
           <p className="mt-1 font-jakarta text-base font-normal text-grey-light/80">{model.subtitle}</p>
         </div>
         <div className="flex flex-wrap gap-2">

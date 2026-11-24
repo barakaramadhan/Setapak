@@ -22,7 +22,7 @@ export default function TripPage() {
 
   if (loading) {
     return (
-      <section className="px-10 pt-10 font-jakarta text-grey-light">
+      <section className="px-5 sm:px-10 pt-10 font-jakarta text-grey-light">
         Memuat trip...
       </section>
     );
@@ -32,7 +32,7 @@ export default function TripPage() {
     const trip = trips.find((item) => item.id === id);
     if (!trip) {
       return (
-        <section className="px-10 pt-10 font-jakarta">
+        <section className="px-5 sm:px-10 pt-10 font-jakarta">
           <h1 className="text-3xl font-bold text-grey-light">
             Trip tidak ditemukan
           </h1>
@@ -74,8 +74,8 @@ export default function TripPage() {
   const tanggal = Object.keys(grupPerjalanan).sort();
 
   return (
-    <section className="mx-auto w-full max-w-4xl px-10 pb-16 pt-10 font-jakarta">
-      <h1 className="font-clash text-4xl font-bold text-grey-light">My Trips</h1>
+    <section className="mx-auto w-full max-w-4xl px-5 sm:px-10 pb-16 pt-10 font-jakarta">
+      <h1 className="font-clash text-3xl font-bold text-grey-light sm:text-4xl">My Trips</h1>
       <p className="mt-2 text-grey-light/70">
         Semua perjalanan dan plan-mu dalam satu tempat. Satu kartu = satu perjalanan, lengkap dengan itinerary & peta.
       </p>

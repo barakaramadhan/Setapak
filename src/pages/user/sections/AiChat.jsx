@@ -790,7 +790,7 @@ function AiChatInner() {
   return (
     <section className="font-jakarta flex min-h-screen w-full max-lg:flex-col">
       {/* ================= kolom chat (halaman yang discroll) ================= */}
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col px-8 pt-4 max-sm:px-4">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col px-4 pt-4 sm:px-8">
         {/* header: judul, tanda trip, pin */}
         <div className="flex items-center justify-between gap-2 border-b border-grey-label/40 pb-3">
           <div className="min-w-0">
@@ -1127,7 +1127,7 @@ function AiChatInner() {
 
       {/* ================= peta (menempel di kanan, gratis & detail) ================= */}
       {petaTampil && (
-        <aside className="border-l border-grey-label/30 lg:sticky lg:top-0 lg:h-screen lg:w-[46%] lg:shrink-0 max-lg:order-first max-lg:h-72 max-lg:w-full">
+        <aside className="border-l border-grey-label/30 lg:sticky lg:top-0 lg:h-screen lg:w-[46%] lg:shrink-0 max-lg:order-first max-lg:h-56 max-lg:w-full">
           <MapPane places={titikPeta} className="h-full w-full" />
         </aside>
       )}

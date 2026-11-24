@@ -204,9 +204,9 @@ function HomeUser() {
     // [PERBAIKAN 1]: Ditambah max-w-7xl mx-auto w-full agar layout terpusat rapi
     <section className="font-jakarta max-w-7xl mx-auto w-full bg-bright-white">
       {/* bagian atas: sapaan + lonceng + profil */}
-      <header className="flex items-start justify-between px-10 pt-9">
+      <header className="flex flex-wrap items-start justify-between gap-3 px-5 pt-6 sm:px-10 sm:pt-9">
         <div>
-          <h1 className="text-4xl font-bold font-jakarta text-grey-light">
+          <h1 className="text-2xl font-bold font-jakarta text-grey-light sm:text-4xl">
             Hello, {displayName(user)}!
           </h1>
           <p className="text-base font-jakarta font-normal text-grey-light">
@@ -236,7 +236,7 @@ function HomeUser() {
       </header>
 
       {/* pembungkus bagian bawah, dibagi dua deretan */}
-      <div className="flex items-stretch gap-6 px-10 pt-12 pb-10 max-md:flex-col">
+      <div className="flex items-stretch gap-6 px-5 pt-8 pb-10 sm:px-10 sm:pt-12 max-md:flex-col">
         {/* deretan pertama: hero + travel interests */}
         <div className="flex min-w-0 flex-1 flex-col gap-5 max-md:w-full">
           {/* bagian hero homeUser */}
@@ -250,7 +250,7 @@ function HomeUser() {
             <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent"></div>
 
             <div className="relative z-10 flex h-full flex-col items-start px-6 py-8">
-              <h2 className="font-clash text-4xl font-bold text-white">
+              <h2 className="font-clash text-2xl font-bold text-white sm:text-4xl">
                 Your Next Journey Awaits!
               </h2>
               <p className="mt-1 max-w-md text-base font-normal font-jakarta text-white">
@@ -277,7 +277,7 @@ function HomeUser() {
             </h2>
 
             {/* [PERBAIKAN 2]: max-w-[820px] diubah menjadi w-full agar mengisi ruang kosong secara maksimal */}
-            <div className="mt-2 grid w-full grid-cols-3 gap-4 max-sm:grid-cols-1">
+            <div className="mt-2 grid w-full grid-cols-3 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
               {travel.map((item) => (
                 <button
                   type="button"
@@ -297,7 +297,7 @@ function HomeUser() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
 
                   <div className="absolute bottom-0 left-0 z-10 px-4 pb-5">
-                    <h3 className="font-clash text-4xl font-bold text-white tracking-normal">
+                    <h3 className="font-clash text-2xl font-bold text-white sm:text-4xl tracking-normal">
                       {item.title}
                     </h3>
                     <p className="text-sm font-light leading-tight text-white">
@@ -336,7 +336,7 @@ function HomeUser() {
       </div>
 
       {/* bagian for you (hasil planner SETAPAK) */}
-      <div className="px-10 pb-10 mt-20">
+      <div className="px-5 pb-10 mt-12 sm:px-10 sm:mt-20">
         {/* judul: For you [In|Near] Bogor > [Bintang] */}
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-3xl font-jakarta font-bold text-grey-light">
@@ -367,7 +367,7 @@ function HomeUser() {
                 placeholder="Mau kota apa?"
                 maxLength={40}
                 aria-label="Nama kota"
-                className="w-52 rounded-full border border-grey-label/60 bg-grey-label/30 py-2 text-base placeholder:text-grey-light/50 focus:border-[#83ADD0] focus:ring-[#83ADD0]"
+                className="w-40 rounded-full sm:w-52 border border-grey-label/60 bg-grey-label/30 py-2 text-base placeholder:text-grey-light/50 focus:border-[#83ADD0] focus:ring-[#83ADD0]"
               />
               <FillButton
                 type="submit"

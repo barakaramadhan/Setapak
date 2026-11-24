@@ -5,7 +5,7 @@ function UserLayout() {
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar />
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 max-lg:pt-14">
         <Outlet />
       </main>
     </div>

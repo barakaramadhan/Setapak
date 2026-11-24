@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth, displayName } from "../../store/useAuth";
 import { useChats } from "../../store/useChats";
 import { useTrips } from "../../store/useTrips";
@@ -45,6 +45,14 @@ function Sidebar() {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [confirmId, setConfirmId] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false); // laci menu di layar kecil
+  const { pathname } = useLocation();
+  useEffect(() => setMobileOpen(false), [pathname]);
+  const tombolMenu = () => {
+    // layar kecil: tutup laci; desktop: ciutkan/lebarkan sidebar
+    if (typeof window !== "undefined" && window.innerWidth < 1024) setMobileOpen(false);
+    else setIsOpen((v) => !v);
+  };
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { trips } = useTrips();
@@ -74,10 +82,21 @@ function Sidebar() {
   };
 
   return (
+    <>
+    {/* bilah atas + latar gelap: hanya di layar kecil */}
+    <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-3 border-b border-grey-label/50 bg-white px-4 lg:hidden">
+      <button type="button" aria-label="Buka menu" onClick={() => setMobileOpen(true)}>
+        <i className="fi fi-rr-bars-staggered text-grey-light text-xl leading-none" />
+      </button>
+      <span className="text-xl font-clash font-bold text-dark-brown-new">SETAPAK</span>
+    </div>
+    {mobileOpen && (
+      <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} />
+    )}
     <aside
-      className={`sticky top-0 flex h-screen shrink-0 flex-col overflow-hidden rounded-r-3xl border-2 border-l-0 border-grey-label/50 bg-white transition-[width] duration-300 ease-in-out ${
-        isOpen ? "w-72" : "w-20"
-      }`}
+      className={`fixed inset-y-0 left-0 z-50 flex h-screen shrink-0 flex-col overflow-hidden rounded-r-3xl border-2 border-l-0 border-grey-label/50 bg-white transition-all duration-300 ease-in-out max-lg:w-72 lg:sticky lg:top-0 lg:translate-x-0 ${
+        mobileOpen ? "translate-x-0" : "max-lg:-translate-x-full"
+      } ${isOpen ? "lg:w-72" : "lg:w-20"}`}
     >
       <div className="relative h-[76px] shrink-0">
         <span
@@ -90,7 +109,7 @@ function Sidebar() {
 
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={tombolMenu}
           className={`absolute top-[30px] transition-all duration-300 ${
             isOpen ? "right-5" : "right-7"
           }`}
@@ -282,6 +301,7 @@ function Sidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }
 

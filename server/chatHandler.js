@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import {
   askAI,
   askAIParalel,
+  providerAktif,
   RECOMMEND_SYSTEM_PROMPT,
   SEARCH_SYSTEM_PROMPT,
   SEARCH_DETAIL_SYSTEM_PROMPT,
@@ -1552,6 +1553,7 @@ export async function handleChatRequest(req, res, env = process.env) {
         webSearch: "riset",
         batasMs: Math.max(15000, Math.min(32000, sisaMs() - 8000)),
         valid: planValid,
+        json: true, // structured output + temperature rendah
       });
       const normPlanDays = (p) => {
         if (!p || !Array.isArray(p.days)) return p;
@@ -1629,7 +1631,9 @@ export async function handleChatRequest(req, res, env = process.env) {
       if (!plan && !alasanPlanGagal) {
         alasanPlanGagal = result
           ? "AI membalas, tapi rencananya belum utuh. Tekan Create Planning sekali lagi ya."
-          : "Gemini, Groq, dan 100milionseek belum merespons tepat waktu (kemungkinan kuota habis atau sedang sibuk). Coba lagi sebentar.";
+          : providerAktif(env).length
+            ? `AI (${providerAktif(env).join(", ")}) belum merespons tepat waktu — kemungkinan kuota habis atau sedang sibuk. Coba lagi sebentar.`
+            : "Server belum punya API key AI. Isi GROQ_API_KEY / GEMINI_API_KEY (dan HUNDREDMILLIONSEEK_API_KEY) di Vercel → Settings → Environment Variables, lalu Redeploy.";
       }
       payload = {
         plan,
@@ -1798,7 +1802,7 @@ export async function handleChatRequest(req, res, env = process.env) {
             maxTokens: 1200,
             allowContinue: true,
             // AI dengan internet bawaan didahulukan; sisanya dibantu catatan riset.
-            providerOrder: ["gemini", "groq", "100milionseek", "openrouter", "ollama"],
+            providerOrder: ["groq", "gemini", "100milionseek", "cerebras", "mistral", "openrouter", "ollama"],
             webSearch: true,
             wajibWeb: true,
           });

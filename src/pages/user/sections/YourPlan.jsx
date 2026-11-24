@@ -89,8 +89,8 @@ export default function YourPlan() {
     });
 
   return (
-    <div className="min-h-screen w-full px-10 py-9 max-sm:px-6">
-      <h1 className="font-jakarta text-4xl font-bold text-grey-light">Your Plan</h1>
+    <div className="min-h-screen w-full px-5 py-6 sm:px-10 sm:py-9">
+      <h1 className="font-jakarta text-3xl font-bold text-grey-light sm:text-4xl">Your Plan</h1>
       <p className="mt-1 font-jakarta text-base font-normal text-grey-light">
         All your travel ideas and itineraries, organized in one place.
       </p>
@@ -103,8 +103,8 @@ export default function YourPlan() {
             onClick={() => setFilter(name)}
             className={
               filter === name
-                ? "border-grey-light bg-grey-light px-8 py-2 text-base font-semibold text-white"
-                : "border-2 border-grey-light px-8 py-2 text-base font-semibold text-grey-light"
+                ? "border-grey-light bg-grey-light px-5 py-2 sm:px-8 text-base font-semibold text-white"
+                : "border-2 border-grey-light px-5 py-2 sm:px-8 text-base font-semibold text-grey-light"
             }
           />
         ))}

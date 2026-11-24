@@ -254,6 +254,7 @@ async function askGemini({
   maxTokens = 400,
   webSearch = false,
   timeoutMs = TIMEOUT_MS,
+  json = false,
 }) {
   const model = env.GEMINI_MODEL || MODEL_GEMINI;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
@@ -268,7 +269,9 @@ async function askGemini({
     ],
     generationConfig: {
       maxOutputTokens: maxTokens, // batas ini yang bikin jawaban tidak "habis-habis"
-      temperature: 0.7,
+      temperature: json ? 0.2 : 0.7,
+      // Structured output: Gemini dipaksa membalas JSON valid (bukan hanya lewat prompt).
+      ...(json && !denganWeb ? { responseMimeType: "application/json" } : {}),
       // Gemini 3.x menghitung token berpikir sebagai bagian dari maxOutputTokens.
       // LOW mencegah jawaban kosong/error MAX_TOKENS pada prompt pendek.
       thinkingConfig: { thinkingLevel: "LOW", includeThoughts: false },
@@ -302,6 +305,7 @@ async function askGroq({
   maxTokens = 400,
   webSearch = false,
   timeoutMs = TIMEOUT_MS,
+  json = false,
 }) {
   const kirim = (denganWeb) => postJson(
     "https://api.groq.com/openai/v1/chat/completions",
@@ -310,7 +314,9 @@ async function askGroq({
       // Browser search bawaan Groq (khusus openai/gpt-oss-*), jalan di server Groq.
       ...(denganWeb ? { tools: [{ type: "browser_search" }], tool_choice: "auto" } : {}),
       max_tokens: maxTokens,
-      temperature: 0.7,
+      temperature: json ? 0.2 : 0.7,
+      // Structured output Groq: JSON mode (tidak bisa dipadukan dengan browser_search).
+      ...(json && !denganWeb ? { response_format: { type: "json_object" } } : {}),
       // gpt-oss menyimpan sebagian besar token untuk "reasoning".
       // Tanpa ini, jawaban JSON bisa habis di reasoning dan content kosong.
       reasoning_effort: "low",
@@ -339,6 +345,44 @@ async function askGroq({
   if (!text) throw new Error("Groq balasan kosong");
   return { reply: text, truncated: data.choices?.[0]?.finish_reason === "length" };
 }
+
+// Provider gratis kompatibel OpenAI (Cerebras, Mistral). Tidak punya internet sendiri:
+// data online datang dari "catatan riset" Gemini/Groq/Tavily (lihat risetBersama).
+async function askOpenAICompat({
+  nama, url, key, model, message, history = [], systemPrompt = SYSTEM_PROMPT,
+  maxTokens = 400, timeoutMs = TIMEOUT_MS, json = false,
+}) {
+  const response = await postJson(
+    url,
+    {
+      model,
+      max_tokens: maxTokens,
+      temperature: json ? 0.2 : 0.7,
+      ...(json ? { response_format: { type: "json_object" } } : {}),
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...history.slice(-8).map((item) => ({
+          role: item.role === "user" ? "user" : "assistant",
+          content: String(item.text || "").slice(0, 1000),
+        })),
+        { role: "user", content: message },
+      ],
+    },
+    { Authorization: `Bearer ${key}` },
+    timeoutMs
+  );
+  if (!response.ok) throw new Error(`${nama} ${response.status}`);
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content?.trim();
+  if (!text) throw new Error(`${nama} balasan kosong`);
+  return { reply: text, truncated: data.choices?.[0]?.finish_reason === "length" };
+}
+const askCerebras = (o) =>
+  askOpenAICompat({ ...o, nama: "Cerebras", url: "https://api.cerebras.ai/v1/chat/completions",
+    key: o.env.CEREBRAS_API_KEY, model: o.env.CEREBRAS_MODEL || "gpt-oss-120b" });
+const askMistral = (o) =>
+  askOpenAICompat({ ...o, nama: "Mistral", url: "https://api.mistral.ai/v1/chat/completions",
+    key: o.env.MISTRAL_API_KEY, model: o.env.MISTRAL_MODEL || "mistral-small-latest" });
 
 async function askOpenRouter({
   message,
@@ -486,7 +530,27 @@ const RISET_PROMPT = `Kamu peneliti web untuk SETAPAK. Cari di internet fakta TE
 // Provider yang kena 429 (kuota/rate limit) diistirahatkan sebentar supaya tidak
 // dipanggil ulang dan memperlambat jawaban.
 const dingin = new Map();
-const DINGIN_MS = 60_000;
+// Lama sebuah AI "diistirahatkan" setelah kuotanya habis (429) / sibuk (503).
+// Selama istirahat, AI cadangan (100milionseek dll) yang dipakai; setelah lewat,
+// otomatis kembali ke Groq/Gemini. Atur dari .env: AI_FALLBACK_MINUTES=1 / 2 / 5 ...
+const masaDingin = (env) =>
+  Math.max(10_000, (Number(env?.AI_FALLBACK_MINUTES) || 2) * 60_000);
+const tandaiDingin = (nama, error, env) => {
+  if (/\b(429|503)\b/.test(String(error?.message))) {
+    dingin.set(nama, Date.now() + masaDingin(env));
+  }
+};
+// AI utama dicoba lebih dulu; sisanya hanya cadangan. Ubah lewat AI_PRIMARY.
+const daftarUtama = (env) =>
+  new Set(String(env?.AI_PRIMARY || "groq,gemini").split(",").map((x) => x.trim().toLowerCase()));
+
+/** Nama AI yang key-nya terpasang di server (untuk diagnosa). */
+export function providerAktif(env) {
+  const dipakai = new Set();
+  return Object.entries(daftarProvider(env))
+    .filter(([, p]) => p.key && !dipakai.has(p.call) && dipakai.add(p.call))
+    .map(([nama]) => nama);
+}
 const sedangDingin = (nama) => (dingin.get(nama) || 0) > Date.now();
 
 async function risetBersama({ message, env, history }) {
@@ -511,7 +575,7 @@ async function risetBersama({ message, env, history }) {
       return null;
     } catch (error) {
       console.warn(`[setapak] riset ${nama} gagal: ${error.message}`);
-      if (/429/.test(error.message)) dingin.set(nama, Date.now() + DINGIN_MS);
+      tandaiDingin(nama, error, env);
     }
   }
   return null;
@@ -537,11 +601,13 @@ function daftarProvider(env) {
     },
     gemini: { key: env.GEMINI_API_KEY, call: askGemini },
     groq: { key: env.GROQ_API_KEY, call: askGroq },
+    cerebras: { key: env.CEREBRAS_API_KEY, call: askCerebras },
+    mistral: { key: env.MISTRAL_API_KEY, call: askMistral },
     openrouter: { key: env.OPENROUTER_API_KEY, call: askOpenRouter },
   };
 }
 
-const URUTAN_DEFAULT = "groq,gemini,100milionseek,openrouter,ollama";
+const URUTAN_DEFAULT = "groq,gemini,100milionseek,cerebras,mistral,openrouter,ollama";
 
 /**
  * Coba provider satu per satu. Kalau semua gagal / kuota habis, kembalikan null.
@@ -571,7 +637,7 @@ export async function askAI({
 
   // Urutan default (terbaik -> terjelek/cadangan) bisa diubah dari .env
   // lewat AI_PROVIDER_ORDER. Provider tanpa key/konfigurasi aktif akan dilewati.
-  const defaultOrder = "groq,gemini,100milionseek,openrouter,ollama";
+  const defaultOrder = "groq,gemini,100milionseek,cerebras,mistral,openrouter,ollama";
 
   const urutan = (Array.isArray(providerOrder) && providerOrder.length
     ? providerOrder
@@ -643,7 +709,7 @@ export async function askAI({
           `[setapak] ${provider.name} gagal (percobaan ${percobaan + 1}): ${error.message}`
         );
         // 429 = kuota habis: langsung pindah provider & istirahatkan 1 menit.
-        if (/429/.test(error.message)) dingin.set(provider.name, Date.now() + DINGIN_MS);
+        tandaiDingin(provider.name, error, env);
         const bisaUlang = sementara.test(error.message) && percobaan === 0;
         if (!bisaUlang) break;
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -673,6 +739,7 @@ export async function askAIParalel({
   maxTokens,
   providerOrder,
   webSearch = false,
+  json = false,
   batasMs = 30000,
   risetMs = 10000,
   valid = () => true,
@@ -707,32 +774,45 @@ export async function askAIParalel({
     if (blok) pesan = `${message}${blok}`;
   }
 
-  const sisa = Math.max(5000, batasMs - (Date.now() - mulai));
-  const tugas = aktif.map(async (provider) => {
-    try {
-      const hasil = await provider.call({
-        message: pesan,
-        history,
-        env,
-        systemPrompt,
-        maxTokens,
-        webSearch: false,
-        timeoutMs: sisa,
-      });
-      const reply = typeof hasil === "string" ? hasil : hasil?.reply;
-      if (!reply) throw new Error(`${provider.name} balasan kosong`);
-      if (!valid(reply)) throw new Error(`${provider.name} balasan tidak valid`);
-      return { reply, source: provider.name };
-    } catch (error) {
-      console.warn(`[setapak] ${provider.name} gagal (paralel): ${error.message}`);
-      if (/429/.test(error.message)) dingin.set(provider.name, Date.now() + DINGIN_MS);
-      throw error;
-    }
-  });
+  const jalankan = (kelompok, batas) =>
+    Promise.any(
+      kelompok.map(async (provider) => {
+        try {
+          const hasil = await provider.call({
+            message: pesan,
+            history,
+            env,
+            systemPrompt,
+            maxTokens,
+            webSearch: false,
+            json,
+            timeoutMs: batas,
+          });
+          const reply = typeof hasil === "string" ? hasil : hasil?.reply;
+          if (!reply) throw new Error(`${provider.name} balasan kosong`);
+          if (!valid(reply)) throw new Error(`${provider.name} balasan tidak valid`);
+          return { reply, source: provider.name };
+        } catch (error) {
+          console.warn(`[setapak] ${provider.name} gagal (paralel): ${error.message}`);
+          tandaiDingin(provider.name, error, env);
+          throw error;
+        }
+      })
+    ).catch(() => null);
 
-  try {
-    return await Promise.any(tugas);
-  } catch {
-    return null;
+  // Bertingkat: Groq/Gemini dulu. Yang sedang istirahat (kuota habis) otomatis
+  // terlewati; kalau semua AI utama gagal/istirahat, baru AI cadangan dipakai.
+  // Setelah masa istirahat habis, AI utama dipakai lagi.
+  const utamaSet = daftarUtama(env);
+  const utama = aktif.filter((p) => utamaSet.has(p.name));
+  const cadangan = aktif.filter((p) => !utamaSet.has(p.name));
+  const total = Math.max(8000, batasMs - (Date.now() - mulai));
+  let hasil = null;
+  if (utama.length) {
+    hasil = await jalankan(utama, cadangan.length ? Math.max(8000, Math.round(total * 0.55)) : total);
   }
+  if (!hasil && cadangan.length) {
+    hasil = await jalankan(cadangan, Math.max(8000, batasMs - (Date.now() - mulai)));
+  }
+  return hasil;
 }
