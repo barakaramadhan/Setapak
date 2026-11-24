@@ -178,8 +178,8 @@ function HomeUser() {
     // [PERBAIKAN 1]: Ditambah max-w-7xl mx-auto w-full agar layout terpusat rapi
     <section className="font-jakarta max-w-7xl mx-auto w-full bg-bright-white">
       {/* bagian atas: sapaan + lonceng + profil */}
-      <header className="flex items-start justify-between px-10 pt-9">
-        <div>
+      <header className="flex items-start justify-between px-10 pt-9 max-sm:-mt-16 max-sm:h-16 max-sm:items-center max-sm:justify-end max-sm:px-5 max-sm:pt-0">
+        <div className="max-sm:hidden">
           <h1 className="text-4xl font-bold font-jakarta text-grey-light">
             Hello, {dummyUser.name}!
           </h1>
@@ -191,7 +191,7 @@ function HomeUser() {
           <button className="text-2xl ">
             <i className="fi fi-rr-bell"></i>
           </button>
-          <button className="-mt-2">
+          <button className="-mt-2 max-sm:mt-0">
             <img
               src={dummyUser.photo}
               alt=""
