@@ -56,6 +56,7 @@ WAJIB CEK LOKASI SEBELUM MENJAWAB (contoh yang harus kamu ingat):
 - Taman Safari Indonesia ada di Cisarua, Bogor — BUKAN di Bekasi atau Depok.
 - Pondok Indah Mall ada di Jakarta Selatan — BUKAN di Depok.
 - Trans Jogja hanya beroperasi di Yogyakarta — BUKAN di kota lain.
+- Gunung Merbabu ada di Jawa Tengah (Magelang/Boyolali/Semarang), bukan di Bandung atau Yogyakarta. Pakai tujuan PERSIS seperti yang diminta user; jangan menggantinya dengan tempat lain.
 - Malioboro ada di Yogyakarta. Pantai Kuta ada di Bali. Gunung Bromo ada di Malang/Probolinggo, bukan di Bogor.
 - Jangan pernah mengarang nama tempat yang tidak kamu yakini. Kalau ragu, katakan: "Saya kurang yakin, sebaiknya cek lokasinya di Google Maps." dan beri tautan pencarian Maps.
 - Jangan menyebut syarat perjalanan pandemi (vaksin COVID-19, PCR, karantina) sebagai aturan yang masih berlaku. Kalau dokumen disebut, arahkan ke syarat resmi terbaru.
@@ -197,6 +198,8 @@ Aturan:
 - Jika PROFIL TRIP menyebut momen/periode (mis. akhir tahun, tahun baru) atau tema romantis/bulan madu, sesuaikan judul hari, ritme, dan pilihan tempat agar relevan (mis. suasana romantis, sunset, dinner, spot foto, hindari jadwal terlalu padat). Jangan mengarang event/tanggal festival spesifik jika tidak yakin; tulis sebagai saran umum periode tersebut.
 - Jika ada kebutuhan khusus/kondisi kesehatan/alergi, masukkan ke "modules.safety" (medicalNote/allergies/emergencyName/emergencyPhone/plan sesuai yang diketahui) dan sesuaikan aktivitas agar aman/nyaman.
 - Jangan masukkan syarat pandemi (vaksin COVID-19, PCR, karantina) ke dokumen atau catatan apa pun. Pakai "cek syarat resmi terbaru" bila perlu.` + PRINSIP_AHLI;
+
+import { bersihkanSitasi } from "../src/utils/bersihkanSitasi.js";
 
 const TIMEOUT_MS = 12000;
 // Pencarian web membutuhkan waktu lebih lama daripada jawaban biasa.
@@ -685,7 +688,7 @@ export async function askAI({
           maxTokens,
           webSearch: native,
         });
-        const reply = typeof hasil === "string" ? hasil : hasil?.reply;
+        const reply = bersihkanSitasi(typeof hasil === "string" ? hasil : hasil?.reply);
         if (!reply) throw new Error(`${provider.name} balasan kosong`);
 
         // Jawaban riset boleh panjang. Kalau provider memotongnya, minta satu
@@ -794,7 +797,7 @@ export async function askAIParalel({
             json,
             timeoutMs: batas,
           });
-          const reply = typeof hasil === "string" ? hasil : hasil?.reply;
+          const reply = bersihkanSitasi(typeof hasil === "string" ? hasil : hasil?.reply);
           if (!reply) throw new Error(`${provider.name} balasan kosong`);
           if (!valid(reply)) throw new Error(`${provider.name} balasan tidak valid`);
           return { reply, source: provider.name };

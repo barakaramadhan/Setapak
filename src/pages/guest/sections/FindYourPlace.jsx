@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import SectionMarker from "../../../components/ui/SectionMarker";
+import GoButton from "../../../components/ui/GoButton";
 import FillButton from "../../../components/ui/FillButton";
 import InputAll from "../../../components/ui/InputAll";
 import ImageCard from "../../../assets/images/find-your-place/imagecard.webp";
@@ -255,12 +256,12 @@ function FindYourPlace() {
           </div>
 
           <div className="mt-6 flex justify-start max-sm:justify-center w-full">
-            <FillButton
+            <GoButton to="/chats"
               className="max-lg:text-white max-sm:px-32 max-sm:py-3 max-sm:text-white flex justify-center items-center text-center"
               baseClassName="max-lg:bg-dark-brown-new max-sm:bg-dark-brown-new ring-1 ring-inset ring-dark-brown-new text-dark-brown-new"
             >
               Plan Trip
-            </FillButton>
+            </GoButton>
           </div>
         </div>
       </div>

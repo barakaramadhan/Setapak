@@ -1,4 +1,5 @@
 import SectionMarker from "../../../components/ui/SectionMarker";
+import GoButton from "../../../components/ui/GoButton";
 import FillButton from "../../../components/ui/FillButton";
 import ImageOrdinary from "../../../assets/images/ordinary-travel/bandung.webp";
 import ImageOrdinary1 from "../../../assets/images/ordinary-travel/ordinaryimage1.webp";
@@ -57,7 +58,7 @@ function OrdinaryTravel() {
           Thoughtfully planned journeys, made for the way you love to explore.
         </p>
 
-        <FillButton
+        <GoButton to="/chats"
           className="mt-10 max-sm:px-4 max-sm:py-3 max-sm:mt-6"
           baseClassName="ring-1 ring-inset ring-dark-brown-new max-lg:bg-dark-brown-new max-sm:bg-dark-brown-new"
         >
@@ -67,7 +68,7 @@ function OrdinaryTravel() {
             </span>
             <i className="fi fi-rr-angle-small-right leading-none text-[20px] pt-2 max-lg:text-white max-sm:text-base max-sm:pt-1 max-sm:text-white"></i>
           </span>
-        </FillButton>
+        </GoButton>
       </div>
 
       <div className="flex-[1.5] flex gap-6 items-start max-lg:w-full max-lg:gap-4 max-sm:gap-6 max-sm:w-full max-sm:max-w-full max-sm:overflow-x-auto max-sm:flex-nowrap max-sm:pb-5 hide-scrollbar">

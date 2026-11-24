@@ -1,7 +1,7 @@
 export default function PlaceCard({ place }) {
   return (
     <div className="flex flex-col">
-      <img
+      <img loading="lazy" decoding="async"
         src={place.image}
         alt={place.name}
         className="w-full aspect-[4/3] object-cover rounded-2xl bg-gray-200"

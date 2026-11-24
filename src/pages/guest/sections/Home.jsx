@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { svgHomeAnimation } from "../../../animations/HomeAnimation";
+import GoButton from "../../../components/ui/GoButton";
 import FillButton from "../../../components/ui/FillButton";
 import ImageLangit from "../../../assets/images/home/langithome.webp";
 import ImageSecond from "../../../assets/images/home/imagehero2.webp";
@@ -159,7 +160,7 @@ function Home() {
             Discover New Places and Create Your Perfect Journey.
           </p>
 
-          <FillButton
+          <GoButton to="/chats"
             className="mt-7"
             baseClassName="ring-1 ring-inset ring-dark-brown-new max-sm:text-white max-sm:ring-1 max-sm:ring-inset max-sm:ring-white"
           >
@@ -170,7 +171,7 @@ function Home() {
                 !
               </span>
             </span>
-          </FillButton>
+          </GoButton>
         </div>
       </div>
     </section>

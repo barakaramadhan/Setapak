@@ -307,6 +307,11 @@ export function geocodeTujuan(query, env = process.env) {
     );
     const hit =
       (data || []).find((d) => ["boundary", "place"].includes(d.category)) ||
+      (data || []).find(
+        (d) =>
+          d.category === "natural" &&
+          ["peak", "volcano", "mountain_range", "hill", "water", "bay", "beach", "cave_entrance"].includes(d.type)
+      ) ||
       (data || []).find((d) => Number(d.importance) >= 0.35);
     if (!hit || !Array.isArray(hit.boundingbox)) return null;
     const [s, n, w, e] = hit.boundingbox.map(Number);
@@ -347,6 +352,14 @@ const BUKAN_TUJUAN = new Set([
   "pagi", "siang", "sore", "malam", "kedua", "pertama", "ketiga", "tengah",
 ]);
 
+// Kata penunjuk jenis tempat: sendirian bukan nama tujuan ("gunung" bukan "Gunungkidul").
+const KATA_GENERIK = new Set([
+  "gunung", "bukit", "pantai", "danau", "pulau", "kota", "kabupaten", "desa", "candi",
+  "air", "curug", "taman", "hutan", "pegunungan", "lembah", "gua", "goa", "savana",
+  "laut", "sungai", "bandara", "stasiun", "mount", "mt", "lake", "beach", "island",
+  "mountain", "river", "valley", "temple", "forest",
+]);
+
 function kandidatDariPesan(pesan = "") {
   const hasil = [];
   const re =
@@ -360,7 +373,7 @@ function kandidatDariPesan(pesan = "") {
     if (!kata.length) continue;
     const dua = kata.slice(0, 2).join(" ");
     if (kata.length > 1 && !hasil.includes(dua)) hasil.push(dua);
-    if (!hasil.includes(kata[0])) hasil.push(kata[0]);
+    if (!KATA_GENERIK.has(kata[0].toLowerCase()) && !hasil.includes(kata[0])) hasil.push(kata[0]);
   }
   return hasil.slice(0, 3);
 }

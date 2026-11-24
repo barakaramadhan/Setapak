@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { bersihkanSitasi } from "../../../utils/bersihkanSitasi";
 import { useLocation, useNavigate } from "react-router-dom";
 import InputAll from "../../../components/ui/InputAll";
 import {
@@ -486,7 +487,12 @@ function AiChatInner() {
       setInput("");
       // Judul otomatis dari pesan pertama (masih bisa diganti lewat sidebar).
       if (activeChat?.title === "Chat baru" && !messages.length) {
-        renameChat(chatId, clean.length > 40 ? `${clean.slice(0, 40)}…` : clean);
+        {
+          // Judul ringkas: ambil klausa pertama, kapital di awal, maks 36 huruf.
+          const awal = clean.split(/[,.!?\n]/)[0].trim() || clean;
+          const judul = awal.charAt(0).toUpperCase() + awal.slice(1);
+          renameChat(chatId, judul.length > 36 ? `${judul.slice(0, 36).trim()}…` : judul);
+        }
       }
 
       try {
@@ -887,7 +893,7 @@ function AiChatInner() {
                   <div key={msg.id} className="flex items-start gap-3">
                     <Avatar ai={ai} src={inisial} />
                     <div className="min-w-0 flex-1 pt-1">
-                      {ai ? <AiText text={msg.text} /> : <p className="text-sm text-grey-light">{msg.text}</p>}
+                      {ai ? <AiText text={bersihkanSitasi(msg.text)} /> : <p className="text-sm text-grey-light">{msg.text}</p>}
 
                       {msg.wizardKey && msg.id === terakhirId && opsiAktif ? (
                         <WizardForm

@@ -241,7 +241,7 @@ function HomeUser() {
         <div className="flex min-w-0 flex-1 flex-col gap-5 max-md:w-full">
           {/* bagian hero homeUser */}
           <div className="relative min-h-[250px] overflow-hidden rounded-3xl bg-dark-brown-new shadow-lg max-md:w-full">
-            <img
+            <img loading="lazy" decoding="async"
               src={ImageHeaderUser}
               alt=""
               className="absolute inset-0 h-full w-full object-cover"
@@ -288,7 +288,7 @@ function HomeUser() {
                   title={`Tanya AI: ${item.prompt}`}
                   className="relative h-[320px] w-full cursor-pointer overflow-hidden rounded-2xl bg-dark-brown-new text-left shadow-lg"
                 >
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={item.image}
                     alt={item.title}
                     className="absolute inset-0 h-full w-full object-cover"
@@ -359,7 +359,11 @@ function HomeUser() {
           </div>
 
           {editingCity ? (
-            <form onSubmit={pilihKota} className="flex flex-wrap items-center gap-2">
+            <form
+              onSubmit={pilihKota}
+              onKeyDown={(e) => { if (e.key === "Escape") setEditingCity(false); }}
+              className="flex w-full flex-wrap items-center gap-2 sm:w-auto"
+            >
               <InputAll
                 autoFocus
                 value={cityInput}
@@ -397,6 +401,7 @@ function HomeUser() {
               </FillButton>
 
               {/* Rating opsional: muncul hanya saat input kota dibuka. Klik lagi untuk batal. */}
+              <div className="flex w-full flex-wrap items-center gap-2">
               <span className="ml-1 text-xs font-jakarta font-medium text-grey-light/60">
                 Rating (opsional)
               </span>
@@ -417,6 +422,7 @@ function HomeUser() {
                   {value}+
                 </FillButton>
               ))}
+              </div>
             </form>
           ) : (
             <button
@@ -480,7 +486,7 @@ function HomeUser() {
         {Object.entries(places)
           .filter(([, items]) => items.length > 0)
           .map(([category, items]) => (
-          <div key={category} className="mt-8">
+          <div key={category} className="mt-8 [contain-intrinsic-size:auto_360px] [content-visibility:auto]">
             <h3 className="text-xl font-jakarta font-bold text-grey-light">
               {category}
             </h3>
@@ -488,7 +494,7 @@ function HomeUser() {
             <div className="mt-3 grid w-full grid-cols-4 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
               {items.map((place) => (
                 <div key={place.id} className="flex flex-col">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={place.image || gambarCadangan(category)}
                     alt={place.name}
                     onError={(event) => perbaikiGambar(event, category)}

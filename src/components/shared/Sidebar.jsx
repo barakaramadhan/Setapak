@@ -11,40 +11,12 @@ const navigasiMenu = [
   { label: "Trip", to: "/trip", icon: "fi fi-rr-briefcase-blank" },
 ];
 
-// Tombol aksi kecil dengan ikon SVG (pasti tampil, tanpa bergantung font ikon).
-function AksiChat({ label, onClick, children, aktif = false, bahaya = false }) {
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      onClick={onClick}
-      className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium hover:bg-grey-label/20 ${
-        bahaya ? "text-red-600" : aktif ? "text-[#4f7fa6]" : "text-grey-light/80"
-      }`}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        width="14"
-        height="14"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {children}
-      </svg>
-      {label}
-    </button>
-  );
-}
-
 function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [confirmId, setConfirmId] = useState(null);
+  const [menuId, setMenuId] = useState(null); // menu titik tiga per chat
   const [mobileOpen, setMobileOpen] = useState(false); // laci menu di layar kecil
   const { pathname } = useLocation();
   useEffect(() => setMobileOpen(false), [pathname]);
@@ -171,103 +143,160 @@ function Sidebar() {
 
       {/* Daftar chat — tepat di bawah garis pemisah Explore */}
       <div
-        className={`min-h-0 flex-1 overflow-y-auto px-3 transition-opacity duration-300 ${
+        data-lenis-prevent
+        className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-3 [scrollbar-width:thin] transition-opacity duration-300 ${
           isOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
-        <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wide text-grey-light/60">
+        <p className="sticky top-0 z-10 flex items-center justify-between bg-white px-2 pb-1.5 pt-1 text-[11px] font-bold uppercase tracking-wide text-grey-light/60">
           Chats
+          <span className="rounded-full bg-grey-label/30 px-2 py-0.5 text-[10px] font-semibold normal-case text-grey-light/70">
+            {chats.length}
+          </span>
         </p>
         {chats.length === 0 && (
           <p className="px-2 text-xs text-grey-label">Belum ada chat.</p>
         )}
-        <div className="space-y-1">
-          {chats.map((chat) => {
-            const trip = trips.find((item) => item.id === chat.tripId);
-            const aktif = chat.id === activeId;
-            return (
-              <div
-                key={chat.id}
-                className={`rounded-xl px-2 py-1.5 ${
-                  aktif ? "bg-[#83ADD0]/20" : "hover:bg-grey-label/10"
-                }`}
-              >
-                {editingId === chat.id ? (
-                  <InputAll
-                    autoFocus
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") simpanJudul(chat.id);
-                      if (e.key === "Escape") setEditingId(null);
-                    }}
-                    onBlur={() => simpanJudul(chat.id)}
-                    className="w-full !px-2 !py-1 text-sm"
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => bukaChat(chat.id)}
-                    title={chat.title}
-                    className="block w-full truncate text-left text-sm font-semibold text-grey-light"
-                  >
-                    {chat.pinned && <span className="mr-1 text-[#6f9abf]">📌</span>}
-                    {chat.title}
-                  </button>
-                )}
-                {trip && (
-                  <span className="mt-0.5 inline-block max-w-full truncate rounded-full bg-[#83ADD0]/20 px-2 py-0.5 text-[10px] font-semibold text-[#4f7fa6]">
-                    Trip: {trip.title}
-                  </span>
-                )}
+        {menuId && <div className="fixed inset-0 z-10" onClick={() => setMenuId(null)} />}
+        <div className="space-y-0.5">
+          {[...chats]
+            .sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned))
+            .map((chat, idx, arr) => {
+              const trip = trips.find((item) => item.id === chat.tripId);
+              const aktif = chat.id === activeId;
+              const menuAtas = arr.length > 3 && idx >= arr.length - 2;
 
-                {confirmId === chat.id ? (
-                  <div className="mt-1 flex items-center gap-2 text-xs">
-                    <span className="font-semibold text-red-600">Hapus chat ini?</span>
+              if (editingId === chat.id) {
+                return (
+                  <div key={chat.id} className="px-1 py-1">
+                    <InputAll
+                      autoFocus
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") simpanJudul(chat.id);
+                        if (e.key === "Escape") setEditingId(null);
+                      }}
+                      onBlur={() => simpanJudul(chat.id)}
+                      className="w-full !px-2 !py-1 text-sm"
+                    />
+                  </div>
+                );
+              }
+
+              return (
+                <div key={chat.id}>
+                  <div
+                    className={`group relative flex items-center rounded-xl transition-colors ${
+                      aktif ? "bg-[#83ADD0]/20" : "hover:bg-grey-label/15"
+                    }`}
+                  >
+                    {aktif && (
+                      <span className="absolute bottom-2 left-0 top-2 w-0.5 rounded-full bg-[#6f9abf]" />
+                    )}
                     <button
                       type="button"
-                      onClick={() => {
-                        deleteChat(chat.id);
-                        setConfirmId(null);
-                      }}
-                      className="rounded-full bg-red-600 px-2.5 py-0.5 font-semibold text-white"
+                      onClick={() => bukaChat(chat.id)}
+                      title={chat.title}
+                      className="min-w-0 flex-1 px-3 py-2 text-left"
                     >
-                      Ya
+                      <span className="flex items-center gap-1.5">
+                        {chat.pinned && (
+                          <svg viewBox="0 0 24 24" width="12" height="12" className="shrink-0 text-[#6f9abf]" fill="currentColor">
+                            <path d="M9 3h6l-1 7 3 3v2H7v-2l3-3-1-7zM11 15h2v6h-2z" />
+                          </svg>
+                        )}
+                        <span className="truncate text-sm font-medium text-grey-light">{chat.title}</span>
+                      </span>
+                      {trip && (
+                        <span className="mt-0.5 block truncate text-[11px] text-grey-light/50">
+                          Trip · {trip.title}
+                        </span>
+                      )}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmId(null)}
-                      className="rounded-full border border-grey-label px-2.5 py-0.5 font-semibold text-grey-light"
-                    >
-                      Batal
-                    </button>
+
+                    <div className="relative shrink-0 pr-1">
+                      <button
+                        type="button"
+                        aria-label="Menu chat"
+                        onClick={() => setMenuId(menuId === chat.id ? null : chat.id)}
+                        className={`flex h-7 w-7 items-center justify-center rounded-lg text-grey-light/60 hover:bg-grey-label/25 focus:opacity-100 ${
+                          aktif || menuId === chat.id ? "opacity-100" : "opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+                        }`}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                          <circle cx="5" cy="12" r="1.8" />
+                          <circle cx="12" cy="12" r="1.8" />
+                          <circle cx="19" cy="12" r="1.8" />
+                        </svg>
+                      </button>
+                      {menuId === chat.id && (
+                        <div
+                          className={`absolute right-0 z-20 w-40 overflow-hidden rounded-xl border border-grey-label/50 bg-white py-1 text-sm shadow-lg ${
+                            menuAtas ? "bottom-8" : "top-8"
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            className="block w-full px-3 py-1.5 text-left font-medium text-grey-light hover:bg-grey-label/15"
+                            onClick={() => {
+                              togglePin(chat.id);
+                              setMenuId(null);
+                            }}
+                          >
+                            {chat.pinned ? "Lepas sematan" : "Sematkan"}
+                          </button>
+                          <button
+                            type="button"
+                            className="block w-full px-3 py-1.5 text-left font-medium text-grey-light hover:bg-grey-label/15"
+                            onClick={() => {
+                              setEditingId(chat.id);
+                              setEditTitle(chat.title);
+                              setMenuId(null);
+                            }}
+                          >
+                            Ganti nama
+                          </button>
+                          <button
+                            type="button"
+                            className="block w-full px-3 py-1.5 text-left font-medium text-red-600 hover:bg-red-50"
+                            onClick={() => {
+                              setConfirmId(chat.id);
+                              setMenuId(null);
+                            }}
+                          >
+                            Hapus
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <div className="mt-1 flex items-center gap-1 text-grey-light">
-                    <AksiChat
-                      label={chat.pinned ? "Lepas pin" : "Pin"}
-                      onClick={() => togglePin(chat.id)}
-                      aktif={chat.pinned}
-                    >
-                      <path d="M12 17v5M9 3h6l-1 7 3 3v2H7v-2l3-3-1-7z" />
-                    </AksiChat>
-                    <AksiChat
-                      label="Ganti judul"
-                      onClick={() => {
-                        setEditingId(chat.id);
-                        setEditTitle(chat.title);
-                      }}
-                    >
-                      <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" />
-                    </AksiChat>
-                    <AksiChat label="Hapus" bahaya onClick={() => setConfirmId(chat.id)}>
-                      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
-                    </AksiChat>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+
+                  {confirmId === chat.id && (
+                    <div className="flex items-center gap-2 px-3 pb-1.5 pt-1 text-xs">
+                      <span className="font-medium text-grey-light/80">Hapus chat ini?</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          deleteChat(chat.id);
+                          setConfirmId(null);
+                        }}
+                        className="rounded-full bg-red-600 px-2.5 py-0.5 font-semibold text-white"
+                      >
+                        Hapus
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(null)}
+                        className="rounded-full border border-grey-label px-2.5 py-0.5 font-semibold text-grey-light"
+                      >
+                        Batal
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
         </div>
       </div>
 

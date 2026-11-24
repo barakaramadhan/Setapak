@@ -1,3 +1,4 @@
+import GoButton from "../ui/GoButton";
 import FillButton from "../ui/FillButton";
 import ImageFooter from "../../assets/images/footer/imagefooter.webp";
 
@@ -156,12 +157,12 @@ function Footer() {
             meaningful journeys filled with unforgettable moments with Setapak.
           </p>
 
-          <FillButton
+          <GoButton to="/chats"
             className="ring-bright-white text-bright-white max-sm:px-4 max-sm:py-3"
             fillClassName="bg-bright-white text-dark-brown-new"
           >
             Start Planning
-          </FillButton>
+          </GoButton>
         </div>
       </section>
 
@@ -190,7 +191,7 @@ function Footer() {
             <ul className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 max-lg:gap-x-3 max-sm:justify-start max-sm:gap-x-2 ">
               <li>
                 <a
-                  href="#"
+                  href="https://www.youtube.com" target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light max-lg:text-sm max-sm:text-sm max-sm:text-black"
                 >
                   <i className="fi fi-brands-youtube text-2xl pt-2 max-lg:text-xl max-sm:text-xl" />
@@ -200,7 +201,7 @@ function Footer() {
 
               <li>
                 <a
-                  href="#"
+                  href="https://www.instagram.com" target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light max-lg:text-sm max-sm:text-sm max-sm:text-black"
                 >
                   <i className="fi fi-brands-instagram text-2xl pt-1 max-lg:text-xl max-sm:text-xl" />
@@ -210,7 +211,7 @@ function Footer() {
 
               <li>
                 <a
-                  href="#"
+                  href="https://www.facebook.com" target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 hover:opacity-75 font-jakarta font-normal text-base text-grey-light max-lg:text-sm max-sm:text-sm max-sm:text-black"
                 >
                   <i className="fi fi-brands-facebook text-2xl pt-1 max-lg:text-xl max-sm:text-xl" />
@@ -223,7 +224,7 @@ function Footer() {
             <ul className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 max-lg:gap-x-3 max-sm:justify-start max-sm:gap-x-3">
               <li>
                 <a
-                  href="#"
+                  href="https://github.com" target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75 max-lg:text-sm max-sm:text-sm max-sm:text-black"
                 >
                   <i className="fi fi-brands-github text-2xl pt-1 max-lg:text-xl max-sm:text-xl" />
@@ -233,7 +234,7 @@ function Footer() {
 
               <li>
                 <a
-                  href="#"
+                  href="https://github.com" target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75 max-lg:text-sm max-sm:text-sm max-sm:text-black"
                 >
                   <i className="fi fi-brands-github text-2xl pt-1 max-lg:text-xl max-sm:text-xl" />
@@ -243,7 +244,7 @@ function Footer() {
 
               <li>
                 <a
-                  href="#"
+                  href="https://github.com" target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2 font-jakarta font-normal text-base text-grey-light hover:opacity-75 max-lg:text-sm max-sm:text-sm max-sm:text-black"
                 >
                   <i className="fi fi-brands-github text-2xl pt-1 max-lg:text-xl max-sm:text-xl" />

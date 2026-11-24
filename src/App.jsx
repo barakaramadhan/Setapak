@@ -1,16 +1,17 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import SmoothScroll from "./components/layouts/SmoothScroll";
 import GuestLayout from "./components/layouts/GuestLayout";
 import AuthLayout from "./components/layouts/AuthLayout";
 import RequireAuth from "./components/layouts/RequireAuth";
-import LandingPage from "./pages/guest/LandingPage";
+const LandingPage = lazy(() => import("./pages/guest/LandingPage"));
 import UserLayout from "./components/layouts/UserLayout";
-import DashboardUser from "./pages/user/DashboardUser";
-import AiChat from "./pages/user/sections/AiChat";
-import YourPlan from "./pages/user/sections/YourPlan";
-import SignIn from "./pages/auth/SignIn";
-import SignUp from "./pages/auth/SignUp";
-import TripPage from "./pages/user/TripPage";
+const DashboardUser = lazy(() => import("./pages/user/DashboardUser"));
+const AiChat = lazy(() => import("./pages/user/sections/AiChat"));
+const YourPlan = lazy(() => import("./pages/user/sections/YourPlan"));
+const SignIn = lazy(() => import("./pages/auth/SignIn"));
+const SignUp = lazy(() => import("./pages/auth/SignUp"));
+const TripPage = lazy(() => import("./pages/user/TripPage"));
 
 // HALAMAN AWAL SAAT DEVELOPMENT
 const START_PAGE = "";
@@ -19,6 +20,7 @@ function App() {
   return (
     <BrowserRouter>
       <SmoothScroll>
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center font-jakarta text-sm text-grey-light/60">Memuat…</div>}>
         <Routes>
           {/* Kalau START_PAGE diisi, "/" langsung diarahkan ke sana */}
           {START_PAGE && (
@@ -56,6 +58,7 @@ function App() {
 
           <Route path="*" element={<Navigate to={START_PAGE || "/"} replace />} />
         </Routes>
+        </Suspense>
       </SmoothScroll>
     </BrowserRouter>
   );

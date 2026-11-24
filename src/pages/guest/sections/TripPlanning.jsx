@@ -1,4 +1,5 @@
 import SectionMarker from "../../../components/ui/SectionMarker";
+import GoButton from "../../../components/ui/GoButton";
 import FillButton from "../../../components/ui/FillButton";
 // import ImagePlan1 from "../../../assets/images/imageplan1.webp"
 // import ImagePlan2 from "../../../assets/images/imageplan2.webp"
@@ -16,12 +17,12 @@ function TripPlanning() {
           Discover new destinations, create your own itinerary, and make every
           journey unforgettable.
         </p>
-         <FillButton className="mt-10">
+         <GoButton to="/chats" className="mt-10">
               <span className="inline-flex items-center justify-center gap-2">
                 <span>Start planning</span>
                 <i className="fi fi-rr-angle-small-right leading-none text-[20px] pt-2"></i>
               </span>
-            </FillButton>
+            </GoButton>
       </div>
 
       <div className="flex">

@@ -127,7 +127,7 @@ export default function YourPlan() {
               className="flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-grey-label/60 font-jakarta transition-shadow duration-200 hover:shadow-md"
             >
               <div className="relative h-40 w-full">
-                <img
+                <img loading="lazy" decoding="async"
                   src={trip.image}
                   alt={trip.title}
                   className={`h-full w-full object-cover ${trip.status === "Past" ? "grayscale" : ""}`}

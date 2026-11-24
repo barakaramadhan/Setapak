@@ -3,6 +3,7 @@ import { useLenis } from "lenis/react";
 import { HOME_PIN_DISTANCE } from "../../animations/HomeAnimation";
 import useActiveSection from "../../hooks/useActiveSection";
 import { getSectionTop } from "../../utils/scroll";
+import GoButton from "../ui/GoButton";
 import FillButton from "../ui/FillButton";
 
 const leftLinks = [
@@ -261,20 +262,20 @@ function Navbar() {
 
           {/* Bawah: tombol Sign Up & Log In (mt-auto = didorong ke dasar) */}
           <div className="mt-auto flex flex-col gap-4">
-            <FillButton
+            <GoButton to="/sign-up"
               className="w-full rounded-xl py-3 bg-grey-light text-bright-white ring-dark-brown-new "
               fillClassName="bg-bright-white text-dark-brown-new"
               baseCla
             >
               Sign Up
-            </FillButton>
+            </GoButton>
 
-            <FillButton
+            <GoButton to="/sign-in"
               className="w-full rounded-xl py-3 text-grey-light ring-grey-light"
               fillClassName="bg-dark-brown-new text-bright-white"
             >
               Log In
-            </FillButton>
+            </GoButton>
           </div>
         </aside>
       </div>

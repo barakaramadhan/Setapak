@@ -101,22 +101,6 @@ export default function TripWorkspace({ trip }) {
     return updateTrip(editTrip.id, data);
   };
 
-  const ekspor = () => {
-    const isi = JSON.stringify(
-      { exportedAt: new Date().toISOString(), trip: { ...trip, plan } },
-      null,
-      2
-    );
-    const url = URL.createObjectURL(new Blob([isi], { type: "application/json" }));
-    const tautan = document.createElement("a");
-    tautan.href = url;
-    tautan.download = `setapak-${String(trip.title || "trip")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")}.json`;
-    tautan.click();
-    URL.revokeObjectURL(url);
-  };
-
   const isiDenganAi = async () => {
     const anggaran = Number(plan.budget?.planned) || 0;
     const prompt = `Buatkan rencana perjalanan ${durasi} hari ke ${
@@ -203,14 +187,6 @@ export default function TripWorkspace({ trip }) {
           </button>
           <button
             type="button"
-            onClick={ekspor}
-            title="Unduh rencana sebagai JSON"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-grey-label/60 text-grey-light/70 hover:bg-grey-label/20"
-          >
-            <i className="fi fi-rr-download text-sm leading-none"></i>
-          </button>
-          <button
-            type="button"
             onClick={() => window.print()}
             title="Cetak / simpan PDF"
             className="flex h-9 w-9 items-center justify-center rounded-full border border-grey-label/60 text-grey-light/70 hover:bg-grey-label/20"
@@ -293,9 +269,23 @@ export default function TripWorkspace({ trip }) {
       )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
+        <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
+        <div className="mb-3 rounded-2xl border border-grey-label/50 bg-white px-3 py-2.5">
+          <div className="flex items-center justify-between text-xs font-semibold text-grey-light">
+            <span>Kelengkapan rencana</span>
+            <span>{MODULES.filter((m) => modulTerisi(m, trip)).length}/{MODULES.length}</span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-grey-label/30">
+            <div
+              className="h-full rounded-full bg-[#83ADD0] transition-all duration-500"
+              style={{ width: `${(MODULES.filter((m) => modulTerisi(m, trip)).length / MODULES.length) * 100}%` }}
+            />
+          </div>
+        </div>
         <nav
           aria-label="Modul trip planner"
-          className="flex gap-2 overflow-x-auto pb-2 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:flex-col lg:overflow-y-auto lg:pb-0"
+          data-lenis-prevent
+          className="flex snap-x gap-2 overflow-x-auto overscroll-contain pb-2 [scrollbar-width:thin] lg:max-h-[calc(100vh-10rem)] lg:snap-none lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden lg:pb-0 lg:pr-1"
         >
           {MODULES.map((modul) => {
             const dipilih = modul.id === modulAktif.id;
@@ -305,8 +295,18 @@ export default function TripWorkspace({ trip }) {
               <button
                 key={modul.id}
                 type="button"
-                onClick={() => setAktif(modul.id)}
-                className={`flex min-w-[210px] items-center gap-2 rounded-2xl border px-3 py-2 text-left transition-colors lg:min-w-0 ${
+                id={`nav-${modul.id}`}
+                onClick={() => {
+                  setAktif(modul.id);
+                  // layar kecil: langsung gulir ke editor modul yang dipilih
+                  if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                    requestAnimationFrame(() =>
+                      document.getElementById("editor-modul")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    );
+                  }
+                }}
+                aria-current={dipilih ? "true" : undefined}
+                className={`flex min-w-[210px] shrink-0 snap-start items-center gap-2 rounded-2xl border px-3 py-2 text-left transition-colors lg:min-w-0 ${
                   dipilih
                     ? "border-[#83ADD0] bg-[#83ADD0]/10"
                     : "border-grey-label/50 bg-white hover:bg-grey-label/10"
@@ -342,13 +342,16 @@ export default function TripWorkspace({ trip }) {
             );
           })}
         </nav>
+        </div>
 
+        <div id="editor-modul" className="min-w-0 scroll-mt-20">
         <ModuleEditor
           key={`${trip.id}-${modulAktif.id}-${versi}`}
           modul={modulAktif}
           bagian={plan[modulAktif.id]}
           onSave={simpanModul}
         />
+        </div>
       </div>
 
       <TripModal
