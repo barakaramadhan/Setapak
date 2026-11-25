@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { authIntro } from "../../animations/AuthAnimation";
 import FillButton from "../../components/ui/FillButton";
 import InputAll from "../../components/ui/InputAll";
 import ImageSignIn from "../../assets/images/imageloginpage.png";
@@ -8,6 +9,8 @@ import { useAuth } from "../../store/useAuth";
 export default function SignUp() {
   const { signUp, isSupabaseReady } = useAuth();
   const navigate = useNavigate();
+  const rootRef = useRef(null);
+  useEffect(() => authIntro(rootRef.current), []);
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +46,7 @@ export default function SignUp() {
   const label = "mb-2 font-jakarta text-base text-grey-light";
 
   return (
-    <div className="flex min-h-screen w-full bg-bright-white">
+    <div ref={rootRef} className="flex min-h-screen w-full bg-bright-white overflow-hidden">
       <div className="flex flex-1 flex-col justify-between p-5">
         <Link to="/" className="font-clash text-3xl font-bold text-grey-light">
           SETAPAK

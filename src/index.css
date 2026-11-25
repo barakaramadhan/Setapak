@@ -47,6 +47,8 @@
 /* Tema gelap (area user). Hanya menimpa variabel warna + beberapa kelas tetap. */
 body.theme-dark {
   color-scheme: dark;
+  --color-dark-brown-new: #F3EBDD;
+  --color-brown-mid: #C8AA78;
   --color-bright-white: #121212;
   --color-new-bright: #181818;
   --color-grey-light: #ececec;
@@ -62,6 +64,12 @@ body.theme-dark .text-gray-500,
 body.theme-dark .text-gray-600 { color: #a3a3a3; }
 body.theme-dark .border-gray-300,
 body.theme-dark .border-gray-400 { border-color: #4a4a4a; }
+body.theme-dark .hover\:bg-neutral-100:hover { background-color: #2c2c2c; }
+body.theme-dark .leaflet-popup-content-wrapper,
+body.theme-dark .leaflet-popup-tip { background: #1c1c1c; color: #ececec; }
+body.theme-dark input,
+body.theme-dark textarea,
+body.theme-dark select { color: #ececec; }
 body.theme-dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9); }
 
 @media print {

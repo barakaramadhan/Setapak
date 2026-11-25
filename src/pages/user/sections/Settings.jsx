@@ -16,8 +16,7 @@ const THEMES = [
 
 const card =
   "flex flex-col gap-6 w-full rounded-2xl border-2 border-grey-label bg-white p-6 max-sm:p-4 scroll-mt-20";
-const rowCls =
-  "flex flex-wrap items-center justify-between gap-x-4 gap-y-2";
+const rowCls = "flex flex-wrap items-center justify-between gap-x-4 gap-y-2";
 const labelCls = "font-jakarta font-bold text-base text-grey-light";
 const valueCls =
   "font-jakarta font-semibold text-base text-grey-light break-all";
@@ -32,8 +31,7 @@ function Notice({ note }) {
       role="status"
       className={`font-jakarta text-sm ${
         note.error ? "text-red-500" : "text-arctic-blue"
-      }`}
-    >
+      }`}>
       {note.text}
     </p>
   );
@@ -42,8 +40,10 @@ function Notice({ note }) {
 // Perkecil foto jadi 256px (kotak) supaya ringan disimpan di browser.
 function bacaFoto(file) {
   return new Promise((resolve, reject) => {
-    if (!file.type.startsWith("image/")) return reject(new Error("File harus berupa gambar."));
-    if (file.size > 8 * 1024 * 1024) return reject(new Error("Ukuran foto maksimal 8 MB."));
+    if (!file.type.startsWith("image/"))
+      return reject(new Error("File harus berupa gambar."));
+    if (file.size > 8 * 1024 * 1024)
+      return reject(new Error("Ukuran foto maksimal 8 MB."));
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("Gagal membaca foto."));
     reader.onload = () => {
@@ -57,7 +57,17 @@ function bacaFoto(file) {
         canvas.height = ukuran;
         canvas
           .getContext("2d")
-          .drawImage(img, (img.width - sisi) / 2, (img.height - sisi) / 2, sisi, sisi, 0, 0, ukuran, ukuran);
+          .drawImage(
+            img,
+            (img.width - sisi) / 2,
+            (img.height - sisi) / 2,
+            sisi,
+            sisi,
+            0,
+            0,
+            ukuran,
+            ukuran,
+          );
         resolve(canvas.toDataURL("image/jpeg", 0.85));
       };
       img.src = reader.result;
@@ -73,8 +83,19 @@ function topengEmail(email = "") {
 }
 
 function Settings() {
-  const { user, isSupabaseReady, updateProfile, updateEmail, updatePassword } = useAuth();
-  const { theme, homeCity, locationAccess, photo, update } = useSettings();
+  const { user, isSupabaseReady, updateProfile, updateEmail, updatePassword } =
+    useAuth();
+  const {
+    theme,
+    homeCity,
+    locationAccess,
+    photo,
+    update,
+    savePhoto,
+    removePhoto,
+    cloud,
+    sync,
+  } = useSettings();
 
   const fileRef = useRef(null);
   const [photoNote, setPhotoNote] = useState(null);
@@ -105,10 +126,14 @@ function Settings() {
     let hasil;
     if (editing === "name") hasil = await updateProfile({ name: draft });
     else if (editing === "email") {
-      if (!/^\S+@\S+\.\S+$/.test(draft.trim())) hasil = { error: "Format email tidak valid." };
+      if (!/^\S+@\S+\.\S+$/.test(draft.trim()))
+        hasil = { error: "Format email tidak valid." };
       else hasil = await updateEmail(draft);
     } else {
-      hasil = draft.length < 6 ? { error: "Password minimal 6 karakter." } : await updatePassword(draft);
+      hasil =
+        draft.length < 6
+          ? { error: "Password minimal 6 karakter." }
+          : await updatePassword(draft);
     }
     setSaving(false);
     if (hasil.error) return setProfileNote({ error: true, text: hasil.error });
@@ -129,8 +154,16 @@ function Settings() {
     event.target.value = "";
     if (!file) return;
     try {
-      update({ photo: await bacaFoto(file) });
-      setPhotoNote({ text: "Foto profil diperbarui." });
+      const hasil = await savePhoto(await bacaFoto(file));
+      setPhotoNote(
+        hasil.error
+          ? { error: true, text: hasil.error }
+          : {
+              text: cloud
+                ? "Foto profil disimpan ke akunmu."
+                : "Foto profil diperbarui.",
+            },
+      );
     } catch (err) {
       setPhotoNote({ error: true, text: err.message });
     }
@@ -138,16 +171,19 @@ function Settings() {
 
   const ambilPosisi = () =>
     new Promise((resolve, reject) => {
-      if (!("geolocation" in navigator)) return reject(new Error("Browser tidak mendukung lokasi."));
-      navigator.geolocation.getCurrentPosition(resolve, (err) =>
-        reject(
-          new Error(
-            err.code === 1
-              ? "Izin lokasi ditolak. Aktifkan lewat pengaturan situs di browser."
-              : "Lokasi tidak bisa didapat saat ini."
-          )
-        ),
-        { timeout: 10000, maximumAge: 300000 }
+      if (!("geolocation" in navigator))
+        return reject(new Error("Browser tidak mendukung lokasi."));
+      navigator.geolocation.getCurrentPosition(
+        resolve,
+        (err) =>
+          reject(
+            new Error(
+              err.code === 1
+                ? "Izin lokasi ditolak. Aktifkan lewat pengaturan situs di browser."
+                : "Lokasi tidak bisa didapat saat ini.",
+            ),
+          ),
+        { timeout: 10000, maximumAge: 300000 },
       );
     });
 
@@ -175,18 +211,27 @@ function Settings() {
       const pos = await ambilPosisi();
       const { latitude, longitude } = pos.coords;
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=id&lat=${latitude}&lon=${longitude}`
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=id&lat=${latitude}&lon=${longitude}`,
       );
       if (!res.ok) throw new Error("Nama kota tidak bisa dicari.");
       const a = (await res.json()).address || {};
-      const kota = a.city || a.town || a.municipality || a.county || a.state_district || a.state;
+      const kota =
+        a.city ||
+        a.town ||
+        a.municipality ||
+        a.county ||
+        a.state_district ||
+        a.state;
       if (!kota) throw new Error("Nama kota tidak ditemukan untuk lokasi ini.");
       const bersih = kota.replace(/^(Kota|Kabupaten)\s+/i, "");
       setCityDraft(bersih);
-      update({ homeCity: bersih });
+      update({ homeCity: bersih, homeLat: latitude, homeLng: longitude });
       setLocNote({ text: `Home city diatur ke ${bersih}.` });
     } catch (err) {
-      setLocNote({ error: true, text: err.message || "Gagal mengambil lokasi." });
+      setLocNote({
+        error: true,
+        text: err.message || "Gagal mengambil lokasi.",
+      });
     } finally {
       setLocBusy(false);
     }
@@ -194,14 +239,19 @@ function Settings() {
 
   const simpanKota = () => {
     const bersih = cityDraft.trim().slice(0, 60);
-    update({ homeCity: bersih });
+    update({ homeCity: bersih, homeLat: null, homeLng: null });
     setCityDraft(bersih);
     setLocNote({
-      text: bersih ? `Home city disimpan: ${bersih}.` : "Home city dikembalikan ke default (Bogor).",
+      text: bersih
+        ? `Home city disimpan: ${bersih}.`
+        : "Home city dikembalikan ke default (Bogor).",
     });
   };
 
-  const ke = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const ke = (id) =>
+    document
+      .getElementById(id)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   const editor = (jenis, tipe, placeholder, nilaiAwal) =>
     editing === jenis ? (
@@ -218,7 +268,7 @@ function Settings() {
           autoFocus
           autoComplete={tipe === "password" ? "new-password" : "off"}
           aria-label={placeholder}
-          className="w-52 max-sm:w-full rounded-xl border-2 border-grey-light px-4 py-2 placeholder:text-grey-label"
+          className="px-4 py-2 border-2 border-grey-light rounded-xl w-52 max-sm:w-full placeholder:text-grey-label"
         />
         <FillButton
           type="button"
@@ -226,8 +276,7 @@ function Settings() {
           disabled={saving}
           className={smallBtn}
           baseClassName="bg-grey-light text-white"
-          fillClassName="bg-transparent text-white"
-        >
+          fillClassName="bg-transparent text-white">
           {saving ? "Saving…" : "Save"}
         </FillButton>
         <FillButton
@@ -235,8 +284,7 @@ function Settings() {
           onClick={() => setEditing(null)}
           className={smallBtn}
           baseClassName={smallBase}
-          fillClassName={smallFill}
-        >
+          fillClassName={smallFill}>
           Cancel
         </FillButton>
       </div>
@@ -246,23 +294,34 @@ function Settings() {
         onClick={() => mulaiEdit(jenis, nilaiAwal)}
         className={smallBtn}
         baseClassName={smallBase}
-        fillClassName={smallFill}
-      >
+        fillClassName={smallFill}>
         Edit
       </FillButton>
     );
 
   return (
-    <section className="px-20 py-10 max-lg:px-8 max-sm:px-5 max-sm:py-6">
+    <section className="px-20 max-sm:px-5 max-lg:px-8 py-10 max-sm:py-6">
       <div>
-        <h1 className="font-jakarta font-bold text-4xl max-sm:text-3xl text-grey-light">Settings</h1>
-        <p className="font-jakarta font-normal text-base text-grey-light">
+        <h1 className="font-jakarta font-bold text-grey-light max-sm:text-3xl text-4xl">
+          Settings
+        </h1>
+        <p className="font-jakarta font-normal text-grey-light text-base">
           Manage your profile and travel preferences.
         </p>
+        {cloud && (
+          <p
+            role="status"
+            className={`mt-1 font-jakarta text-xs ${sync.state === "error" ? "text-red-500" : "text-grey-label"}`}>
+            {sync.state === "syncing" && "Menyimpan ke akun…"}
+            {sync.state === "saved" && "Tersimpan di akunmu."}
+            {sync.state === "error" &&
+              `Gagal sinkron: ${sync.error}. Tersimpan di perangkat ini.`}
+          </p>
+        )}
       </div>
 
-      <div className="mt-11 flex gap-24 max-xl:gap-12 max-lg:mt-8 max-lg:flex-col max-lg:gap-6">
-        <ul className="flex shrink-0 flex-col gap-6 max-lg:sticky max-lg:top-14 max-lg:z-10 max-lg:-mx-1 max-lg:flex-row max-lg:gap-2 max-lg:overflow-x-auto max-lg:bg-bright-white max-lg:px-1 max-lg:py-2 lg:sticky lg:top-10 lg:self-start">
+      <div className="flex max-lg:flex-col gap-24 max-lg:gap-6 max-xl:gap-12 mt-11 max-lg:mt-8">
+        <ul className="lg:top-10 max-lg:top-14 max-lg:z-10 lg:sticky max-lg:sticky flex max-lg:flex-row flex-col lg:self-start gap-6 max-lg:gap-2 max-lg:bg-bright-white max-lg:-mx-1 max-lg:px-1 max-lg:py-2 max-lg:overflow-x-auto shrink-0">
           {[
             ["profile", "Profile"],
             ["appearance", "Appearance"],
@@ -272,46 +331,55 @@ function Settings() {
               <button
                 type="button"
                 onClick={() => ke(id)}
-                className="font-jakarta font-normal text-base text-grey-light hover:underline max-lg:rounded-full max-lg:border max-lg:border-grey-label max-lg:px-4 max-lg:py-1.5 max-lg:text-sm"
-              >
+                className="max-lg:px-4 max-lg:py-1.5 max-lg:border max-lg:border-grey-label max-lg:rounded-full font-jakarta font-normal text-grey-light max-lg:text-sm text-base hover:underline">
                 {label}
               </button>
             </li>
           ))}
         </ul>
 
-        <div className="min-w-0 flex-1 flex flex-col gap-8">
+        <div className="flex flex-col flex-1 gap-8 min-w-0">
           {/* Profile */}
           <div id="profile" className={card}>
-            <h2 className="font-jakarta font-bold text-2xl text-grey-light">Profile</h2>
+            <h2 className="font-jakarta font-bold text-grey-light text-2xl">
+              Profile
+            </h2>
 
             <div className="flex flex-wrap items-center gap-3.5">
               {photo ? (
-                <img src={photo} alt="Foto profil" className="h-20 w-20 rounded-full object-cover" />
+                <img
+                  src={photo}
+                  alt="Foto profil"
+                  className="rounded-full w-20 h-20 object-cover"
+                />
               ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-grey-light font-jakarta text-3xl font-bold text-white">
+                <div className="flex justify-center items-center bg-grey-light rounded-full w-20 h-20 font-jakarta font-bold text-white text-3xl">
                   {(nama || "U").slice(0, 1).toUpperCase()}
                 </div>
               )}
-              <input ref={fileRef} type="file" accept="image/*" hidden onChange={pilihFoto} />
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={pilihFoto}
+              />
               <FillButton
                 type="button"
                 onClick={() => fileRef.current?.click()}
                 baseClassName="bg-grey-light text-white"
                 fillClassName="bg-transparent text-white"
-                className="px-3 py-2 text-sm rounded-lg"
-              >
+                className="px-3 py-2 rounded-lg text-sm">
                 Change Photo
               </FillButton>
               {photo && (
                 <button
                   type="button"
                   onClick={() => {
-                    update({ photo: "" });
+                    removePhoto();
                     setPhotoNote({ text: "Foto profil dihapus." });
                   }}
-                  className="font-jakarta text-sm font-semibold text-grey-label hover:underline"
-                >
+                  className="font-jakarta font-semibold text-grey-label text-sm hover:underline">
                   Remove
                 </button>
               )}
@@ -331,17 +399,20 @@ function Settings() {
               <div className="flex flex-wrap items-center gap-4">
                 {editing !== "email" && (
                   <>
-                    <p className={valueCls}>{showEmail ? user?.email : topengEmail(user?.email)}</p>
+                    <p className={valueCls}>
+                      {showEmail ? user?.email : topengEmail(user?.email)}
+                    </p>
                     <button
                       type="button"
                       onClick={() => setShowEmail((v) => !v)}
-                      className="font-jakarta font-semibold text-arctic-blue text-base"
-                    >
+                      className="font-jakarta font-semibold text-arctic-blue text-base">
                       {showEmail ? "Hide" : "Reveal"}
                     </button>
                   </>
                 )}
-                {isSupabaseReady ? editor("email", "email", "Email baru", "") : null}
+                {isSupabaseReady
+                  ? editor("email", "email", "Email baru", "")
+                  : null}
               </div>
             </div>
 
@@ -349,13 +420,16 @@ function Settings() {
               <p className={labelCls}>Password</p>
               <div className="flex flex-wrap items-center gap-4">
                 {editing !== "password" && <p className={valueCls}>••••••••</p>}
-                {isSupabaseReady ? editor("password", "password", "Password baru (min. 6)", "") : null}
+                {isSupabaseReady
+                  ? editor("password", "password", "Password baru (min. 6)", "")
+                  : null}
               </div>
             </div>
 
             {!isSupabaseReady && (
-              <p className="font-jakarta text-sm text-grey-label">
-                Mode demo: email dan password hanya bisa diganti saat Supabase aktif.
+              <p className="font-jakarta text-grey-label text-sm">
+                Mode demo: email dan password hanya bisa diganti saat Supabase
+                aktif.
               </p>
             )}
             <Notice note={profileNote} />
@@ -363,14 +437,19 @@ function Settings() {
 
           {/* Appearance */}
           <div id="appearance" className={`${card} !gap-0`}>
-            <h2 className="font-jakarta font-bold text-2xl text-grey-light">Appearance</h2>
+            <h2 className="font-jakarta font-bold text-grey-light text-2xl">
+              Appearance
+            </h2>
             <div className="mt-6">
               <h3 className={labelCls}>Theme</h3>
-              <p className="font-jakarta font-normal text-base text-grey-light">
+              <p className="font-jakarta font-normal text-grey-light text-base">
                 Choose how Setapak looks on this device.
               </p>
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-4 max-sm:grid-cols-1" role="radiogroup" aria-label="Theme">
+            <div
+              className="gap-4 grid grid-cols-3 max-sm:grid-cols-1 mt-3"
+              role="radiogroup"
+              aria-label="Theme">
               {THEMES.map((t) => {
                 const aktif = theme === t.id;
                 return (
@@ -381,13 +460,21 @@ function Settings() {
                     aria-checked={aktif}
                     onClick={() => update({ theme: t.id })}
                     className={`flex cursor-pointer flex-col gap-3 rounded-xl border-2 p-3 text-left transition-colors ${
-                      aktif ? "border-arctic-blue ring-2 ring-arctic-blue/40" : "border-grey-label hover:border-grey-light"
-                    }`}
-                  >
-                    <img src={t.img} alt={`${t.label} mode`} loading="lazy" className="h-24 w-full rounded-lg object-cover" />
-                    <p className="font-jakarta font-medium text-sm text-grey-light">
+                      aktif
+                        ? "border-arctic-blue ring-2 ring-arctic-blue/40"
+                        : "border-grey-label hover:border-grey-light"
+                    }`}>
+                    <img
+                      src={t.img}
+                      alt={`${t.label} mode`}
+                      loading="lazy"
+                      className="rounded-lg w-full h-24 object-cover"
+                    />
+                    <p className="font-jakarta font-medium text-grey-light text-sm">
                       {t.label}
-                      {aktif && <i className="fi fi-br-check ml-2 text-xs text-arctic-blue" />}
+                      {aktif && (
+                        <i className="ml-2 text-arctic-blue text-xs fi fi-br-check" />
+                      )}
                     </p>
                   </button>
                 );
@@ -397,13 +484,16 @@ function Settings() {
 
           {/* Location */}
           <div id="location" className={`${card} !gap-6`}>
-            <h2 className="font-jakarta font-bold text-2xl text-grey-light">Location</h2>
+            <h2 className="font-jakarta font-bold text-grey-light text-2xl">
+              Location
+            </h2>
 
             <div className={rowCls}>
               <div className="min-w-0 max-w-md">
                 <h3 className={labelCls}>Home city</h3>
-                <p className="font-jakarta font-normal text-sm text-grey-light">
-                  Dianggap rumahmu: jadi kota awal “For you” dan titik berangkat plan AI kalau kamu tidak menyebut asal. Kosongkan untuk reset.
+                <p className="font-jakarta font-normal text-grey-light text-sm">
+                  Dianggap rumahmu: jadi kota awal “For you” dan titik berangkat
+                  plan AI kalau kamu tidak menyebut asal. Kosongkan untuk reset.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -415,7 +505,7 @@ function Settings() {
                   placeholder="Bogor"
                   maxLength={60}
                   aria-label="Home city"
-                  className="w-36 rounded-xl border-2 border-grey-light px-4 py-2 text-base text-grey-light placeholder:text-grey-label"
+                  className="px-4 py-2 border-2 border-grey-light rounded-xl w-36 text-grey-light placeholder:text-grey-label text-base"
                 />
                 <FillButton
                   type="button"
@@ -423,8 +513,7 @@ function Settings() {
                   disabled={cityDraft.trim() === homeCity}
                   className={`${smallBtn} disabled:opacity-50`}
                   baseClassName={smallBase}
-                  fillClassName={smallFill}
-                >
+                  fillClassName={smallFill}>
                   Save
                 </FillButton>
               </div>
@@ -433,8 +522,9 @@ function Settings() {
             <div className={rowCls}>
               <div className="min-w-0 max-w-md">
                 <h3 className={labelCls}>Location access</h3>
-                <p className="font-jakarta font-normal text-sm text-grey-light">
-                  Izinkan Setapak membaca lokasi perangkat untuk mengisi Home city otomatis.
+                <p className="font-jakarta font-normal text-grey-light text-sm">
+                  Izinkan Setapak membaca lokasi perangkat untuk mengisi Home
+                  city otomatis.
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -443,8 +533,7 @@ function Settings() {
                     type="button"
                     onClick={pakaiLokasiSaya}
                     disabled={locBusy}
-                    className="font-jakarta text-sm font-semibold text-arctic-blue disabled:opacity-50"
-                  >
+                    className="disabled:opacity-50 font-jakarta font-semibold text-arctic-blue text-sm">
                     {locBusy ? "Mencari…" : "Gunakan lokasi saya"}
                   </button>
                 )}

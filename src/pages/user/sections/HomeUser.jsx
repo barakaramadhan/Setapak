@@ -222,7 +222,7 @@ function HomeUser() {
 
       <div className="flex items-stretch gap-6 px-5 pt-8 pb-10 sm:px-10 sm:pt-12 max-md:flex-col">
         <div className="flex min-w-0 flex-1 flex-col gap-5 max-md:w-full">
-          <div className="relative min-h-[250px] overflow-hidden rounded-3xl bg-dark-brown-new shadow-lg max-md:w-full">
+          <div className="relative min-h-[250px] overflow-hidden rounded-3xl bg-[#29241F] shadow-lg max-md:w-full">
             <img loading="lazy" decoding="async"
               src={ImageHeaderUser}
               alt=""
@@ -240,8 +240,8 @@ function HomeUser() {
               </p>
               <FillButton
                 onClick={() => navigate("/chats")}
-                className="mt-7 ring-bright-white text-bright-white px-6 py-2"
-                fillClassName="bg-bright-white text-dark-brown-new"
+                className="mt-7 ring-white text-white px-6 py-2"
+                fillClassName="bg-[#FDFDFD] text-[#29241F]"
               >
                 <span className="inline-flex items-center justify-center gap-2">
                   <span>Start planning</span>
@@ -265,7 +265,7 @@ function HomeUser() {
                     navigate("/chats", { state: { prompt: item.prompt } })
                   }
                   title={`Tanya AI: ${item.prompt}`}
-                  className="relative h-[320px] w-full cursor-pointer overflow-hidden rounded-2xl bg-dark-brown-new text-left shadow-lg"
+                  className="relative h-[320px] w-full cursor-pointer overflow-hidden rounded-2xl bg-[#29241F] text-left shadow-lg"
                 >
                   <img loading="lazy" decoding="async"
                     src={item.image}
@@ -368,7 +368,7 @@ function HomeUser() {
                 title="Batal"
                 className="flex h-10 w-10 items-center justify-center !rounded-full !px-0 !py-0 !text-base"
                 baseClassName="ring-1 ring-inset ring-grey-label/60 bg-grey-label/50 text-grey-light"
-                fillClassName="rounded-full bg-white/70 text-grey-light"
+                fillClassName="rounded-full bg-bright-white/70 text-grey-light"
               >
                 <i className="fi fi-rr-cross-small text-xl leading-none"></i>
               </FillButton>
@@ -417,7 +417,7 @@ function HomeUser() {
             title="Muat rekomendasi lain"
             className="flex h-10 w-10 items-center justify-center !rounded-full !px-0 !py-0 !text-base disabled:opacity-60"
             baseClassName="ring-1 ring-inset ring-grey-label/60 bg-grey-label/50 text-grey-light"
-            fillClassName="rounded-full bg-white/70 text-grey-light"
+            fillClassName="rounded-full bg-bright-white/70 text-grey-light"
           >
             <i
               className={`fi fi-rr-refresh text-lg leading-none ${

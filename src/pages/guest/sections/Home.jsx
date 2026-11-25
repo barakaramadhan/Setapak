@@ -1,11 +1,14 @@
-import { useEffect, useRef } from "react";
-import { svgHomeAnimation } from "../../../animations/HomeAnimation";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import { heroEntrance, svgHomeAnimation } from "../../../animations/HomeAnimation";
 import GoButton from "../../../components/ui/GoButton";
 import FillButton from "../../../components/ui/FillButton";
 import ImageLangit from "../../../assets/images/home/langithome.webp";
 import ImageSecond from "../../../assets/images/home/imagehero2.webp";
 function Home() {
   const animasiRef = useRef(null);
+  const sectionRef = useRef(null);
+
+  useLayoutEffect(() => heroEntrance(sectionRef.current), []);
 
   useEffect(() => {
     const animasiSvg = svgHomeAnimation(animasiRef.current);
@@ -14,10 +17,11 @@ function Home() {
   }, []);
 
   return (
-    <section className="relative z-10 grid w-full overflow-hidden">
+    <section ref={sectionRef} className="relative z-10 grid w-full overflow-hidden">
       <img
         src={ImageLangit}
         alt="Langit Home"
+        data-hero="sky"
         className="block w-full h-[900px] max-lg:h-[560px] [grid-area:1/1] object-cover object-center rounded-b-4xl max-sm:h-[500px] max-sm:rounded-b-2xl"
       />
 
@@ -142,21 +146,22 @@ function Home() {
       <img
         src={ImageSecond}
         alt="Second Image"
+        data-hero="front"
         className="block w-full h-[900px] max-lg:h-[560px] [grid-area:1/1] object-cover object-center z-10 rounded-4xl max-sm:h-[500px] max-sm:rounded-b-2xl max-sm:object-left"
       />
 
       <div className="hidden max-lg:block w-full max-lg:h-[560px] max-sm:h-[500px] [grid-area:1/1] z-[11] bg-gradient-to-t from-black/40 via-black/20 to-transparent max-lg:rounded-b-4xl max-sm:rounded-b-2xl"></div>
 
       <div className="relative z-[12] [grid-area:1/1]">
-        <div className="absolute top-48 right-[442px] leading-none max-lg:top-52 max-lg:left-12 max-lg:right-auto max-sm:left-auto max-sm:right-20 max-sm:top-56">
-          <h1 className="font-jakarta text-5xl font-medium text-white leading-none w-[330px] max-lg:w-[380px] max-sm:text-3xl max-sm:w-[280px]">
+        <div data-hero="text" className="absolute top-48 right-[442px] leading-none max-lg:top-52 max-lg:left-12 max-lg:right-auto max-sm:left-auto max-sm:right-20 max-sm:top-56">
+          <h1 data-hero="title" className="font-jakarta text-5xl font-medium text-white leading-none w-[330px] max-lg:w-[380px] max-sm:text-3xl max-sm:w-[280px]">
             Plan Your Next Trip Across
             <span className="pl-1 font-clash font-semibold">
               Multiple Destinations.
             </span>
           </h1>
 
-          <p className="pt-3 font-jakarta text-white font-medium text-base w-2xs max-sm:text-sm max-sm:w-3xs">
+          <p data-hero="sub" className="pt-3 font-jakarta text-white font-medium text-base w-2xs max-sm:text-sm max-sm:w-3xs">
             Discover New Places and Create Your Perfect Journey.
           </p>
 

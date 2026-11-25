@@ -41,8 +41,8 @@ supabase/  # skema database
 
 ## Settings (`/settings`)
 
-Menu **Settings** ada di sidebar user. Semua pengaturan tersimpan per akun di browser (`localStorage`, kunci `setapak:settings:v1:<id-user>`).
+Menu **Settings** ada di sidebar user. Pengaturan tersimpan per akun: di cloud (Supabase tabel `user_settings`, foto di bucket `avatars`) dan disalin ke browser (`localStorage`, kunci `setapak:settings:v1:<id-user>`) untuk mode offline. Tanpa Supabase (mode demo) hanya di browser. Jalankan `supabase/schema.sql` (atau `supabase/user_settings.sql` untuk database lama) agar tabel & bucket ada.
 
-- **Profile**: ganti foto (dikecilkan 256px, disimpan di browser), ganti username, ganti email dan password (butuh Supabase aktif; di mode demo hanya username).
+- **Profile**: ganti foto (dikecilkan 256px, diunggah ke Supabase Storage), ganti username, ganti email dan password (butuh Supabase aktif; di mode demo hanya username).
 - **Appearance**: Light / Dark / System (System mengikuti tema perangkat). Tema gelap berlaku di area user saja.
 - **Location**: *Home city* dipakai sebagai kota awal "For you" di Home. *Location access* meminta izin lokasi browser; kalau aktif muncul tombol **Gunakan lokasi saya** yang mengisi Home city lewat Nominatim (OpenStreetMap).

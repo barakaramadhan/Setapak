@@ -4,6 +4,7 @@ import { useAuth, displayName } from "../../store/useAuth";
 import { useChats } from "../../store/useChats";
 import { useTrips } from "../../store/useTrips";
 import InputAll from "../ui/InputAll";
+import FillButton from "../ui/FillButton";
 
 const navigasiMenu = [
   { label: "Home", to: "/dashboard", icon: "fi fi-rr-house-blank" },
@@ -93,7 +94,7 @@ function Sidebar() {
         <button
           type="button"
           onClick={mulaiChatBaru}
-          className="flex w-full items-center justify-center overflow-hidden rounded-xl bg-grey-light py-3 text-base font-jakarta font-medium text-white hover:bg-grey-light/95"
+          className="flex w-full items-center justify-center overflow-hidden rounded-xl bg-grey-light py-3 text-base font-jakarta font-medium text-white hover:opacity-90"
         >
           <span
             className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
@@ -311,20 +312,24 @@ function Sidebar() {
       </div>
 
       <div className="mt-auto px-4 pb-6">
-        <button
+        <FillButton
           type="button"
           onClick={() => signOut()}
-          className="flex w-full items-center gap-3 overflow-hidden border-2 border-grey-label/90 rounded-xl px-3.5 py-2.5 text-base font-jakarta font-medium text-grey-light hover:bg-neutral-100"
+          className="flex w-full !rounded-xl !px-3.5 !py-2.5 text-base font-medium"
+          baseClassName="ring-2 ring-inset ring-grey-label/90 text-grey-light"
+          fillClassName="bg-grey-light text-white !rounded-xl px-3.5 justify-start"
         >
-          <i className="fi fi-rr-sign-out-alt shrink-0 text-xl leading-none" />
-          <span
-            className={`whitespace-nowrap transition-opacity duration-300 font-jakarta font-medium text-base text-grey-light ${
-              isOpen ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            Log out
+          <span className="flex w-full items-center gap-3">
+            <i className="fi fi-rr-sign-out-alt shrink-0 text-xl leading-none" />
+            <span
+              className={`whitespace-nowrap font-jakarta text-base font-medium transition-opacity duration-300 ${
+                isOpen ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              Log out
+            </span>
           </span>
-        </button>
+        </FillButton>
       </div>
     </aside>
     </>

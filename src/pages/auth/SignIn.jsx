@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { authIntro } from "../../animations/AuthAnimation";
 import FillButton from "../../components/ui/FillButton";
 import InputAll from "../../components/ui/InputAll";
 import ImageSignIn from "../../assets/images/imageloginpage.png";
@@ -9,6 +10,8 @@ export default function SignIn() {
   const { signIn, isSupabaseReady } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const rootRef = useRef(null);
+  useEffect(() => authIntro(rootRef.current), []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pesan, setPesan] = useState("");
@@ -29,7 +32,7 @@ export default function SignIn() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-bright-white">
+    <div ref={rootRef} className="flex min-h-screen w-full bg-bright-white overflow-hidden">
       <div className="flex flex-1 flex-col justify-between p-5">
         <Link to="/" className="font-clash text-3xl font-bold text-grey-light">
           SETAPAK
