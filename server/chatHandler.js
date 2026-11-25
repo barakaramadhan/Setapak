@@ -270,6 +270,8 @@ function bersihkanFakta(raw = {}) {
     tema: teks(raw.tema, 40),
     companions: teks(raw.companions, 40),
     specialNeeds: teks(raw.specialNeeds, 120),
+    origin: teks(raw.origin, 60),
+    originSource: ["user", "home"].includes(raw.originSource) ? raw.originSource : null,
     knownKeys: daftar(raw.knownKeys),
     knownModules: daftar(raw.knownModules),
   };
@@ -290,6 +292,13 @@ function formatFakta(fakta) {
   const baris = [];
   const tujuan = fakta.destinationLabel || fakta.destinations.join(" + ");
   if (tujuan) baris.push(`- Tujuan: ${tujuan}`);
+  if (fakta.origin) {
+    baris.push(
+      fakta.originSource === "home"
+        ? `- Berangkat dari: ${fakta.origin} (lokasi rumah user yang tersimpan; user tidak menyebut asal lain). JANGAN tanya kota asal lagi. Hitung moda transport, waktu tempuh, dan biaya perjalanan dari ${fakta.origin}.`
+        : `- Berangkat dari: ${fakta.origin} (disebut user). Hitung transport dan waktu tempuh dari sana.`
+    );
+  }
   if (fakta.days) baris.push(`- Durasi: ${fakta.days} hari`);
   const durasiTujuan = Object.entries(fakta.daysByDestination || {})
     .map(([nama, hari]) => `${nama} ${hari} hari`)
@@ -450,6 +459,7 @@ function infoSudahDijawab(history = [], fakta = null) {
     safety: dariTeks.safety || known.has("safety") || Boolean(fakta.specialNeeds),
     dokumen: known.has("dokumen"),
     transport: known.has("transport"),
+    asal: known.has("asal"),
     akomodasi: known.has("akomodasi"),
   };
 }

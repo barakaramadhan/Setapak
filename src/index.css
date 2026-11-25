@@ -44,6 +44,26 @@
   }
 }
 
+/* Tema gelap (area user). Hanya menimpa variabel warna + beberapa kelas tetap. */
+body.theme-dark {
+  color-scheme: dark;
+  --color-bright-white: #121212;
+  --color-new-bright: #181818;
+  --color-grey-light: #ececec;
+  --color-grey-label: #8f8f8f;
+}
+body.theme-dark .bg-white { background-color: #1c1c1c; }
+body.theme-dark .bg-grey-light { background-color: #3a3a3a; }
+body.theme-dark .bg-gray-100,
+body.theme-dark .bg-gray-200,
+body.theme-dark .bg-neutral-100 { background-color: #262626; }
+body.theme-dark .text-gray-400,
+body.theme-dark .text-gray-500,
+body.theme-dark .text-gray-600 { color: #a3a3a3; }
+body.theme-dark .border-gray-300,
+body.theme-dark .border-gray-400 { border-color: #4a4a4a; }
+body.theme-dark .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9); }
+
 @media print {
   nav[aria-label="Modul trip planner"] {
     display: none !important;

@@ -83,6 +83,12 @@ export default function TripsProvider({ children }) {
       return;
     }
 
+    // Tanpa internet: tampilkan salinan terakhir yang tersimpan di perangkat
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setTrips(urut(readLocal(user.id)));
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error: err } = await supabase
@@ -91,10 +97,15 @@ export default function TripsProvider({ children }) {
         .eq("user_id", user.id)
         .order("trip_date", { ascending: true });
       if (err) {
+        setTrips(urut(readLocal(user.id)));
         setError(err.message);
         return;
       }
-      setTrips(urut((data || []).map(fromRow)));
+      const daftar = urut((data || []).map(fromRow));
+      writeLocal(user.id, daftar); // salinan untuk mode offline
+      setTrips(daftar);
+    } catch {
+      setTrips(urut(readLocal(user.id)));
     } finally {
       setLoading(false);
     }

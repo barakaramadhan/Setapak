@@ -38,3 +38,11 @@ server/    # handler chat & provider AI
 api/       # entry point Vercel
 supabase/  # skema database
 ```
+
+## Settings (`/settings`)
+
+Menu **Settings** ada di sidebar user. Semua pengaturan tersimpan per akun di browser (`localStorage`, kunci `setapak:settings:v1:<id-user>`).
+
+- **Profile**: ganti foto (dikecilkan 256px, disimpan di browser), ganti username, ganti email dan password (butuh Supabase aktif; di mode demo hanya username).
+- **Appearance**: Light / Dark / System (System mengikuti tema perangkat). Tema gelap berlaku di area user saja.
+- **Location**: *Home city* dipakai sebagai kota awal "For you" di Home. *Location access* meminta izin lokasi browser; kalau aktif muncul tombol **Gunakan lokasi saya** yang mengisi Home city lewat Nominatim (OpenStreetMap).

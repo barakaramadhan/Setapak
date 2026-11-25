@@ -18,6 +18,7 @@ import {
 } from "../../../api/plannerEngine";
 import { askRecommendations } from "../../../api/chat";
 import { useAuth, displayName } from "../../../store/useAuth";
+import { useSettings } from "../../../store/useSettings";
 import { useTrips } from "../../../store/useTrips";
 import { toDateKey } from "../../../utils/tripDate";
 
@@ -25,6 +26,7 @@ function HomeUser() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { homeCity, photo } = useSettings();
   const {
     trips,
     tripsByDate,
@@ -60,7 +62,7 @@ function HomeUser() {
     return updateTrip(editTrip.id, data);
   };
   const [mode, setMode] = useState("near"); // "in" | "near"
-  const [city, setCity] = useState("bogor");
+  const [city, setCity] = useState(() => homeCity || "bogor");
   const [minRating, setMinRating] = useState(0); // 0 = tidak difilter, urut dari rating tertinggi
   const [editingCity, setEditingCity] = useState(false); // form input kota
   const [cityInput, setCityInput] = useState("");
@@ -206,10 +208,14 @@ function HomeUser() {
           <button
             type="button"
             title={displayName(user)}
-            onClick={() => navigate("/trip")}
-            className="-mt-2 flex h-8 w-8 items-center justify-center rounded-full bg-grey-light text-sm font-bold text-white"
+            onClick={() => navigate("/settings")}
+            className="-mt-2 flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-grey-light text-sm font-bold text-white"
           >
-            {(displayName(user) || "U").slice(0, 1).toUpperCase()}
+            {photo ? (
+              <img src={photo} alt="" className="h-full w-full object-cover" />
+            ) : (
+              (displayName(user) || "U").slice(0, 1).toUpperCase()
+            )}
           </button>
         </div>
       </header>

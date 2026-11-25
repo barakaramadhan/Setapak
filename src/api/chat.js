@@ -25,6 +25,24 @@ function writeStorage(key, value) {
   }
 }
 
+// Kota rumah user (dari Settings). Dipakai sebagai kota berangkat kalau user tidak menyebut asal.
+let asalDefault = "";
+export function setAsalDefault(kota) {
+  asalDefault = String(kota || "").trim().slice(0, 60);
+}
+export function getAsalDefault() {
+  return asalDefault;
+}
+
+// Asal yang disebut jelas: "dari Jakarta ke Bali", "berangkat dari Depok", "asal Bandung".
+function extractAsal(teks) {
+  const m = String(teks).match(
+    /\b(?:berangkat|start|mulai|pergi|asal)\s+(?:dari\s+)?([A-Za-z][A-Za-z ]{2,28}?)(?=\s+(?:ke|menuju|untuk|selama|tanggal|tgl|pada|naik|pakai|dengan)\b|[,.;\n]|$)|\bdari\s+([A-Z][A-Za-z]{2,}(?:\s[A-Z][A-Za-z]{2,})?)\s+(?:ke|menuju)\b/
+  );
+  const hasil = (m?.[1] || m?.[2] || "").trim();
+  return /^(rumah|sini|sana|situ)$/i.test(hasil) ? "" : hasil;
+}
+
 export function extractTripFacts(history = []) {
   const teks = (Array.isArray(history) ? history : [])
     .filter((item) => (item?.role || "user") === "user")
@@ -74,6 +92,7 @@ export function extractTripFacts(history = []) {
   const akomodasi = /\b(hotel|villa|hostel|menginap|akomodasi|penginapan)\b/.test(lower);
 
   const knownKeys = [];
+  if (extractAsal(teks) || asalDefault) knownKeys.push("asal");
   const knownModules = [];
   if (destinations.length) {
     knownKeys.push("kota");
@@ -129,6 +148,8 @@ export function extractTripFacts(history = []) {
     specialNeeds,
     knownKeys,
     knownModules,
+    origin: extractAsal(teks) || asalDefault || null,
+    originSource: extractAsal(teks) ? "user" : asalDefault ? "home" : null,
   };
 }
 

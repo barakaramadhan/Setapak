@@ -4,6 +4,7 @@ import SmoothScroll from "./components/layouts/SmoothScroll";
 import GuestLayout from "./components/layouts/GuestLayout";
 import AuthLayout from "./components/layouts/AuthLayout";
 import RequireAuth from "./components/layouts/RequireAuth";
+import OfflineGate from "./components/layouts/OfflineGate";
 const LandingPage = lazy(() => import("./pages/guest/LandingPage"));
 import UserLayout from "./components/layouts/UserLayout";
 const DashboardUser = lazy(() => import("./pages/user/DashboardUser"));
@@ -12,12 +13,14 @@ const YourPlan = lazy(() => import("./pages/user/sections/YourPlan"));
 const SignIn = lazy(() => import("./pages/auth/SignIn"));
 const SignUp = lazy(() => import("./pages/auth/SignUp"));
 const TripPage = lazy(() => import("./pages/user/TripPage"));
+const Settings = lazy(() => import("./pages/user/sections/Settings"));
 
 const START_PAGE = "";
 
 function App() {
   return (
     <BrowserRouter>
+      <OfflineGate />
       <SmoothScroll>
         <Suspense fallback={<div className="flex min-h-screen items-center justify-center font-jakarta text-sm text-grey-light/60">Memuat…</div>}>
         <Routes>
@@ -48,6 +51,7 @@ function App() {
             <Route path="/plan" element={<Navigate to="/trip" replace />} />
             <Route path="/trip" element={<YourPlan />} />
             <Route path="/trip/:id" element={<TripPage />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
 
           <Route path="*" element={<Navigate to={START_PAGE || "/"} replace />} />

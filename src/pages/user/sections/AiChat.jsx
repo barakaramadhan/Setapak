@@ -7,8 +7,7 @@ import {
   askPlanFields,
   askCreatePlan,
   saveLastPlan,
-  extractTripFacts,
-} from "../../../api/chat";
+  extractTripFacts, getAsalDefault } from "../../../api/chat";
 import { planTrip, resolveCity, cityLabels, normalizeText } from "../../../api/plannerEngine";
 import MapPane from "../../../components/ui/MapPane";
 import { mapMarkersFromPlan, ringkasPlan } from "../../../utils/planSummary";
@@ -741,7 +740,7 @@ function AiChatInner() {
       planBaru.destination = { ...(planBaru.destination || {}), city: kotaTrip || planBaru.destination?.city || "" };
       const transportVal = String(wiz.values?.transport || wiz.values?.transportasi || wiz.values?.transportation || wiz.values?.moda || "").trim();
       if (transportVal && !(planBaru.transportation?.items || []).length) {
-        planBaru.transportation = { ...(planBaru.transportation || {}), items: [{ type: "Pergi", mode: transportVal, from: "Kota asal", to: kotaTrip || "Tujuan", depart: "", arrive: "", cost: "", note: "Dari jawaban user" }] };
+        planBaru.transportation = { ...(planBaru.transportation || {}), items: [{ type: "Pergi", mode: transportVal, from: getAsalDefault() || "Kota asal", to: kotaTrip || "Tujuan", depart: "", arrive: "", cost: "", note: "Dari jawaban user" }] };
       }
       const accomVal = String(wiz.values?.akomodasi || wiz.values?.accommodation || wiz.values?.hotel || "").trim();
       if (accomVal && !(planBaru.accommodation?.items || []).length) {
